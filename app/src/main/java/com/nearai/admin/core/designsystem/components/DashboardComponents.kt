@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
 
 /**
  * A small pill-shaped badge with a colored dot indicator and label.
@@ -207,5 +209,80 @@ fun SimpleBarChart(
                     .background(color.copy(alpha = 0.5f + (index.toFloat() / dataPoints.size) * 0.5f))
             )
         }
+    }
+}
+
+/**
+ * Preview for StatusPill.
+ */
+@Preview(showBackground = true, widthDp = 300)
+@Composable
+fun StatusPillPreview() {
+    NearAiAdminTheme {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(16.dp)) {
+            StatusPill(label = "Active", dotColor = Color(0xFF10B981))
+            StatusPill(label = "Warning", dotColor = Color(0xFFF59E0B))
+            StatusPill(label = "Error", dotColor = Color(0xFFEF4444))
+        }
+    }
+}
+
+/**
+ * Preview for ActivityStreamCard.
+ */
+@Preview(showBackground = true, widthDp = 390)
+@Composable
+fun ActivityStreamCardPreview() {
+    NearAiAdminTheme {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(16.dp)) {
+            ActivityStreamCard(
+                title = "New Pro Subscription",
+                description = "sarah.k@gmail.com · Annual Plan",
+                timeAgo = "4m ago",
+                status = ActivityStatus.Success
+            )
+            ActivityStreamCard(
+                title = "AI Budget Soft Cap (70%)",
+                description = "Google Cloud Run / OpenAI Routing",
+                timeAgo = "28m ago",
+                status = ActivityStatus.Warning
+            )
+            ActivityStreamCard(
+                title = "Failed Discovery Query",
+                description = "Places timeout (Tokyo, JP) · status 504",
+                timeAgo = "1h ago",
+                status = ActivityStatus.Error
+            )
+        }
+    }
+}
+
+/**
+ * Preview for BudgetProgressBar.
+ */
+@Preview(showBackground = true, widthDp = 390)
+@Composable
+fun BudgetProgressBarPreview() {
+    NearAiAdminTheme {
+        BudgetProgressBar(
+            consumed = 428.50,
+            total = 600.00,
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
+/**
+ * Preview for SimpleBarChart.
+ */
+@Preview(showBackground = true, widthDp = 390)
+@Composable
+fun SimpleBarChartPreview() {
+    NearAiAdminTheme {
+        SimpleBarChart(
+            dataPoints = listOf(0.35f, 0.45f, 0.38f, 0.55f, 0.65f, 0.72f, 0.88f, 0.60f, 0.50f, 0.62f, 0.40f),
+            modifier = Modifier.padding(16.dp),
+            height = 60
+        )
     }
 }

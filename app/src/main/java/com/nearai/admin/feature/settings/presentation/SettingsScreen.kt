@@ -9,8 +9,10 @@ import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.nearai.admin.core.designsystem.components.ConfirmationDialog
+import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,5 +90,19 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+/**
+ * Preview for the Settings screen.
+ */
+@Preview(showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+fun SettingsScreenPreview() {
+    NearAiAdminTheme {
+        SettingsScreen(
+            onNavigateBack = { },
+            onLogout = { }
+        )
     }
 }

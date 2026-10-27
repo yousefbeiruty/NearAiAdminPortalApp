@@ -7,7 +7,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
 
 /**
  * Displays a single KPI metric with a label, value, and optional trend indicator.
@@ -86,4 +88,33 @@ sealed interface KpiTrend {
     val period: String
     data class Up(override val percentage: Int, override val period: String) : KpiTrend
     data class Down(override val percentage: Int, override val period: String) : KpiTrend
+}
+
+/**
+ * Preview for KpiCard with upward trend.
+ */
+@Preview(showBackground = true, widthDp = 300)
+@Composable
+fun KpiCardPreview() {
+    NearAiAdminTheme {
+        KpiCard(
+            label = "Total Users",
+            value = "14,820",
+            trend = KpiTrend.Up(12, "vs last week")
+        )
+    }
+}
+
+/**
+ * Preview for KpiCard without trend.
+ */
+@Preview(showBackground = true, widthDp = 300)
+@Composable
+fun KpiCardNoTrendPreview() {
+    NearAiAdminTheme {
+        KpiCard(
+            label = "AI Requests",
+            value = "84.6k"
+        )
+    }
 }

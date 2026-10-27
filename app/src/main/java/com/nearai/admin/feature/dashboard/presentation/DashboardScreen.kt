@@ -32,20 +32,45 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.nearai.admin.core.designsystem.theme.*
 
 // =============================================================================
-// UI Models
+// Design System Color Aliases (matching existing screen design)
 // =============================================================================
 
-data class KpiMetric(
-    val title: String,
-    val value: String,
-    val delta: String,
-    val isPositive: Boolean,
-    val icon: ImageVector,
-    val deltaColorOverride: Color? = null
-)
+val NavyPrimary = Navy
+val IndigoAccent = Indigo
+val BackgroundSurface = BackgroundLight
+val CardSurface = SurfaceLight
+val BorderSubtle = Color(0xFFE2E8F0)
+val TextPrimary = TextPrimaryLight
+val TextSecondary = TextSecondaryLight
+val EmeraldSuccess = Success
+val AmberWarning = Warning
+val RoseError = Error
+
+// =============================================================================
+// Helper: Map iconLabel from domain model to ImageVector
+// =============================================================================
+
+fun iconFromLabel(label: String): ImageVector {
+    return when (label.lowercase()) {
+        "people" -> Icons.Outlined.People
+        "bolt" -> Icons.Outlined.Bolt
+        "memory" -> Icons.Outlined.Memory
+        "accountbalancewallet" -> Icons.Outlined.AccountBalanceWallet
+        "explore" -> Icons.Outlined.Explore
+        "creditcard" -> Icons.Outlined.CreditCard
+        else -> Icons.Outlined.Dashboard
+    }
+}
+
+// =============================================================================
+// Helper: Map statusType to status color and icon
+// =============================================================================
 
 data class ActivityStreamEvent(
     val id: String,
@@ -58,24 +83,62 @@ data class ActivityStreamEvent(
 )
 
 // =============================================================================
+// Screen-level KPI model (includes ImageVector icon for DashboardKpiCard)
+// =============================================================================
+
+data class KpiMetric(
+    val title: String,
+    val value: String,
+    val delta: String,
+    val isPositive: Boolean,
+    val icon: ImageVector,
+    val deltaColorOverride: Color? = null
+)
+
+fun ActivityEventItem.toActivityStreamEvent(): ActivityStreamEvent {
+    val (color, icon) = when (statusType.lowercase()) {
+        "success" -> EmeraldSuccess to Icons.Outlined.Diamond
+        "warning" -> AmberWarning to Icons.Outlined.WarningAmber
+        "error" -> RoseError to Icons.Outlined.ErrorOutline
+        "info" -> IndigoAccent to Icons.Outlined.Info
+        else -> TextSecondary to Icons.Outlined.Info
+    }
+    return ActivityStreamEvent(
+        id = id,
+        title = title,
+        subtitle = subtitle,
+        timestamp = timestamp,
+        statusLabel = statusLabel,
+        statusColor = color,
+        icon = icon
+    )
+}
+
+// =============================================================================
 // Overview Dashboard Composable
 // =============================================================================
 
 /**
- * Overview Dashboard — high-fidelity admin dashboard with KPI metrics,
- * Bezier curve telemetry, inference histograms, budget gauges, and
- * a live activity stream.
+ * Overview Dashboard — connected to [DashboardViewModel] for state-driven rendering.
  *
- * Uses development-only placeholder data until the backend API is connected.
+ * Displays KPI metrics, telemetry charts, budget utilization, and live activity
+ * stream from the ViewModel's StateFlow. Handles loading, error, and content states.
+ *
+ * Uses development-only fake data via [FakeDashboardRepository] until the backend
+ * API is connected.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
+    viewModel: DashboardViewModel = hiltViewModel(),
     onNavigateToDetails: () -> Unit = {},
     onNavigateToSystemHealth: () -> Unit = {},
     onNavigateToAuditLogs: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -174,125 +237,221 @@ fun DashboardScreen(
         },
         containerColor = BackgroundSurface
     ) { innerPadding ->
-        LazyColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // 1. Greeting & Synchronization Status
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+        if (uiState.isLoading && uiState.kpiMetrics.isEmpty()) {
+            // Initial loading state
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column {
-                        Text(
-                            text = "Good evening,",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = TextSecondary
-                            )
+                    CircularProgressIndicator(
+                        color = IndigoAccent,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text(
+                        text = "Loading dashboard...",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = TextSecondary
                         )
-                        Text(
-                            text = "Alex",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = NavyPrimary
-                            )
+                    )
+                }
+            }
+        } else if (uiState.error != null && uiState.kpiMetrics.isEmpty()) {
+            // Error state with retry
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.padding(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.ErrorOutline,
+                        contentDescription = null,
+                        tint = RoseError,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text(
+                        text = "Failed to load dashboard",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
                         )
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = CardSurface,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle)
+                    )
+                    val errorMessage = uiState.error ?: "Unknown error"
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = TextSecondary
+                        )
+                    )
+                    Button(
+                        onClick = { viewModel.onRetry() },
+                        colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
+                        shape = RoundedCornerShape(10.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(EmeraldSuccess)
-                            )
-                            Text(
-                                text = "Live · Synced 2m ago",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondary,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                        }
+                        Text(
+                            text = "Retry",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
+        } else {
+            // Content state (may have previous data while refreshing)
+            DashboardContent(
+                uiState = uiState,
+                onNavigateToSystemHealth = onNavigateToSystemHealth,
+                onRefresh = { viewModel.onRetry() },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            )
+        }
+    }
+}
 
-            // 2. Horizon & Cluster Filter Chips
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = true,
-                        onClick = { },
-                        label = { Text("Last 24 Hours", fontWeight = FontWeight.Medium) },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.FilterList,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = NavyPrimary,
-                            selectedLabelColor = Color.White,
-                            selectedLeadingIconColor = Color.White
+/**
+ * Dashboard content rendered from ViewModel state.
+ */
+@Composable
+private fun DashboardContent(
+    uiState: DashboardUiState,
+    onNavigateToSystemHealth: () -> Unit,
+    onRefresh: () -> Unit,
+    modifier: Modifier
+) {
+    val kpis: List<KpiMetric> = uiState.kpiMetrics.map { kpi ->
+        KpiMetric(
+            title = kpi.title,
+            value = kpi.value,
+            delta = kpi.delta,
+            isPositive = kpi.isPositive,
+            icon = iconFromLabel(kpi.title)
+        )
+    }
+
+    val events = uiState.activityEvents.map { it.toActivityStreamEvent() }
+
+    LazyColumn(
+        modifier = modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // 1. Greeting & Synchronization Status
+        item {
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Good evening,",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = TextSecondary
                         )
                     )
-                    FilterChip(
-                        selected = false,
-                        onClick = { },
-                        label = { Text("US-East Cluster") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Dns,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            containerColor = CardSurface
-                        )
-                    )
-                    FilterChip(
-                        selected = false,
-                        onClick = { },
-                        label = { Text("GPT-4o / Claude 3.5") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            containerColor = CardSurface
+                    Text(
+                        text = "Alex",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = NavyPrimary
                         )
                     )
                 }
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = CardSurface,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(EmeraldSuccess)
+                        )
+                        Text(
+                            text = if (uiState.lastUpdated.isNotBlank()) "Live · Synced ${uiState.lastUpdated}" else "Loading...",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = TextSecondary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        )
+                    }
+                }
             }
+        }
 
-            // 3. Six-Card Executive KPI Grid
-            item {
-                val kpis = listOf(
-                    KpiMetric("TOTAL USERS", "14,820", "↗ +12.4% vs last wk", true, Icons.Outlined.People),
-                    KpiMetric("ACTIVE (DAU)", "3,410", "↗ +8.2% vs yest.", true, Icons.Outlined.Bolt),
-                    KpiMetric("AI REQUESTS", "84.6k", "99.4% ok · 512 err", true, Icons.Outlined.Memory),
-                    KpiMetric("AI SPEND", "$428.50", "● 71% of $600 cap", false, Icons.Outlined.AccountBalanceWallet, IndigoAccent),
-                    KpiMetric("PLACES FOUND", "192.4k", "↑ +18% queries", true, Icons.Outlined.Explore),
-                    KpiMetric("EST. REVENUE", "$4,820", "Pro + 18 trials", true, Icons.Outlined.CreditCard, IndigoAccent)
+        // 2. Horizon & Cluster Filter Chips
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = true,
+                    onClick = { },
+                    label = { Text("Last 24 Hours", fontWeight = FontWeight.Medium) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = NavyPrimary,
+                        selectedLabelColor = Color.White,
+                        selectedLeadingIconColor = Color.White
+                    )
                 )
+                FilterChip(
+                    selected = false,
+                    onClick = { },
+                    label = { Text("US-East Cluster") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Dns,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = CardSurface
+                    )
+                )
+                FilterChip(
+                    selected = false,
+                    onClick = { },
+                    label = { Text("GPT-4o / Claude 3.5") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = CardSurface
+                    )
+                )
+            }
+        }
+
+        // 3. KPI Grid from ViewModel state
+        item {
+            if (kpis.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     for (i in kpis.indices step 2) {
                         Row(
@@ -307,341 +466,341 @@ fun DashboardScreen(
                     }
                 }
             }
+        }
 
-            // 4. User Velocity & DAU Telemetry Curve
-            item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardSurface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = "User Velocity & DAU",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextPrimary
-                                    )
-                                )
-                                Text(
-                                    text = "14-day rolling telemetry",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = TextSecondary
-                                    )
-                                )
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = IndigoAccent.copy(alpha = 0.12f)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = null,
-                                        tint = IndigoAccent,
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Text(
-                                        text = "Peak: 3,410",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            color = IndigoAccent,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Smooth Bezier Curve Canvas with Gradient Fill
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(110.dp)
-                        ) {
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                val w = size.width
-                                val h = size.height
-
-                                // Grid guidelines
-                                drawLine(
-                                    color = BorderSubtle,
-                                    start = Offset(0f, h * 0.35f),
-                                    end = Offset(w, h * 0.35f),
-                                    strokeWidth = 1f
-                                )
-                                drawLine(
-                                    color = BorderSubtle,
-                                    start = Offset(0f, h * 0.7f),
-                                    end = Offset(w, h * 0.7f),
-                                    strokeWidth = 1f
-                                )
-
-                                val points = listOf(
-                                    Offset(0f, h * 0.85f),
-                                    Offset(w * 0.14f, h * 0.78f),
-                                    Offset(w * 0.22f, h * 0.82f),
-                                    Offset(w * 0.35f, h * 0.65f),
-                                    Offset(w * 0.48f, h * 0.72f),
-                                    Offset(w * 0.58f, h * 0.60f),
-                                    Offset(w * 0.70f, h * 0.62f),
-                                    Offset(w * 0.82f, h * 0.45f),
-                                    Offset(w * 0.98f, h * 0.20f)
-                                )
-
-                                val linePath = Path().apply {
-                                    moveTo(points.first().x, points.first().y)
-                                    for (i in 0 until points.size - 1) {
-                                        val p0 = points[i]
-                                        val p1 = points[i + 1]
-                                        val cx = (p0.x + p1.x) / 2
-                                        cubicTo(cx, p0.y, cx, p1.y, p1.x, p1.y)
-                                    }
-                                }
-
-                                val fillPath = Path().apply {
-                                    addPath(linePath)
-                                    lineTo(w * 0.98f, h)
-                                    lineTo(0f, h)
-                                    close()
-                                }
-
-                                drawPath(
-                                    path = fillPath,
-                                    brush = Brush.verticalGradient(
-                                        colors = listOf(
-                                            IndigoAccent.copy(alpha = 0.25f),
-                                            IndigoAccent.copy(alpha = 0.02f)
-                                        )
-                                    )
-                                )
-
-                                drawPath(
-                                    path = linePath,
-                                    color = IndigoAccent,
-                                    style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
-                                )
-
-                                // Apex indicator dot at Today's Peak
-                                val peak = points.last()
-                                drawCircle(
-                                    color = IndigoAccent.copy(alpha = 0.3f),
-                                    radius = 10.dp.toPx(),
-                                    center = peak
-                                )
-                                drawCircle(
-                                    color = NavyPrimary,
-                                    radius = 5.dp.toPx(),
-                                    center = peak
-                                )
-                                drawCircle(
-                                    color = Color.White,
-                                    radius = 2.5.dp.toPx(),
-                                    center = peak
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Oct 11", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary))
-                            Text("Oct 18", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary))
+        // 4. User Velocity & DAU Telemetry Curve
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = CardSurface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
                             Text(
-                                "Today (All-Time High)",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = IndigoAccent,
-                                    fontWeight = FontWeight.Bold
+                                text = "User Velocity & DAU",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                            )
+                            Text(
+                                text = "14-day rolling telemetry",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = TextSecondary
                                 )
                             )
                         }
-                    }
-                }
-            }
-
-            // 5. AI Inference Load & Monthly Envelope Card
-            item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardSurface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = IndigoAccent.copy(alpha = 0.12f)
                         ) {
-                            Column {
-                                Text(
-                                    text = "AI Inference Load & Retries",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextPrimary
-                                    )
-                                )
-                                Text(
-                                    text = "Tokens / Sec vs Fallbacks (24h)",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = TextSecondary
-                                    )
-                                )
-                            }
                             Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(EmeraldSuccess)
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = IndigoAccent,
+                                    modifier = Modifier.size(12.dp)
                                 )
                                 Text(
-                                    text = "99.4% Pass Rate",
+                                    text = "Peak: 3,410",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = EmeraldSuccess,
+                                        color = IndigoAccent,
                                         fontWeight = FontWeight.Bold
                                     )
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                        // Compact 24h Bar Histogram
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            val bars = listOf(
-                                0.35f to IndigoAccent.copy(alpha = 0.25f),
-                                0.45f to IndigoAccent.copy(alpha = 0.25f),
-                                0.38f to IndigoAccent.copy(alpha = 0.25f),
-                                0.55f to IndigoAccent.copy(alpha = 0.35f),
-                                0.65f to IndigoAccent.copy(alpha = 0.4f),
-                                0.72f to IndigoAccent.copy(alpha = 0.5f),
-                                0.88f to NavyPrimary,
-                                0.60f to IndigoAccent.copy(alpha = 0.35f),
-                                0.50f to IndigoAccent.copy(alpha = 0.25f),
-                                0.62f to RoseError.copy(alpha = 0.85f),
-                                0.40f to IndigoAccent.copy(alpha = 0.25f)
+                    // Smooth Bezier Curve Canvas with Gradient Fill
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(110.dp)
+                    ) {
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            val w = size.width
+                            val h = size.height
+
+                            drawLine(
+                                color = BorderSubtle,
+                                start = Offset(0f, h * 0.35f),
+                                end = Offset(w, h * 0.35f),
+                                strokeWidth = 1f
                             )
-                            bars.forEach { (heightFraction, color) ->
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(horizontal = 2.dp)
-                                        .fillMaxHeight(heightFraction)
-                                        .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                        .background(color)
+                            drawLine(
+                                color = BorderSubtle,
+                                start = Offset(0f, h * 0.7f),
+                                end = Offset(w, h * 0.7f),
+                                strokeWidth = 1f
+                            )
+
+                            val points = listOf(
+                                Offset(0f, h * 0.85f),
+                                Offset(w * 0.14f, h * 0.78f),
+                                Offset(w * 0.22f, h * 0.82f),
+                                Offset(w * 0.35f, h * 0.65f),
+                                Offset(w * 0.48f, h * 0.72f),
+                                Offset(w * 0.58f, h * 0.60f),
+                                Offset(w * 0.70f, h * 0.62f),
+                                Offset(w * 0.82f, h * 0.45f),
+                                Offset(w * 0.98f, h * 0.20f)
+                            )
+
+                            val linePath = Path().apply {
+                                moveTo(points.first().x, points.first().y)
+                                for (i in 0 until points.size - 1) {
+                                    val p0 = points[i]
+                                    val p1 = points[i + 1]
+                                    val cx = (p0.x + p1.x) / 2
+                                    cubicTo(cx, p0.y, cx, p1.y, p1.x, p1.y)
+                                }
+                            }
+
+                            val fillPath = Path().apply {
+                                addPath(linePath)
+                                lineTo(w * 0.98f, h)
+                                lineTo(0f, h)
+                                close()
+                            }
+
+                            drawPath(
+                                path = fillPath,
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        IndigoAccent.copy(alpha = 0.25f),
+                                        IndigoAccent.copy(alpha = 0.02f)
+                                    )
+                                )
+                            )
+
+                            drawPath(
+                                path = linePath,
+                                color = IndigoAccent,
+                                style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
+                            )
+
+                            val peak = points.last()
+                            drawCircle(
+                                color = IndigoAccent.copy(alpha = 0.3f),
+                                radius = 10.dp.toPx(),
+                                center = peak
+                            )
+                            drawCircle(
+                                color = NavyPrimary,
+                                radius = 5.dp.toPx(),
+                                center = peak
+                            )
+                            drawCircle(
+                                color = Color.White,
+                                radius = 2.5.dp.toPx(),
+                                center = peak
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Oct 11", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary))
+                        Text("Oct 18", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary))
+                        Text(
+                            "Today (All-Time High)",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = IndigoAccent,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        // 5. AI Inference Load & Monthly Envelope Card
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = CardSurface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "AI Inference Load & Retries",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                            )
+                            Text(
+                                text = "Tokens / Sec vs Fallbacks (24h)",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = TextSecondary
+                                )
+                            )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(EmeraldSuccess)
+                            )
+                            Text(
+                                text = "99.4% Pass Rate",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = EmeraldSuccess,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Compact 24h Bar Histogram
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        val bars = listOf(
+                            0.35f to IndigoAccent.copy(alpha = 0.25f),
+                            0.45f to IndigoAccent.copy(alpha = 0.25f),
+                            0.38f to IndigoAccent.copy(alpha = 0.25f),
+                            0.55f to IndigoAccent.copy(alpha = 0.35f),
+                            0.65f to IndigoAccent.copy(alpha = 0.4f),
+                            0.72f to IndigoAccent.copy(alpha = 0.5f),
+                            0.88f to NavyPrimary,
+                            0.60f to IndigoAccent.copy(alpha = 0.35f),
+                            0.50f to IndigoAccent.copy(alpha = 0.25f),
+                            0.62f to RoseError.copy(alpha = 0.85f),
+                            0.40f to IndigoAccent.copy(alpha = 0.25f)
+                        )
+                        bars.forEach { (heightFraction, color) ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 2.dp)
+                                    .fillMaxHeight(heightFraction)
+                                    .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                    .background(color)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Monthly Compute Progress Gauge
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = BackgroundSurface,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Monthly Compute Envelope",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = TextPrimary
+                                    )
+                                )
+                                Text(
+                                    text = "$428.50 / $600.00",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = NavyPrimary
+                                    )
                                 )
                             }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Monthly Compute Progress Gauge
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = BackgroundSurface,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = "Monthly Compute Envelope",
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = TextPrimary
-                                        )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = { 428.50f / 600f },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                color = IndigoAccent,
+                                trackColor = BorderSubtle
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "● 71% Consumed",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = IndigoAccent,
+                                        fontWeight = FontWeight.Medium
                                     )
-                                    Text(
-                                        text = "$428.50 / $600.00",
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = NavyPrimary
-                                        )
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                LinearProgressIndicator(
-                                    progress = { 428.50f / 600f },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(8.dp)
-                                        .clip(RoundedCornerShape(4.dp)),
-                                    color = IndigoAccent,
-                                    trackColor = BorderSubtle
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = "● 71% Consumed",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            color = IndigoAccent,
-                                            fontWeight = FontWeight.Medium
-                                        )
+                                Text(
+                                    text = "$171.50 remaining",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = TextSecondary
                                     )
-                                    Text(
-                                        text = "$171.50 remaining",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            color = TextSecondary
-                                        )
-                                    )
-                                }
+                                )
                             }
                         }
                     }
                 }
             }
+        }
 
-            // 6. Live Activity Stream Section Header
-            item {
+        // 6. Live Activity Stream Section Header
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "Live Activity Stream",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
+                    Text(
+                        text = "Live Activity Stream",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
                         )
+                    )
+                    if (events.isNotEmpty()) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = IndigoAccent.copy(alpha = 0.15f)
                         ) {
                             Text(
-                                text = "4 New",
+                                text = "${events.size} New",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = IndigoAccent,
                                     fontWeight = FontWeight.Bold
@@ -650,116 +809,117 @@ fun DashboardScreen(
                             )
                         }
                     }
-                    Text(
-                        text = "View audit log",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            color = IndigoAccent,
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        modifier = Modifier.clickable { /* TODO: onViewAuditLog */ }
-                    )
                 }
-            }
-
-            // 7. Live Activity Events List
-            val events = listOf(
-                ActivityStreamEvent(
-                    id = "evt-1",
-                    title = "New Pro Subscription",
-                    subtitle = "sarah.k@gmail.com · Annual Plan",
-                    timestamp = "4m ago",
-                    statusLabel = "Active",
-                    statusColor = EmeraldSuccess,
-                    icon = Icons.Outlined.Diamond
-                ),
-                ActivityStreamEvent(
-                    id = "evt-2",
-                    title = "AI Budget Soft Cap (70%)",
-                    subtitle = "Google Cloud Run / OpenAI Routing",
-                    timestamp = "28m ago",
-                    statusLabel = "Warning",
-                    statusColor = AmberWarning,
-                    icon = Icons.Outlined.WarningAmber
-                ),
-                ActivityStreamEvent(
-                    id = "evt-3",
-                    title = "Failed Discovery Query",
-                    subtitle = "Places timeout (Tokyo, JP) · status 504",
-                    timestamp = "1h ago",
-                    statusLabel = "Investigate",
-                    statusColor = RoseError,
-                    icon = Icons.Outlined.ErrorOutline
-                ),
-                ActivityStreamEvent(
-                    id = "evt-4",
-                    title = "Batch User Import",
-                    subtitle = "142 new signups from ProductHunt",
-                    timestamp = "2h ago",
-                    statusLabel = "Success",
-                    statusColor = EmeraldSuccess,
-                    icon = Icons.Outlined.CloudDone
+                Text(
+                    text = "View audit log",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        color = IndigoAccent,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    modifier = Modifier.clickable { /* TODO: onViewAuditLog */ }
                 )
-            )
+            }
+        }
+
+        // 7. Live Activity Events from ViewModel state
+        if (events.isNotEmpty()) {
             items(events) { event ->
                 ActivityStreamCard(
                     event = event,
                     onClick = { /* TODO: onEventClick(event.id) */ }
                 )
             }
-
-            // 8. Cluster Status Operational Banner
+        } else {
             item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = NavyPrimary),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigateToSystemHealth() }
+                EmptyStateCard()
+            }
+        }
+
+        // 8. Cluster Status Operational Banner
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = NavyPrimary),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToSystemHealth() }
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Color.White.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CloudSync,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Cluster Fleet 100% Operational",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                            Text(
-                                text = "12 of 12 worker nodes responding smoothly",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = Color.White.copy(alpha = 0.72f)
-                                )
-                            )
-                        }
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = "Navigate to System Health",
+                            imageVector = Icons.Default.CloudSync,
+                            contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (uiState.clusterStatus.isNotBlank()) "Cluster Fleet ${uiState.clusterStatus}" else "Cluster Fleet Status",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                        Text(
+                            text = "Tap to view system health details",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = Color.White.copy(alpha = 0.72f)
+                            )
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "Navigate to System Health",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
             }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+/**
+ * Empty state card for activity stream when no events are available.
+ */
+@Composable
+private fun EmptyStateCard() {
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.EventNote,
+                contentDescription = null,
+                tint = TextSecondary,
+                modifier = Modifier.size(32.dp)
+            )
+            Text(
+                text = "No recent activity",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = TextSecondary,
+                    fontWeight = FontWeight.Medium
+                )
+            )
         }
     }
 }
@@ -909,28 +1069,35 @@ fun ActivityStreamCard(
 }
 
 // =============================================================================
-// Design System Tokens (matching core design system)
-// =============================================================================
-
-val NavyPrimary = Color(0xFF1E1B4B)
-val IndigoAccent = Color(0xFF6366F1)
-val BackgroundSurface = Color(0xFFF7F9FB)
-val CardSurface = Color(0xFFFFFFFF)
-val BorderSubtle = Color(0xFFE2E8F0)
-val TextPrimary = Color(0xFF0F172A)
-val TextSecondary = Color(0xFF64748B)
-val EmeraldSuccess = Color(0xFF10B981)
-val AmberWarning = Color(0xFFF59E0B)
-val RoseError = Color(0xFFEF4444)
-
-// =============================================================================
 // Jetpack Compose Preview
 // =============================================================================
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
-fun OverviewDashboardPreview() {
+fun OverviewDashboardLoadingPreview() {
     MaterialTheme {
-        DashboardScreen(onNavigateToDetails = {}, onNavigateToSystemHealth = {})
+        // Preview shows the loading state since Hilt ViewModel cannot be used in previews
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(BackgroundSurface),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CircularProgressIndicator(
+                    color = IndigoAccent,
+                    modifier = Modifier.size(48.dp)
+                )
+                Text(
+                    text = "Loading dashboard...",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = TextSecondary
+                    )
+                )
+            }
+        }
     }
 }

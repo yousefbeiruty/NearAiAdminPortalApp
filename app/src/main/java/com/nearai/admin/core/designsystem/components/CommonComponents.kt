@@ -13,7 +13,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
 
 /**
  * Displays a colored status dot with a label.
@@ -179,3 +181,73 @@ data class FilterChipItem(
     val id: String,
     val label: String
 )
+
+/**
+ * Preview for StatusIndicator.
+ */
+@Preview(showBackground = true, widthDp = 300)
+@Composable
+fun StatusIndicatorPreview() {
+    NearAiAdminTheme {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(16.dp)) {
+            StatusIndicator(status = StatusType.Active, label = "Active")
+            StatusIndicator(status = StatusType.Warning, label = "Warning")
+            StatusIndicator(status = StatusType.Error, label = "Error")
+            StatusIndicator(status = StatusType.Inactive, label = "Inactive")
+        }
+    }
+}
+
+/**
+ * Preview for SectionHeader.
+ */
+@Preview(showBackground = true, widthDp = 390)
+@Composable
+fun SectionHeaderPreview() {
+    NearAiAdminTheme {
+        SectionHeader(
+            title = "Live Activity Stream",
+            actionText = "View All",
+            onActionClick = { }
+        )
+    }
+}
+
+/**
+ * Preview for SearchBar.
+ */
+@Preview(showBackground = true, widthDp = 390)
+@Composable
+fun SearchBarPreview() {
+    NearAiAdminTheme {
+        androidx.compose.foundation.layout.Box(modifier = Modifier.padding(16.dp)) {
+            SearchBar(
+                query = "",
+                onQueryChanged = { },
+                placeholder = "Search users...",
+                onClear = { }
+            )
+        }
+    }
+}
+
+/**
+ * Preview for FilterChips.
+ */
+@Preview(showBackground = true, widthDp = 390)
+@Composable
+fun FilterChipsPreview() {
+    NearAiAdminTheme {
+        FilterChips(
+            filters = listOf(
+                FilterChipItem("all", "All Users"),
+                FilterChipItem("pro", "Pro Tier"),
+                FilterChipItem("free", "Free Plan"),
+                FilterChipItem("flagged", "Flagged")
+            ),
+            selectedFilters = setOf("pro"),
+            onFilterSelected = { },
+            onFilterDeselected = { }
+        )
+    }
+}

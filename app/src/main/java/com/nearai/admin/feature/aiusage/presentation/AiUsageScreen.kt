@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.nearai.admin.core.designsystem.components.*
 import com.nearai.admin.core.designsystem.theme.*
@@ -555,4 +556,15 @@ enum class TelemetryStatus(
     Success("Completed", Color(0xFF10B981)),
     RateLimited("429 Rate Limited", Color(0xFFEF4444)),
     Timeout("Timeout", Color(0xFFF59E0B))
+}
+
+/**
+ * Preview for the AI Usage & Credits screen.
+ */
+@Preview(showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+fun AiUsageScreenPreview() {
+    NearAiAdminTheme {
+        AiUsageScreen()
+    }
 }

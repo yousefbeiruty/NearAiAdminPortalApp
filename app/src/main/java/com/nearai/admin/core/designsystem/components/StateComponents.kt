@@ -9,7 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
 
 /**
  * Full-screen loading indicator with a centered CircularProgressIndicator.
@@ -172,4 +174,64 @@ fun ConfirmationDialog(
         },
         modifier = modifier
     )
+}
+
+/**
+ * Preview for LoadingScreen.
+ */
+@Preview(showBackground = true, widthDp = 390, heightDp = 500)
+@Composable
+fun LoadingScreenPreview() {
+    NearAiAdminTheme {
+        LoadingScreen(message = "Loading dashboard...")
+    }
+}
+
+/**
+ * Preview for EmptyState.
+ */
+@Preview(showBackground = true, widthDp = 390, heightDp = 500)
+@Composable
+fun EmptyStatePreview() {
+    NearAiAdminTheme {
+        EmptyState(
+            title = "No Data Available",
+            message = "There are no results to display. Try adjusting your filters.",
+            actionText = "Clear Filters",
+            onActionClick = { }
+        )
+    }
+}
+
+/**
+ * Preview for ErrorState.
+ */
+@Preview(showBackground = true, widthDp = 390, heightDp = 500)
+@Composable
+fun ErrorStatePreview() {
+    NearAiAdminTheme {
+        ErrorState(
+            message = "Failed to load data. Please check your connection and try again.",
+            onRetry = { }
+        )
+    }
+}
+
+/**
+ * Preview for ConfirmationDialog.
+ */
+@Preview(showBackground = true, widthDp = 390)
+@Composable
+fun ConfirmationDialogPreview() {
+    NearAiAdminTheme {
+        ConfirmationDialog(
+            title = "Suspend Account",
+            message = "Are you sure you want to suspend this user account? This action will require re-authentication.",
+            confirmText = "Suspend",
+            dismissText = "Cancel",
+            isDestructive = true,
+            onConfirm = { },
+            onDismiss = { }
+        )
+    }
 }

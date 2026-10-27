@@ -11,7 +11,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
 
 data class MoreMenuItem(
     val title: String,
@@ -80,5 +82,21 @@ fun MoreScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * Preview for the More menu screen.
+ */
+@Preview(showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+fun MoreScreenPreview() {
+    NearAiAdminTheme {
+        MoreScreen(
+            onNavigateToInventory = { },
+            onNavigateToSystemHealth = { },
+            onNavigateToAuditLogs = { },
+            onNavigateToSettings = { }
+        )
     }
 }

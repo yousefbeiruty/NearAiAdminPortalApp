@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.nearai.admin.core.designsystem.components.*
 import com.nearai.admin.core.designsystem.theme.*
@@ -623,5 +624,18 @@ fun QuickActionButton(
                 modifier = Modifier.size(20.dp)
             )
         }
+    }
+}
+
+/**
+ * Preview for the System Health screen.
+ */
+@Preview(showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+fun SystemHealthScreenPreview() {
+    NearAiAdminTheme {
+        SystemHealthScreen(
+            onNavigateBack = { /* No-op for preview */ }
+        )
     }
 }
