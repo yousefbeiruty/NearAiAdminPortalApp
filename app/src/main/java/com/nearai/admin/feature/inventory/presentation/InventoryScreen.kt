@@ -29,8 +29,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.nearai.admin.core.designsystem.theme.Indigo
-import com.nearai.admin.core.designsystem.theme.Navy
+import com.nearai.admin.core.designsystem.theme.*
 
 /**
  * Products & Inventory screen with KPI summary cards, filter tabs, catalog SKU list,
@@ -43,22 +42,6 @@ import com.nearai.admin.core.designsystem.theme.Navy
 // Color Tokens
 // =============================================================================
 
-private val BackgroundSurface = Color(0xFFF7F9FB)
-private val CardSurface = Color(0xFFFFFFFF)
-private val BorderSubtle = Color(0xFFE2E8F0)
-private val TextPrimary = Color(0xFF0F172A)
-private val TextSecondary = Color(0xFF64748B)
-private val EmeraldSuccess = Color(0xFF10B981)
-private val EmeraldBg = Color(0xFFECFDF5)
-private val EmeraldDark = Color(0xFF047857)
-private val AmberWarning = Color(0xFFF59E0B)
-private val AmberBg = Color(0xFFFFFBEB)
-private val AmberDark = Color(0xFFB45309)
-private val RoseError = Color(0xFFEF4444)
-private val RoseBg = Color(0xFFFEF2F2)
-private val RoseDark = Color(0xFFB91C1C)
-private val PurpleBg = Color(0xFFEEF2FF)
-private val PurpleDark = Color(0xFF4338CA)
 
 // =============================================================================
 // UI Data Models
@@ -100,7 +83,7 @@ data class SkuItem(
     val tag2Icon: ImageVector,
     val footerNote: String,
     val footerNoteIcon: ImageVector? = null,
-    val footerNoteColor: Color = TextSecondary,
+    val footerNoteColor: Color = TextSecondaryLight,
     val noticeBanner: String? = null,
     val isStrikethrough: Boolean = false
 )
@@ -151,13 +134,13 @@ fun InventoryScreen(
                                 text = "NearAI Admin",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = Navy
                                 )
                             )
                             Text(
                                 text = "INVENTORY",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondary,
+                                    color = TextSecondaryLight,
                                     letterSpacing = 1.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -180,7 +163,7 @@ fun InventoryScreen(
                             Icon(
                                 imageVector = Icons.Outlined.Notifications,
                                 contentDescription = "Notifications",
-                                tint = TextPrimary
+                                tint = Navy
                             )
                         }
                     }
@@ -203,7 +186,7 @@ fun InventoryScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = CardSurface)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
             )
         },
         floatingActionButton = {
@@ -229,7 +212,7 @@ fun InventoryScreen(
                 }
             )
         },
-        containerColor = BackgroundSurface
+        containerColor = BackgroundLight
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -308,7 +291,7 @@ fun InventoryScreen(
                         title = "Gross MRR",
                         value = "$4,820",
                         delta = "Recurring",
-                        deltaColor = TextSecondary,
+                        deltaColor = TextSecondaryLight,
                         icon = Icons.Outlined.AccountBalanceWallet,
                         iconTint = Indigo
                     ),
@@ -346,14 +329,14 @@ fun InventoryScreen(
                         val isSelected = selectedTab == index
                         Surface(
                             shape = RoundedCornerShape(20.dp),
-                            color = if (isSelected) Navy else CardSurface,
+                            color = if (isSelected) Navy else SurfaceLight,
                             border = if (isSelected) null else BorderStroke(1.dp, BorderSubtle),
                             modifier = Modifier.clickable { selectedTab = index }
                         ) {
                             Text(
                                 text = tabName,
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    color = if (isSelected) Color.White else TextSecondary,
+                                    color = if (isSelected) Color.White else TextSecondaryLight,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                 ),
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
@@ -383,7 +366,7 @@ fun InventoryScreen(
                         )
                         Text(
                             text = "(4 Showing)",
-                            style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
+                            style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight)
                         )
                     }
                     Button(
@@ -426,7 +409,7 @@ fun InventoryScreen(
                     tag2Icon = Icons.Outlined.People,
                     footerNote = "Auto-renews",
                     footerNoteIcon = Icons.Outlined.Autorenew,
-                    footerNoteColor = TextSecondary
+                    footerNoteColor = TextSecondaryLight
                 ),
                 SkuItem(
                     id = "sku-2",
@@ -436,7 +419,7 @@ fun InventoryScreen(
                     billingCycle = "one-time",
                     status = SkuStatus.ACTIVE,
                     leadingIcon = Icons.Outlined.ViewInAr,
-                    leadingIconBg = Color(0xFFF0FDF4),
+                    leadingIconBg = EmeraldBg,
                     leadingIconTint = EmeraldDark,
                     tag1Text = "2,500 bonus credits",
                     tag1Icon = Icons.Outlined.Stars,
@@ -444,7 +427,7 @@ fun InventoryScreen(
                     tag2Icon = Icons.Outlined.ShoppingCart,
                     footerNote = "Instant Delivery",
                     footerNoteIcon = Icons.Outlined.History,
-                    footerNoteColor = TextSecondary
+                    footerNoteColor = TextSecondaryLight
                 ),
                 SkuItem(
                     id = "sku-3",
@@ -462,7 +445,7 @@ fun InventoryScreen(
                     tag2Icon = Icons.Outlined.Storefront,
                     footerNote = "Merchant Perk",
                     footerNoteIcon = Icons.Outlined.Schedule,
-                    footerNoteColor = TextSecondary
+                    footerNoteColor = TextSecondaryLight
                 ),
                 SkuItem(
                     id = "sku-4",
@@ -472,8 +455,8 @@ fun InventoryScreen(
                     billingCycle = "Archived",
                     status = SkuStatus.DEPRECATED,
                     leadingIcon = Icons.Outlined.Archive,
-                    leadingIconBg = Color(0xFFF1F5F9),
-                    leadingIconTint = TextSecondary,
+                    leadingIconBg = SurfaceVariantLight,
+                    leadingIconTint = TextSecondaryLight,
                     tag1Text = "",
                     tag1Icon = Icons.Default.Check,
                     tag2Text = "",
@@ -510,7 +493,7 @@ fun ProductKpiCard(
 ) {
     Card(
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
         border = BorderStroke(1.dp, BorderSubtle),
         modifier = modifier
     ) {
@@ -523,7 +506,7 @@ fun ProductKpiCard(
                 Text(
                     text = kpi.title,
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = TextSecondary,
+                        color = TextSecondaryLight,
                         fontWeight = FontWeight.Medium
                     ),
                     maxLines = 1
@@ -568,7 +551,7 @@ fun SkuProductCard(
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
         border = BorderStroke(1.dp, BorderSubtle),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -600,7 +583,7 @@ fun SkuProductCard(
                         text = item.title,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary,
+                            color = Navy,
                             textDecoration = if (item.isStrikethrough) TextDecoration.LineThrough else TextDecoration.None
                         ),
                         maxLines = 1
@@ -639,7 +622,7 @@ fun SkuProductCard(
                         Text(
                             text = "SKU: ${item.skuCode}",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = TextSecondary,
+                                color = TextSecondaryLight,
                                 fontFamily = FontFamily.Monospace
                             )
                         )
@@ -656,7 +639,7 @@ fun SkuProductCard(
                     )
                     Text(
                         text = item.billingCycle,
-                        style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                        style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight)
                     )
                 }
             }
@@ -671,7 +654,7 @@ fun SkuProductCard(
                     if (item.tag1Text.isNotEmpty()) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = BackgroundSurface,
+                            color = BackgroundLight,
                             border = BorderStroke(1.dp, BorderSubtle)
                         ) {
                             Row(
@@ -688,7 +671,7 @@ fun SkuProductCard(
                                 Text(
                                     text = item.tag1Text,
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = TextPrimary,
+                                        color = Navy,
                                         fontWeight = FontWeight.Medium
                                     )
                                 )
@@ -698,7 +681,7 @@ fun SkuProductCard(
                     if (item.tag2Text.isNotEmpty()) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = BackgroundSurface,
+                            color = BackgroundLight,
                             border = BorderStroke(1.dp, BorderSubtle)
                         ) {
                             Row(
@@ -715,7 +698,7 @@ fun SkuProductCard(
                                 Text(
                                     text = item.tag2Text,
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = TextPrimary,
+                                        color = Navy,
                                         fontWeight = FontWeight.Medium
                                     )
                                 )
@@ -730,7 +713,7 @@ fun SkuProductCard(
                 Spacer(modifier = Modifier.height(12.dp))
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = BackgroundSurface,
+                    color = BackgroundLight,
                     border = BorderStroke(1.dp, BorderSubtle),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -748,7 +731,7 @@ fun SkuProductCard(
                         Text(
                             text = item.noticeBanner,
                             style = MaterialTheme.typography.bodySmall.copy(
-                                color = TextSecondary,
+                                color = TextSecondaryLight,
                                 fontSize = 12.sp,
                                 lineHeight = 16.sp
                             )
@@ -792,7 +775,7 @@ fun SkuProductCard(
                     // Edit Button
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = BackgroundSurface,
+                        color = BackgroundLight,
                         border = BorderStroke(1.dp, BorderSubtle),
                         modifier = Modifier.clickable { onEdit() }
                     ) {
@@ -804,13 +787,13 @@ fun SkuProductCard(
                             Icon(
                                 imageVector = Icons.Outlined.Edit,
                                 contentDescription = "Edit",
-                                tint = TextPrimary,
+                                tint = Navy,
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
                                 text = "Edit",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextPrimary,
+                                    color = Navy,
                                     fontWeight = FontWeight.Bold
                                 )
                             )

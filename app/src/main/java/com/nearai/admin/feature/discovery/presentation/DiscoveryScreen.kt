@@ -30,8 +30,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.nearai.admin.core.designsystem.theme.Indigo
-import com.nearai.admin.core.designsystem.theme.Navy
+import com.nearai.admin.core.designsystem.theme.*
 
 /**
  * Places & Discovery Monitoring screen with pipeline telemetry,
@@ -50,7 +49,7 @@ data class DiscoveryKpi(
     val subtitle: String,
     val icon: ImageVector,
     val iconTint: Color = Indigo,
-    val subtitleColor: Color = Color(0xFF64748B)
+    val subtitleColor: Color = TextSecondaryLight
 )
 
 data class IngestionItem(
@@ -80,18 +79,6 @@ data class DiscoveredPlace(
 // Color Tokens
 // =============================================================================
 
-private val BackgroundSurface = Color(0xFFF7F9FB)
-private val CardSurface = Color(0xFFFFFFFF)
-private val BorderSubtle = Color(0xFFE2E8F0)
-private val TextPrimary = Color(0xFF0F172A)
-private val TextSecondary = Color(0xFF64748B)
-private val EmeraldSuccess = Color(0xFF10B981)
-private val EmeraldBg = Color(0xFFECFDF5)
-private val EmeraldDark = Color(0xFF047857)
-private val AmberWarning = Color(0xFFF59E0B)
-private val RoseError = Color(0xFFEF4444)
-private val RoseBg = Color(0xFFFEF2F2)
-private val DarkClusterBg = Color(0xFF062E25)
 
 // =============================================================================
 // Discovery Screen Composable
@@ -137,13 +124,13 @@ fun DiscoveryScreen(
                                 text = "NearAI Admin",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = Navy
                                 )
                             )
                             Text(
                                 text = "DISCOVERY",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondary,
+                                    color = TextSecondaryLight,
                                     letterSpacing = 1.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -166,7 +153,7 @@ fun DiscoveryScreen(
                             Icon(
                                 imageVector = Icons.Outlined.Notifications,
                                 contentDescription = "Alerts",
-                                tint = TextPrimary
+                                tint = Navy
                             )
                         }
                     }
@@ -189,10 +176,10 @@ fun DiscoveryScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = CardSurface)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
             )
         },
-        containerColor = BackgroundSurface
+        containerColor = BackgroundLight
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -241,13 +228,13 @@ fun DiscoveryScreen(
                         Text(
                             text = "GEO-PIPELINE v2.4",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = TextSecondary,
+                                color = TextSecondaryLight,
                                 fontWeight = FontWeight.SemiBold
                             )
                         )
                         Surface(
                             shape = RoundedCornerShape(16.dp),
-                            color = CardSurface,
+                            color = SurfaceLight,
                             border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle)
                         ) {
                             Row(
@@ -264,7 +251,7 @@ fun DiscoveryScreen(
                                 Text(
                                     text = "Live 1s",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = TextPrimary,
+                                        color = Navy,
                                         fontWeight = FontWeight.Bold
                                     )
                                 )
@@ -289,14 +276,14 @@ fun DiscoveryScreen(
                         value = "$312.40",
                         subtitle = "GCP Billing Pool A",
                         icon = Icons.Outlined.AccountBalanceWallet,
-                        subtitleColor = TextSecondary
+                        subtitleColor = TextSecondaryLight
                     ),
                     DiscoveryKpi(
                         title = "AVG LATENCY",
                         value = "240ms",
                         subtitle = "FastAPI + Places",
                         icon = Icons.Outlined.Speed,
-                        subtitleColor = TextSecondary
+                        subtitleColor = TextSecondaryLight
                     ),
                     DiscoveryKpi(
                         title = "CACHE HIT",
@@ -330,14 +317,14 @@ fun DiscoveryScreen(
                     placeholder = {
                         Text(
                             text = "Filter searches by query, city, or status...",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
+                            style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight)
                         )
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Outlined.Search,
                             contentDescription = null,
-                            tint = TextSecondary
+                            tint = TextSecondaryLight
                         )
                     },
                     trailingIcon = {
@@ -346,15 +333,15 @@ fun DiscoveryScreen(
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Clear search",
-                                    tint = TextSecondary
+                                    tint = TextSecondaryLight
                                 )
                             }
                         }
                     },
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = CardSurface,
-                        unfocusedContainerColor = CardSurface,
+                        focusedContainerColor = SurfaceLight,
+                        unfocusedContainerColor = SurfaceLight,
                         focusedBorderColor = Navy,
                         unfocusedBorderColor = BorderSubtle
                     ),
@@ -386,8 +373,8 @@ fun DiscoveryScreen(
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Navy,
                                 selectedLabelColor = Color.White,
-                                containerColor = CardSurface,
-                                labelColor = TextSecondary
+                                containerColor = SurfaceLight,
+                                labelColor = TextSecondaryLight
                             ),
                             border = FilterChipDefaults.filterChipBorder(
                                 enabled = true,
@@ -410,13 +397,13 @@ fun DiscoveryScreen(
                         text = "REAL-TIME INGESTION FEED",
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary,
+                            color = Navy,
                             letterSpacing = 0.5.sp
                         )
                     )
                     Text(
                         text = "Tap row to inspect",
-                        style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                        style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight)
                     )
                 }
             }
@@ -491,7 +478,7 @@ fun DiscoveryKpiCard(
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
         border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
         modifier = modifier
     ) {
@@ -504,7 +491,7 @@ fun DiscoveryKpiCard(
                 Text(
                     text = kpi.title,
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = TextSecondary,
+                        color = TextSecondaryLight,
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 0.5.sp
                     )
@@ -521,7 +508,7 @@ fun DiscoveryKpiCard(
                 text = kpi.value,
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = Navy
                 )
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -547,7 +534,7 @@ fun IngestionRowCard(
 ) {
     Card(
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
         border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
         modifier = Modifier
             .fillMaxWidth()
@@ -574,7 +561,7 @@ fun IngestionRowCard(
                         text = item.query,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = Navy
                         ),
                         maxLines = 1
                     )
@@ -602,7 +589,7 @@ fun IngestionRowCard(
             ) {
                 Text(
                     text = "${item.location} • ${item.userTag}",
-                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight)
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -611,14 +598,14 @@ fun IngestionRowCard(
                     Text(
                         text = "${item.placeCount} places",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = TextPrimary,
+                            color = Navy,
                             fontWeight = FontWeight.Medium
                         )
                     )
                     Text(
                         text = "${item.latencyMs}ms",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = if (item.latencyMs > 500) RoseError else TextSecondary,
+                            color = if (item.latencyMs > 500) RoseError else TextSecondaryLight,
                             fontWeight = FontWeight.SemiBold,
                             fontFamily = FontFamily.Monospace
                         )
@@ -643,7 +630,7 @@ fun TraceInspectorSection(
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
         border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -668,7 +655,7 @@ fun TraceInspectorSection(
                         text = "TRACE INSPECTOR",
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary,
+                            color = Navy,
                             letterSpacing = 0.5.sp
                         )
                     )
@@ -693,7 +680,7 @@ fun TraceInspectorSection(
             // Prompt Payload Banner
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = BackgroundSurface,
+                color = BackgroundLight,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
@@ -704,7 +691,7 @@ fun TraceInspectorSection(
                         Text(
                             text = "PROMPT PAYLOAD",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = TextSecondary,
+                                color = TextSecondaryLight,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.5.sp
                             )
@@ -716,12 +703,12 @@ fun TraceInspectorSection(
                             Icon(
                                 imageVector = Icons.Outlined.Lock,
                                 contentDescription = null,
-                                tint = TextSecondary,
+                                tint = TextSecondaryLight,
                                 modifier = Modifier.size(12.dp)
                             )
                             Text(
                                 text = "Privacy Masked [PII Cleared]",
-                                style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                                style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight)
                             )
                         }
                     }
@@ -730,14 +717,14 @@ fun TraceInspectorSection(
                         text = promptPayload,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = Navy
                         )
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = clientContext,
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = TextSecondary,
+                            color = TextSecondaryLight,
                             fontFamily = FontFamily.Monospace
                         )
                     )
@@ -749,7 +736,7 @@ fun TraceInspectorSection(
             Text(
                 text = "SEMANTIC INTENT EXTRACTION",
                 style = MaterialTheme.typography.labelSmall.copy(
-                    color = TextSecondary,
+                    color = TextSecondaryLight,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp
                 )
@@ -778,7 +765,7 @@ fun TraceInspectorSection(
                 Text(
                     text = "PIPELINE LATENCY WATERFALL (265MS TOTAL)",
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = TextSecondary,
+                        color = TextSecondaryLight,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp
                     )
@@ -825,15 +812,15 @@ fun TraceInspectorSection(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(horizontalAlignment = Alignment.Start) {
-                    Text("Nearby Search", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary))
+                    Text("Nearby Search", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
                     Text("120ms", style = MaterialTheme.typography.labelSmall.copy(color = Indigo, fontWeight = FontWeight.Bold))
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Details Batch", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary))
+                    Text("Details Batch", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
                     Text("85ms", style = MaterialTheme.typography.labelSmall.copy(color = Indigo.copy(alpha = 0.75f), fontWeight = FontWeight.Bold))
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("AI Ranker", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary))
+                    Text("AI Ranker", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
                     Text("60ms", style = MaterialTheme.typography.labelSmall.copy(color = EmeraldDark, fontWeight = FontWeight.Bold))
                 }
             }
@@ -848,7 +835,7 @@ fun TraceInspectorSection(
                 Text(
                     text = "DISCOVERED PLACES (6 RESULTS)",
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = TextSecondary,
+                        color = TextSecondaryLight,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp
                     )
@@ -903,7 +890,7 @@ fun TraceInspectorSection(
                     onClick = onReplayTrace,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Navy),
                     border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle)
                 ) {
                     Icon(
@@ -946,7 +933,7 @@ fun IntentTag(
 ) {
     Surface(
         shape = RoundedCornerShape(8.dp),
-        color = if (isPrimary) Indigo.copy(alpha = 0.12f) else BackgroundSurface,
+        color = if (isPrimary) Indigo.copy(alpha = 0.12f) else BackgroundLight,
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
             if (isPrimary) Indigo.copy(alpha = 0.3f) else BorderSubtle
@@ -961,14 +948,14 @@ fun IntentTag(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = if (isPrimary) Indigo else TextSecondary,
+                    tint = if (isPrimary) Indigo else TextSecondaryLight,
                     modifier = Modifier.size(14.dp)
                 )
             }
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    color = if (isPrimary) Indigo else TextPrimary,
+                    color = if (isPrimary) Indigo else Navy,
                     fontWeight = FontWeight.SemiBold
                 )
             )
@@ -984,7 +971,7 @@ fun IntentTag(
 fun DiscoveredPlaceCard(place: DiscoveredPlace) {
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = BackgroundSurface),
+        colors = CardDefaults.cardColors(containerColor = BackgroundLight),
         border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
         modifier = Modifier.width(220.dp)
     ) {
@@ -1034,14 +1021,14 @@ fun DiscoveredPlaceCard(place: DiscoveredPlace) {
                     text = place.name,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        color = Navy
                     ),
                     maxLines = 1
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = place.tags,
-                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary),
+                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight),
                     maxLines = 1
                 )
                 Spacer(modifier = Modifier.height(6.dp))

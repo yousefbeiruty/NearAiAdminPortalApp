@@ -71,8 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.nearai.admin.core.designsystem.theme.Indigo
-import com.nearai.admin.core.designsystem.theme.Navy
+import com.nearai.admin.core.designsystem.theme.*
 
 /**
  * Admin Sign-In & Zero-Trust Authentication Screen.
@@ -120,7 +119,7 @@ fun AdminSignInScreen(
                         Text(
                             text = "Executive Operations Console",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF64748B)
+                            color = TextSecondaryLight
                         )
                     }
                 },
@@ -143,7 +142,7 @@ fun AdminSignInScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFF7F9FB)
+                    containerColor = BackgroundLight
                 )
             )
         }
@@ -243,7 +242,7 @@ private fun ClusterSecurityHeroSection() {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFE0E7FF)),
+                    .background(PrimaryContainerLight),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -261,7 +260,7 @@ private fun ClusterSecurityHeroSection() {
         Text(
             text = "Executive Operations & Compute Cluster Control Plane",
             style = MaterialTheme.typography.bodyMedium.copy(
-                color = Color(0xFF64748B)
+                color = TextSecondaryLight
             ),
             textAlign = TextAlign.Center
         )
@@ -279,7 +278,7 @@ private fun TelemetryMfaCard() {
             containerColor = Color.White
         ),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -303,7 +302,7 @@ private fun TelemetryMfaCard() {
                 Text(
                     text = "Unauthorized ingress attempts are audited via immutable eBPF telemetry and routed to root ops.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF64748B)
+                    color = TextSecondaryLight
                 )
             }
         }
@@ -331,7 +330,7 @@ private fun MfaCard(
             containerColor = Color.White
         ),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        border = BorderStroke(1.dp, BorderSubtle),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -406,19 +405,19 @@ private fun MfaCard(
             // Fast Hardware Pass Divider
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = 8.dp),
-                color = Color(0xFFE2E8F0)
+                color = BorderSubtle
             )
             Text(
                 text = "FAST HARDWARE PASS",
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF64748B)
+                    color = TextSecondaryLight
                 ),
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = 8.dp),
-                color = Color(0xFFE2E8F0)
+                color = BorderSubtle
             )
 
             // Biometrics and FIDO2 buttons
@@ -491,18 +490,18 @@ private fun EmailField(
             Text(
                 text = "Work Email or Founder ID",
                 style = MaterialTheme.typography.labelMedium,
-                color = Color(0xFF0F172A)
+                color = Navy
             )
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFF1F5F9)),
+                    .background(SurfaceVariantLight),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "SSO Partition 0",
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = Color(0xFF64748B)
+                        color = TextSecondaryLight
                     ),
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                 )
@@ -515,14 +514,14 @@ private fun EmailField(
             placeholder = {
                 Text(
                     text = "alex.founder@nearai.internal",
-                    color = Color(0xFF94A3B8)
+                    color = TextSecondaryDark
                 )
             },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.Mail,
                     contentDescription = null,
-                    tint = Color(0xFF64748B)
+                    tint = TextSecondaryLight
                 )
             },
             trailingIcon = {
@@ -531,7 +530,7 @@ private fun EmailField(
                         Icon(
                             imageVector = Icons.Outlined.Cancel,
                             contentDescription = "Clear",
-                            tint = Color(0xFF64748B)
+                            tint = TextSecondaryLight
                         )
                     }
                 }
@@ -567,7 +566,7 @@ private fun PasswordField(
             Text(
                 text = "Master Passphrase",
                 style = MaterialTheme.typography.labelMedium,
-                color = Color(0xFF0F172A)
+                color = Navy
             )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -595,14 +594,14 @@ private fun PasswordField(
             placeholder = {
                 Text(
                     text = "Enter your master passphrase",
-                    color = Color(0xFF94A3B8)
+                    color = TextSecondaryDark
                 )
             },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.Lock,
                     contentDescription = null,
-                    tint = Color(0xFF64748B)
+                    tint = TextSecondaryLight
                 )
             },
             trailingIcon = {
@@ -610,7 +609,7 @@ private fun PasswordField(
                     Icon(
                         imageVector = if (isPasswordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
                         contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
-                        tint = Color(0xFF64748B)
+                        tint = TextSecondaryLight
                     )
                 }
             },
@@ -646,7 +645,7 @@ private fun TotpInputSection(
             Text(
                 text = "Hardware / Authenticator TOTP",
                 style = MaterialTheme.typography.labelMedium,
-                color = Color(0xFF0F172A)
+                color = Navy
             )
             Text(
                 text = "Step 2 of 2",
@@ -693,7 +692,7 @@ private fun TotpDigitBox(
             .size(48.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(
-                if (hasFocus) Color(0xFFE0E7FF) else Color(0xFFF7F9FB)
+                if (hasFocus) PrimaryContainerLight else BackgroundLight
             )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -751,23 +750,23 @@ private fun ClusterBoundaryFooter() {
                 modifier = Modifier
                     .size(8.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF10B981))
+                    .background(EmeraldSuccess)
             )
             Text(
                 text = "cluster: gcp-nearai-prod · us-central1",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF64748B)
+                color = TextSecondaryLight
             )
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFF1F5F9)),
+                    .background(SurfaceVariantLight),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "TLS 1.3",
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = Color(0xFF64748B),
+                        color = TextSecondaryLight,
                         fontWeight = FontWeight.Medium
                     ),
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -779,7 +778,7 @@ private fun ClusterBoundaryFooter() {
         Text(
             text = "Strict boundary: Separated from public customer accounts. Consumer NearAI credentials are not authorized for cluster infrastructure.",
             style = MaterialTheme.typography.labelSmall.copy(
-                color = Color(0xFF64748B)
+                color = TextSecondaryLight
             ),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -789,7 +788,7 @@ private fun ClusterBoundaryFooter() {
         Text(
             text = "NearAI Admin v2.4.1 (Build 8902-prod) · Zero-Trust Policy",
             style = MaterialTheme.typography.labelSmall.copy(
-                color = Color(0xFF94A3B8)
+                color = TextSecondaryDark
             ),
             textAlign = TextAlign.Center
         )

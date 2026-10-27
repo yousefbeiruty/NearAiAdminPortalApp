@@ -38,21 +38,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.nearai.admin.core.designsystem.theme.*
 
 // =============================================================================
-// Design System Color Aliases (matching existing screen design)
-// =============================================================================
-
-val NavyPrimary = Navy
-val IndigoAccent = Indigo
-val BackgroundSurface = BackgroundLight
-val CardSurface = SurfaceLight
-val BorderSubtle = Color(0xFFE2E8F0)
-val TextPrimary = TextPrimaryLight
-val TextSecondary = TextSecondaryLight
-val EmeraldSuccess = Success
-val AmberWarning = Warning
-val RoseError = Error
-
-// =============================================================================
 // Helper: Map iconLabel from domain model to ImageVector
 // =============================================================================
 
@@ -100,8 +85,8 @@ fun ActivityEventItem.toActivityStreamEvent(): ActivityStreamEvent {
         "success" -> EmeraldSuccess to Icons.Outlined.Diamond
         "warning" -> AmberWarning to Icons.Outlined.WarningAmber
         "error" -> RoseError to Icons.Outlined.ErrorOutline
-        "info" -> IndigoAccent to Icons.Outlined.Info
-        else -> TextSecondary to Icons.Outlined.Info
+        "info" -> Indigo to Icons.Outlined.Info
+        else -> TextSecondaryLight to Icons.Outlined.Info
     }
     return ActivityStreamEvent(
         id = id,
@@ -149,7 +134,7 @@ fun DashboardScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = NavyPrimary,
+                            color = Navy,
                             modifier = Modifier.size(36.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -166,13 +151,13 @@ fun DashboardScreen(
                                 text = "NearAI Admin",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = Navy
                                 )
                             )
                             Text(
                                 text = "OVERVIEW",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondary,
+                                    color = TextSecondaryLight,
                                     letterSpacing = 1.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -198,7 +183,7 @@ fun DashboardScreen(
                             Icon(
                                 imageVector = Icons.Outlined.Notifications,
                                 contentDescription = "Alerts & Notifications",
-                                tint = TextPrimary
+                                tint = Navy
                             )
                         }
                     }
@@ -209,7 +194,7 @@ fun DashboardScreen(
                         Icon(
                             imageVector = Icons.Outlined.ReceiptLong,
                             contentDescription = "Audit Logs",
-                            tint = TextPrimary
+                            tint = Navy
                         )
                     }
                     Box(
@@ -217,25 +202,25 @@ fun DashboardScreen(
                             .padding(end = 16.dp)
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(IndigoAccent.copy(alpha = 0.15f))
-                            .border(1.dp, IndigoAccent.copy(alpha = 0.35f), CircleShape),
+                            .background(Indigo.copy(alpha = 0.15f))
+                            .border(1.dp, Indigo.copy(alpha = 0.35f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "AF",
                             style = MaterialTheme.typography.labelMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = NavyPrimary
+                                color = Navy
                             )
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = CardSurface
+                    containerColor = SurfaceLight
                 )
             )
         },
-        containerColor = BackgroundSurface
+        containerColor = BackgroundLight
     ) { innerPadding ->
         if (uiState.isLoading && uiState.kpiMetrics.isEmpty()) {
             // Initial loading state
@@ -250,13 +235,13 @@ fun DashboardScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     CircularProgressIndicator(
-                        color = IndigoAccent,
+                        color = Indigo,
                         modifier = Modifier.size(48.dp)
                     )
                     Text(
                         text = "Loading dashboard...",
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            color = TextSecondary
+                            color = TextSecondaryLight
                         )
                     )
                 }
@@ -284,19 +269,19 @@ fun DashboardScreen(
                         text = "Failed to load dashboard",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = Navy
                         )
                     )
                     val errorMessage = uiState.error ?: "Unknown error"
                     Text(
                         text = errorMessage,
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            color = TextSecondary
+                            color = TextSecondaryLight
                         )
                     )
                     Button(
                         onClick = { viewModel.onRetry() },
-                        colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
+                        colors = ButtonDefaults.buttonColors(containerColor = Navy),
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Text(
@@ -359,20 +344,20 @@ private fun DashboardContent(
                     Text(
                         text = "Good evening,",
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            color = TextSecondary
+                            color = TextSecondaryLight
                         )
                     )
                     Text(
                         text = "Alex",
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            color = NavyPrimary
+                            color = Navy
                         )
                     )
                 }
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = CardSurface,
+                    color = SurfaceLight,
                     border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle)
                 ) {
                     Row(
@@ -389,7 +374,7 @@ private fun DashboardContent(
                         Text(
                             text = if (uiState.lastUpdated.isNotBlank()) "Live · Synced ${uiState.lastUpdated}" else "Loading...",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = TextSecondary,
+                                color = TextSecondaryLight,
                                 fontWeight = FontWeight.Medium
                             )
                         )
@@ -418,7 +403,7 @@ private fun DashboardContent(
                         )
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = NavyPrimary,
+                        selectedContainerColor = Navy,
                         selectedLabelColor = Color.White,
                         selectedLeadingIconColor = Color.White
                     )
@@ -435,7 +420,7 @@ private fun DashboardContent(
                         )
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        containerColor = CardSurface
+                        containerColor = SurfaceLight
                     )
                 )
                 FilterChip(
@@ -443,7 +428,7 @@ private fun DashboardContent(
                     onClick = { },
                     label = { Text("GPT-4o / Claude 3.5") },
                     colors = FilterChipDefaults.filterChipColors(
-                        containerColor = CardSurface
+                        containerColor = SurfaceLight
                     )
                 )
             }
@@ -472,7 +457,7 @@ private fun DashboardContent(
         item {
             Card(
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = CardSurface),
+                colors = CardDefaults.cardColors(containerColor = SurfaceLight),
                 border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -487,19 +472,19 @@ private fun DashboardContent(
                                 text = "User Velocity & DAU",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = Navy
                                 )
                             )
                             Text(
                                 text = "14-day rolling telemetry",
                                 style = MaterialTheme.typography.bodySmall.copy(
-                                    color = TextSecondary
+                                    color = TextSecondaryLight
                                 )
                             )
                         }
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = IndigoAccent.copy(alpha = 0.12f)
+                            color = Indigo.copy(alpha = 0.12f)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -509,13 +494,13 @@ private fun DashboardContent(
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
                                     contentDescription = null,
-                                    tint = IndigoAccent,
+                                    tint = Indigo,
                                     modifier = Modifier.size(12.dp)
                                 )
                                 Text(
                                     text = "Peak: 3,410",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = IndigoAccent,
+                                        color = Indigo,
                                         fontWeight = FontWeight.Bold
                                     )
                                 )
@@ -580,26 +565,26 @@ private fun DashboardContent(
                                 path = fillPath,
                                 brush = Brush.verticalGradient(
                                     colors = listOf(
-                                        IndigoAccent.copy(alpha = 0.25f),
-                                        IndigoAccent.copy(alpha = 0.02f)
+                                        Indigo.copy(alpha = 0.25f),
+                                        Indigo.copy(alpha = 0.02f)
                                     )
                                 )
                             )
 
                             drawPath(
                                 path = linePath,
-                                color = IndigoAccent,
+                                color = Indigo,
                                 style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
                             )
 
                             val peak = points.last()
                             drawCircle(
-                                color = IndigoAccent.copy(alpha = 0.3f),
+                                color = Indigo.copy(alpha = 0.3f),
                                 radius = 10.dp.toPx(),
                                 center = peak
                             )
                             drawCircle(
-                                color = NavyPrimary,
+                                color = Navy,
                                 radius = 5.dp.toPx(),
                                 center = peak
                             )
@@ -616,12 +601,12 @@ private fun DashboardContent(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Oct 11", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary))
-                        Text("Oct 18", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary))
+                        Text("Oct 11", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
+                        Text("Oct 18", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
                         Text(
                             "Today (All-Time High)",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = IndigoAccent,
+                                color = Indigo,
                                 fontWeight = FontWeight.Bold
                             )
                         )
@@ -634,7 +619,7 @@ private fun DashboardContent(
         item {
             Card(
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = CardSurface),
+                colors = CardDefaults.cardColors(containerColor = SurfaceLight),
                 border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -649,13 +634,13 @@ private fun DashboardContent(
                                 text = "AI Inference Load & Retries",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = Navy
                                 )
                             )
                             Text(
                                 text = "Tokens / Sec vs Fallbacks (24h)",
                                 style = MaterialTheme.typography.bodySmall.copy(
-                                    color = TextSecondary
+                                    color = TextSecondaryLight
                                 )
                             )
                         }
@@ -689,17 +674,17 @@ private fun DashboardContent(
                         verticalAlignment = Alignment.Bottom
                     ) {
                         val bars = listOf(
-                            0.35f to IndigoAccent.copy(alpha = 0.25f),
-                            0.45f to IndigoAccent.copy(alpha = 0.25f),
-                            0.38f to IndigoAccent.copy(alpha = 0.25f),
-                            0.55f to IndigoAccent.copy(alpha = 0.35f),
-                            0.65f to IndigoAccent.copy(alpha = 0.4f),
-                            0.72f to IndigoAccent.copy(alpha = 0.5f),
-                            0.88f to NavyPrimary,
-                            0.60f to IndigoAccent.copy(alpha = 0.35f),
-                            0.50f to IndigoAccent.copy(alpha = 0.25f),
+                            0.35f to Indigo.copy(alpha = 0.25f),
+                            0.45f to Indigo.copy(alpha = 0.25f),
+                            0.38f to Indigo.copy(alpha = 0.25f),
+                            0.55f to Indigo.copy(alpha = 0.35f),
+                            0.65f to Indigo.copy(alpha = 0.4f),
+                            0.72f to Indigo.copy(alpha = 0.5f),
+                            0.88f to Navy,
+                            0.60f to Indigo.copy(alpha = 0.35f),
+                            0.50f to Indigo.copy(alpha = 0.25f),
                             0.62f to RoseError.copy(alpha = 0.85f),
-                            0.40f to IndigoAccent.copy(alpha = 0.25f)
+                            0.40f to Indigo.copy(alpha = 0.25f)
                         )
                         bars.forEach { (heightFraction, color) ->
                             Box(
@@ -718,7 +703,7 @@ private fun DashboardContent(
                     // Monthly Compute Progress Gauge
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = BackgroundSurface,
+                        color = BackgroundLight,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
@@ -730,14 +715,14 @@ private fun DashboardContent(
                                     text = "Monthly Compute Envelope",
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = FontWeight.SemiBold,
-                                        color = TextPrimary
+                                        color = Navy
                                     )
                                 )
                                 Text(
                                     text = "$428.50 / $600.00",
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = NavyPrimary
+                                        color = Navy
                                     )
                                 )
                             }
@@ -748,7 +733,7 @@ private fun DashboardContent(
                                     .fillMaxWidth()
                                     .height(8.dp)
                                     .clip(RoundedCornerShape(4.dp)),
-                                color = IndigoAccent,
+                                color = Indigo,
                                 trackColor = BorderSubtle
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -759,14 +744,14 @@ private fun DashboardContent(
                                 Text(
                                     text = "● 71% Consumed",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = IndigoAccent,
+                                        color = Indigo,
                                         fontWeight = FontWeight.Medium
                                     )
                                 )
                                 Text(
                                     text = "$171.50 remaining",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = TextSecondary
+                                        color = TextSecondaryLight
                                     )
                                 )
                             }
@@ -791,18 +776,18 @@ private fun DashboardContent(
                         text = "Live Activity Stream",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = Navy
                         )
                     )
                     if (events.isNotEmpty()) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = IndigoAccent.copy(alpha = 0.15f)
+                            color = Indigo.copy(alpha = 0.15f)
                         ) {
                             Text(
                                 text = "${events.size} New",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = IndigoAccent,
+                                    color = Indigo,
                                     fontWeight = FontWeight.Bold
                                 ),
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -813,7 +798,7 @@ private fun DashboardContent(
                 Text(
                     text = "View audit log",
                     style = MaterialTheme.typography.labelMedium.copy(
-                        color = IndigoAccent,
+                        color = Indigo,
                         fontWeight = FontWeight.SemiBold
                     ),
                     modifier = Modifier.clickable { /* TODO: onViewAuditLog */ }
@@ -839,7 +824,7 @@ private fun DashboardContent(
         item {
             Card(
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = NavyPrimary),
+                colors = CardDefaults.cardColors(containerColor = Navy),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onNavigateToSystemHealth() }
@@ -898,7 +883,7 @@ private fun DashboardContent(
 private fun EmptyStateCard() {
     Card(
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
         border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -910,13 +895,13 @@ private fun EmptyStateCard() {
             Icon(
                 imageVector = Icons.Outlined.EventNote,
                 contentDescription = null,
-                tint = TextSecondary,
+                tint = TextSecondaryLight,
                 modifier = Modifier.size(32.dp)
             )
             Text(
                 text = "No recent activity",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = TextSecondary,
+                    color = TextSecondaryLight,
                     fontWeight = FontWeight.Medium
                 )
             )
@@ -935,7 +920,7 @@ fun DashboardKpiCard(
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
         border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
         modifier = modifier
     ) {
@@ -948,7 +933,7 @@ fun DashboardKpiCard(
                 Text(
                     text = kpi.title,
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = TextSecondary,
+                        color = TextSecondaryLight,
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 0.5.sp
                     )
@@ -957,13 +942,13 @@ fun DashboardKpiCard(
                     modifier = Modifier
                         .size(28.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(IndigoAccent.copy(alpha = 0.08f)),
+                        .background(Indigo.copy(alpha = 0.08f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = kpi.icon,
                         contentDescription = null,
-                        tint = IndigoAccent,
+                        tint = Indigo,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -973,7 +958,7 @@ fun DashboardKpiCard(
                 text = kpi.value,
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = Navy
                 )
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -981,7 +966,7 @@ fun DashboardKpiCard(
                 text = kpi.delta,
                 style = MaterialTheme.typography.bodySmall.copy(
                     color = kpi.deltaColorOverride
-                        ?: if (kpi.isPositive) EmeraldSuccess else TextSecondary,
+                        ?: if (kpi.isPositive) EmeraldSuccess else TextSecondaryLight,
                     fontWeight = FontWeight.Medium
                 )
             )
@@ -1000,7 +985,7 @@ fun ActivityStreamCard(
 ) {
     Card(
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
         border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
         modifier = Modifier
             .fillMaxWidth()
@@ -1034,20 +1019,20 @@ fun ActivityStreamCard(
                         text = event.title,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = Navy
                         )
                     )
                     Text(
                         text = "• ${event.timestamp}",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = TextSecondary
+                            color = TextSecondaryLight
                         )
                     )
                 }
                 Text(
                     text = event.subtitle,
                     style = MaterialTheme.typography.bodySmall.copy(
-                        color = TextSecondary
+                        color = TextSecondaryLight
                     )
                 )
             }
@@ -1080,7 +1065,7 @@ fun OverviewDashboardLoadingPreview() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(BackgroundSurface),
+                .background(BackgroundLight),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -1088,13 +1073,13 @@ fun OverviewDashboardLoadingPreview() {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 CircularProgressIndicator(
-                    color = IndigoAccent,
+                    color = Indigo,
                     modifier = Modifier.size(48.dp)
                 )
                 Text(
                     text = "Loading dashboard...",
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = TextSecondary
+                        color = TextSecondaryLight
                     )
                 )
             }

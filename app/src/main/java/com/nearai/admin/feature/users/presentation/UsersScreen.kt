@@ -60,7 +60,7 @@ fun UsersScreen(
                         )
                         StatusPill(
                             label = "14,820 total",
-                            dotColor = Color(0xFF10B981)
+                            dotColor = EmeraldSuccess
                         )
                     }
                 },
@@ -155,7 +155,7 @@ val sampleUsers = listOf(
         creditsRemaining = 12,
         subscriptionPrice = "Free",
         lastActive = "15m ago",
-        avatarColor = Color(0xFF10B981)
+        avatarColor = EmeraldSuccess
     ),
     UserItem(
         id = "user_1205",
@@ -166,7 +166,7 @@ val sampleUsers = listOf(
         creditsRemaining = 5,
         subscriptionPrice = "$29/mo",
         lastActive = "1h ago",
-        avatarColor = Color(0xFFEF4444)
+        avatarColor = RoseError
     ),
     UserItem(
         id = "user_6789",
@@ -177,7 +177,7 @@ val sampleUsers = listOf(
         creditsRemaining = 92,
         subscriptionPrice = "$29/mo",
         lastActive = "5m ago",
-        avatarColor = Color(0xFFF59E0B)
+        avatarColor = AmberWarning
     ),
     UserItem(
         id = "user_4532",
@@ -188,7 +188,7 @@ val sampleUsers = listOf(
         creditsRemaining = 45,
         subscriptionPrice = "Free",
         lastActive = "30m ago",
-        avatarColor = Color(0xFF3B82F6)
+        avatarColor = Info
     )
 )
 
@@ -245,12 +245,12 @@ fun UserListItem(
                     )
                     StatusPill(
                         label = user.tier,
-                        dotColor = if (user.tier == "Pro") Indigo else Color(0xFF94A3B8)
+                        dotColor = if (user.tier == "Pro") Indigo else TextSecondaryDark
                     )
                     if (user.status == "Flagged") {
                         StatusPill(
                             label = "Flagged",
-                            dotColor = Color(0xFFEF4444)
+                            dotColor = RoseError
                         )
                     }
                 }
@@ -348,11 +348,11 @@ fun UserDetailBottomSheet(
                     ) {
                         StatusPill(
                             label = user.tier,
-                            dotColor = if (user.tier == "Pro") Indigo else Color(0xFF94A3B8)
+                            dotColor = if (user.tier == "Pro") Indigo else TextSecondaryDark
                         )
                         StatusPill(
                             label = user.status,
-                            dotColor = if (user.status == "Active") Color(0xFF10B981) else Color(0xFFEF4444)
+                            dotColor = if (user.status == "Active") EmeraldSuccess else RoseError
                         )
                     }
                 }
@@ -404,7 +404,7 @@ fun UserDetailBottomSheet(
                             text = "${user.creditsRemaining}% remaining",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = if (user.creditsRemaining > 30) Color(0xFF10B981) else Color(0xFFEF4444)
+                            color = if (user.creditsRemaining > 30) EmeraldSuccess else RoseError
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -413,7 +413,7 @@ fun UserDetailBottomSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(10.dp),
-                        color = if (user.creditsRemaining > 30) Color(0xFF10B981) else Color(0xFFEF4444),
+                        color = if (user.creditsRemaining > 30) EmeraldSuccess else RoseError,
                         trackColor = MaterialTheme.colorScheme.surfaceContainer
                     )
                     Spacer(modifier = Modifier.height(6.dp))
@@ -493,7 +493,7 @@ fun UserDetailBottomSheet(
                     .fillMaxWidth()
                     .height(44.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFEF4444)
+                    containerColor = RoseError
                 )
             ) {
                 Icon(

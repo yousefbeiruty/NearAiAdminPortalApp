@@ -24,8 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.nearai.admin.core.designsystem.theme.Indigo
-import com.nearai.admin.core.designsystem.theme.Navy
+import com.nearai.admin.core.designsystem.theme.*
 import kotlin.math.roundToInt
 
 /**
@@ -39,19 +38,6 @@ import kotlin.math.roundToInt
 // Color Tokens
 // =============================================================================
 
-private val BackgroundSurface = Color(0xFFF7F9FB)
-private val CardSurface = Color(0xFFFFFFFF)
-private val BorderSubtle = Color(0xFFE2E8F0)
-private val TextPrimary = Color(0xFF0F172A)
-private val TextSecondary = Color(0xFF64748B)
-private val EmeraldSuccess = Color(0xFF10B981)
-private val EmeraldBg = Color(0xFFECFDF5)
-private val EmeraldDark = Color(0xFF047857)
-private val RoseError = Color(0xFFEF4444)
-private val RoseBg = Color(0xFFFEF2F2)
-private val RoseDark = Color(0xFFB91C1C)
-private val PurpleBg = Color(0xFFEEF2FF)
-private val PurpleDark = Color(0xFF4338CA)
 
 // =============================================================================
 // UI State & Models
@@ -121,13 +107,13 @@ fun ProductEditScreen(
                                 text = "NearAI Admin",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = Navy
                                 )
                             )
                             Text(
                                 text = "PRODUCT EDIT",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondary,
+                                    color = TextSecondaryLight,
                                     letterSpacing = 1.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -150,7 +136,7 @@ fun ProductEditScreen(
                             Icon(
                                 imageVector = Icons.Outlined.Notifications,
                                 contentDescription = "Alerts",
-                                tint = TextPrimary
+                                tint = Navy
                             )
                         }
                     }
@@ -172,10 +158,10 @@ fun ProductEditScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = CardSurface)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
             )
         },
-        containerColor = BackgroundSurface
+        containerColor = BackgroundLight
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -203,7 +189,7 @@ fun ProductEditScreen(
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Close",
-                                tint = TextPrimary
+                                tint = Navy
                             )
                         }
                         Column {
@@ -211,7 +197,7 @@ fun ProductEditScreen(
                                 text = "Configure Product S...",
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = Navy
                                 )
                             )
                             Spacer(modifier = Modifier.height(4.dp))
@@ -246,7 +232,7 @@ fun ProductEditScreen(
                                 Text(
                                     text = "SKU: #SUB-PRO-M",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = TextSecondary,
+                                        color = TextSecondaryLight,
                                         fontFamily = FontFamily.Monospace
                                     )
                                 )
@@ -279,7 +265,7 @@ fun ProductEditScreen(
             item {
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardSurface),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
                     border = BorderStroke(1.dp, BorderSubtle),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -287,7 +273,7 @@ fun ProductEditScreen(
                         Text(
                             text = "BILLING CLASSIFICATION",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = TextSecondary,
+                                color = TextSecondaryLight,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 1.sp
                             )
@@ -296,7 +282,7 @@ fun ProductEditScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(BackgroundSurface, RoundedCornerShape(12.dp))
+                                .background(BackgroundLight, RoundedCornerShape(12.dp))
                                 .padding(4.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
@@ -304,7 +290,7 @@ fun ProductEditScreen(
                                 val isSelected = selectedClassification == classification
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = if (isSelected) CardSurface else Color.Transparent,
+                                    color = if (isSelected) SurfaceLight else Color.Transparent,
                                     shadowElevation = if (isSelected) 2.dp else 0.dp,
                                     modifier = Modifier
                                         .weight(1f)
@@ -318,13 +304,13 @@ fun ProductEditScreen(
                                             text = classification.title,
                                             style = MaterialTheme.typography.labelMedium.copy(
                                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                color = if (isSelected) Navy else TextSecondary
+                                                color = if (isSelected) Navy else TextSecondaryLight
                                             )
                                         )
                                         Text(
                                             text = classification.subtitle,
                                             style = MaterialTheme.typography.labelSmall.copy(
-                                                color = if (isSelected) Indigo else TextSecondary,
+                                                color = if (isSelected) Indigo else TextSecondaryLight,
                                                 fontSize = 10.sp
                                             )
                                         )
@@ -340,7 +326,7 @@ fun ProductEditScreen(
             item {
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardSurface),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
                     border = BorderStroke(1.dp, BorderSubtle),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -364,14 +350,14 @@ fun ProductEditScreen(
                                     text = "Metadata & Identity",
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = TextPrimary
+                                        color = Navy
                                     )
                                 )
                             }
                             Text(
                                 text = "Core Spec",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondary,
+                                    color = TextSecondaryLight,
                                     fontFamily = FontFamily.Monospace
                                 )
                             )
@@ -382,7 +368,7 @@ fun ProductEditScreen(
                         Text(
                             text = "Public Display Name",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = TextSecondary,
+                                color = TextSecondaryLight,
                                 fontWeight = FontWeight.SemiBold
                             )
                         )
@@ -395,14 +381,14 @@ fun ProductEditScreen(
                                 Icon(
                                     imageVector = Icons.Outlined.Edit,
                                     contentDescription = null,
-                                    tint = TextSecondary,
+                                    tint = TextSecondaryLight,
                                     modifier = Modifier.size(18.dp)
                                 )
                             },
                             shape = RoundedCornerShape(10.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = BackgroundSurface,
-                                unfocusedContainerColor = BackgroundSurface,
+                                focusedContainerColor = BackgroundLight,
+                                unfocusedContainerColor = BackgroundLight,
                                 focusedBorderColor = Indigo,
                                 unfocusedBorderColor = BorderSubtle
                             ),
@@ -419,7 +405,7 @@ fun ProductEditScreen(
                             Text(
                                 text = "Internal Identifier",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondary,
+                                    color = TextSecondaryLight,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             )
@@ -436,7 +422,7 @@ fun ProductEditScreen(
                         Spacer(modifier = Modifier.height(6.dp))
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = BackgroundSurface,
+                            color = BackgroundLight,
                             border = BorderStroke(1.dp, BorderSubtle),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -448,13 +434,13 @@ fun ProductEditScreen(
                                 Icon(
                                     imageVector = Icons.Outlined.Lock,
                                     contentDescription = null,
-                                    tint = TextSecondary,
+                                    tint = TextSecondaryLight,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
                                     text = internalIdentifier,
                                     style = MaterialTheme.typography.bodyMedium.copy(
-                                        color = TextPrimary,
+                                        color = Navy,
                                         fontFamily = FontFamily.Monospace
                                     )
                                 )
@@ -468,13 +454,13 @@ fun ProductEditScreen(
                             Icon(
                                 imageVector = Icons.Outlined.Info,
                                 contentDescription = null,
-                                tint = TextSecondary,
+                                tint = TextSecondaryLight,
                                 modifier = Modifier.size(12.dp)
                             )
                             Text(
                                 text = "Immutable once deployed to global billing engine.",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondary,
+                                    color = TextSecondaryLight,
                                     fontSize = 11.sp
                                 )
                             )
@@ -485,7 +471,7 @@ fun ProductEditScreen(
                         Text(
                             text = "Classification Category",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = TextSecondary,
+                                color = TextSecondaryLight,
                                 fontWeight = FontWeight.SemiBold
                             )
                         )
@@ -529,7 +515,7 @@ fun ProductEditScreen(
                             }
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = BackgroundSurface,
+                                color = BackgroundLight,
                                 border = BorderStroke(1.dp, BorderSubtle),
                                 modifier = Modifier.clickable { }
                             ) {
@@ -541,13 +527,13 @@ fun ProductEditScreen(
                                     Icon(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = null,
-                                        tint = TextSecondary,
+                                        tint = TextSecondaryLight,
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Text(
                                         text = "Add Tag",
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            color = TextSecondary,
+                                            color = TextSecondaryLight,
                                             fontWeight = FontWeight.Medium
                                         )
                                     )
@@ -562,7 +548,7 @@ fun ProductEditScreen(
             item {
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardSurface),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
                     border = BorderStroke(1.dp, BorderSubtle),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -586,7 +572,7 @@ fun ProductEditScreen(
                                     text = "Pricing & Cadence",
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = TextPrimary
+                                        color = Navy
                                     )
                                 )
                             }
@@ -609,7 +595,7 @@ fun ProductEditScreen(
                                 Text(
                                     text = "List Price",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = TextSecondary,
+                                        color = TextSecondaryLight,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 )
@@ -622,15 +608,15 @@ fun ProductEditScreen(
                                         Text(
                                             text = "$",
                                             style = MaterialTheme.typography.bodyLarge.copy(
-                                                color = TextPrimary,
+                                                color = Navy,
                                                 fontWeight = FontWeight.Bold
                                             )
                                         )
                                     },
                                     shape = RoundedCornerShape(10.dp),
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedContainerColor = BackgroundSurface,
-                                        unfocusedContainerColor = BackgroundSurface,
+                                        focusedContainerColor = BackgroundLight,
+                                        unfocusedContainerColor = BackgroundLight,
                                         focusedBorderColor = Indigo,
                                         unfocusedBorderColor = BorderSubtle
                                     ),
@@ -642,7 +628,7 @@ fun ProductEditScreen(
                                 Text(
                                     text = "Cadence",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = TextSecondary,
+                                        color = TextSecondaryLight,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 )
@@ -650,7 +636,7 @@ fun ProductEditScreen(
                                 Box {
                                     Surface(
                                         shape = RoundedCornerShape(10.dp),
-                                        color = BackgroundSurface,
+                                        color = BackgroundLight,
                                         border = BorderStroke(1.dp, BorderSubtle),
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -667,21 +653,21 @@ fun ProductEditScreen(
                                             Text(
                                                 text = selectedCadence,
                                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                                    color = TextPrimary,
+                                                    color = Navy,
                                                     fontWeight = FontWeight.Medium
                                                 )
                                             )
                                             Icon(
                                                 imageVector = Icons.Default.KeyboardArrowDown,
                                                 contentDescription = null,
-                                                tint = TextSecondary
+                                                tint = TextSecondaryLight
                                             )
                                         }
                                     }
                                     DropdownMenu(
                                         expanded = cadenceExpanded,
                                         onDismissRequest = { cadenceExpanded = false },
-                                        modifier = Modifier.background(CardSurface)
+                                        modifier = Modifier.background(SurfaceLight)
                                     ) {
                                         cadenceOptions.forEach { cadence ->
                                             DropdownMenuItem(
@@ -701,7 +687,7 @@ fun ProductEditScreen(
                         // 14-Day Free Trial Toggle
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = BackgroundSurface,
+                            color = BackgroundLight,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
@@ -734,13 +720,13 @@ fun ProductEditScreen(
                                             text = "14-Day Free Trial",
                                             style = MaterialTheme.typography.bodyMedium.copy(
                                                 fontWeight = FontWeight.Bold,
-                                                color = TextPrimary
+                                                color = Navy
                                             )
                                         )
                                         Text(
                                             text = "Zero charge upfront verification",
                                             style = MaterialTheme.typography.bodySmall.copy(
-                                                color = TextSecondary
+                                                color = TextSecondaryLight
                                             )
                                         )
                                     }
@@ -765,7 +751,7 @@ fun ProductEditScreen(
             item {
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardSurface),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
                     border = BorderStroke(1.dp, BorderSubtle),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -789,7 +775,7 @@ fun ProductEditScreen(
                                     text = "Inference & Quota Limits",
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = TextPrimary
+                                        color = Navy
                                     )
                                 )
                             }
@@ -806,7 +792,7 @@ fun ProductEditScreen(
                         // Monthly Included Credits Slider
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = BackgroundSurface,
+                            color = BackgroundLight,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(14.dp)) {
@@ -818,7 +804,7 @@ fun ProductEditScreen(
                                     Text(
                                         text = "Monthly Included Credits",
                                         style = MaterialTheme.typography.labelMedium.copy(
-                                            color = TextSecondary,
+                                            color = TextSecondaryLight,
                                             fontWeight = FontWeight.SemiBold
                                         )
                                     )
@@ -854,9 +840,9 @@ fun ProductEditScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text("100 min", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary))
-                                    Text("5,000", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary))
-                                    Text("10,000 max", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary))
+                                    Text("100 min", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
+                                    Text("5,000", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
+                                    Text("10,000 max", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
                                 }
                             }
                         }
@@ -865,7 +851,7 @@ fun ProductEditScreen(
                         // Burst Rate Governor
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = BackgroundSurface,
+                            color = BackgroundLight,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
@@ -880,25 +866,25 @@ fun ProductEditScreen(
                                         text = "Burst Rate Governor",
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             fontWeight = FontWeight.Bold,
-                                            color = TextPrimary
+                                            color = Navy
                                         )
                                     )
                                     Text(
                                         text = "Maximum concurrent pipeline saturation",
                                         style = MaterialTheme.typography.bodySmall.copy(
-                                            color = TextSecondary
+                                            color = TextSecondaryLight
                                         )
                                     )
                                 }
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = CardSurface,
+                                    color = SurfaceLight,
                                     border = BorderStroke(1.dp, BorderSubtle)
                                 ) {
                                     Text(
                                         text = "$burstGovernor req/min",
                                         style = MaterialTheme.typography.labelMedium.copy(
-                                            color = TextPrimary,
+                                            color = Navy,
                                             fontWeight = FontWeight.Bold,
                                             fontFamily = FontFamily.Monospace
                                         ),
@@ -913,7 +899,7 @@ fun ProductEditScreen(
                         Text(
                             text = "MODEL ROUTING ACCESS",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = TextSecondary,
+                                color = TextSecondaryLight,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.5.sp
                             )
@@ -944,7 +930,7 @@ fun ProductEditScreen(
                             // Places & Search API Cache Bypass
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = BackgroundSurface,
+                                color = BackgroundLight,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable { cacheBypassEnabled = !cacheBypassEnabled }
@@ -967,13 +953,13 @@ fun ProductEditScreen(
                                             text = "Places & Search API Cache Bypass",
                                             style = MaterialTheme.typography.bodyMedium.copy(
                                                 fontWeight = FontWeight.Bold,
-                                                color = TextPrimary
+                                                color = Navy
                                             )
                                         )
                                         Text(
                                             text = "Enables real-time synthetic web queries without stale cache hits.",
                                             style = MaterialTheme.typography.bodySmall.copy(
-                                                color = TextSecondary
+                                                color = TextSecondaryLight
                                             )
                                         )
                                     }
@@ -988,7 +974,7 @@ fun ProductEditScreen(
             item {
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardSurface),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
                     border = BorderStroke(1.dp, BorderSubtle),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -1002,13 +988,13 @@ fun ProductEditScreen(
                                 text = "Lifecycle Operations",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = Navy
                                 )
                             )
                             Text(
                                 text = "STATE: DEPLOYED",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondary,
+                                    color = TextSecondaryLight,
                                     fontFamily = FontFamily.Monospace,
                                     letterSpacing = 0.5.sp
                                 )
@@ -1019,7 +1005,7 @@ fun ProductEditScreen(
                         // Deprecate SKU Row
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = BackgroundSurface,
+                            color = BackgroundLight,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
@@ -1032,7 +1018,7 @@ fun ProductEditScreen(
                                         text = "Deprecate SKU",
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             fontWeight = FontWeight.Bold,
-                                            color = TextPrimary
+                                            color = Navy
                                         )
                                     )
                                     Button(
@@ -1040,7 +1026,7 @@ fun ProductEditScreen(
                                         shape = RoundedCornerShape(8.dp),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = BorderSubtle.copy(alpha = 0.8f),
-                                            contentColor = TextPrimary
+                                            contentColor = Navy
                                         ),
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                                     ) {
@@ -1056,7 +1042,7 @@ fun ProductEditScreen(
                                 Text(
                                     text = "Existing active subscribers will continue to renew until bulk contract migration occurs.",
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        color = TextSecondary
+                                        color = TextSecondaryLight
                                     )
                                 )
                             }
@@ -1138,8 +1124,8 @@ fun ProductEditScreen(
                             .height(50.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = BackgroundSurface,
-                            contentColor = TextPrimary
+                            containerColor = BackgroundLight,
+                            contentColor = Navy
                         ),
                         border = BorderStroke(1.dp, BorderSubtle)
                     ) {
@@ -1192,7 +1178,7 @@ fun ModelAccessRow(
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = BackgroundSurface,
+        color = BackgroundLight,
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCheckedChange(!isChecked) }
@@ -1220,13 +1206,13 @@ fun ModelAccessRow(
                         text = title,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = Navy
                         )
                     )
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall.copy(
-                            color = TextSecondary
+                            color = TextSecondaryLight
                         )
                     )
                 }

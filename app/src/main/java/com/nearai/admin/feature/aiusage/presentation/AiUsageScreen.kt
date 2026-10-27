@@ -132,7 +132,7 @@ fun BudgetEnvelopeCard() {
                 }
                 StatusPill(
                     label = "71% used",
-                    dotColor = Color(0xFFF59E0B)
+                    dotColor = AmberWarning
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -160,7 +160,7 @@ fun BudgetEnvelopeCard() {
                         text = "$171.50",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF10B981)
+                        color = EmeraldSuccess
                     )
                     Text(
                         text = "remaining",
@@ -204,7 +204,7 @@ fun ThresholdMarker(
                 .size(12.dp)
                 .clip(CircleShape)
                 .background(
-                    if (reached) Color(0xFFF59E0B)
+                    if (reached) AmberWarning
                     else MaterialTheme.colorScheme.outlineVariant
                 )
         )
@@ -213,7 +213,7 @@ fun ThresholdMarker(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Medium,
-            color = if (reached) Color(0xFFF59E0B)
+            color = if (reached) AmberWarning
                     else MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
@@ -236,7 +236,7 @@ fun ModelDistributionSection() {
             requests = "32.4k",
             percentage = 38,
             cost = "$186.20",
-            color = Color(0xFF10B981)
+            color = EmeraldSuccess
         )
         ModelDistributionCard(
             provider = "Anthropic",
@@ -252,7 +252,7 @@ fun ModelDistributionSection() {
             requests = "28.1k",
             percentage = 34,
             cost = "$99.50",
-            color = Color(0xFFF59E0B)
+            color = AmberWarning
         )
     }
 }
@@ -411,7 +411,7 @@ fun QuotaSafeguardCard(
                     )
                     StatusPill(
                         label = status,
-                        dotColor = if (status == "Active") Color(0xFF10B981) else Color(0xFFF59E0B)
+                        dotColor = if (status == "Active") EmeraldSuccess else AmberWarning
                     )
                 }
                 Spacer(modifier = Modifier.height(2.dp))
@@ -553,9 +553,9 @@ enum class TelemetryStatus(
     val label: String,
     val color: Color
 ) {
-    Success("Completed", Color(0xFF10B981)),
-    RateLimited("429 Rate Limited", Color(0xFFEF4444)),
-    Timeout("Timeout", Color(0xFFF59E0B))
+    Success("Completed", EmeraldSuccess),
+    RateLimited("429 Rate Limited", RoseError),
+    Timeout("Timeout", AmberWarning)
 }
 
 /**

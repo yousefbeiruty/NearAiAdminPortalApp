@@ -37,19 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.nearai.admin.core.designsystem.theme.Indigo
-import com.nearai.admin.core.designsystem.theme.Navy
-
-// =============================================================================
-// Theme Tokens
-// =============================================================================
-
-private val BackgroundSurface = Color(0xFFF7F9FB)
-private val CardSurface = Color(0xFFFFFFFF)
-private val BorderSubtle = Color(0xFFE2E8F0)
-private val TextPrimary = Color(0xFF0F172A)
-private val TextMuted = Color(0xFF94A3B8)
-private val RoseError = Color(0xFFEF4444)
+import com.nearai.admin.core.designsystem.theme.*
 
 // =============================================================================
 // Bottom Navigation Destination Routes & Definitions
@@ -126,14 +114,14 @@ fun NearAiBottomNavBar(
         modifier = modifier
             .fillMaxWidth()
             .border(width = 1.dp, color = BorderSubtle),
-        color = CardSurface,
+        color = SurfaceLight,
         tonalElevation = 0.dp,
         shadowElevation = 8.dp
     ) {
         NavigationBar(
             modifier = Modifier.fillMaxWidth(),
-            containerColor = CardSurface,
-            contentColor = TextPrimary,
+            containerColor = SurfaceLight,
+            contentColor = Navy,
             tonalElevation = 0.dp
         ) {
             AdminBottomDestination.items.forEach { screen ->
@@ -210,8 +198,8 @@ fun NearAiBottomNavBar(
                         selectedTextColor = Navy,
                         indicatorColor = Indigo.copy(alpha = 0.12f),
                         // Inactive tab styling
-                        unselectedIconColor = TextMuted,
-                        unselectedTextColor = TextMuted
+                        unselectedIconColor = TextSecondaryDark,
+                        unselectedTextColor = TextSecondaryDark
                     )
                 )
             }
@@ -233,13 +221,13 @@ fun NearAiBottomNavBarStateless(
         modifier = modifier
             .fillMaxWidth()
             .border(width = 1.dp, color = BorderSubtle),
-        color = CardSurface,
+        color = SurfaceLight,
         tonalElevation = 0.dp
     ) {
         NavigationBar(
             modifier = Modifier.fillMaxWidth(),
-            containerColor = CardSurface,
-            contentColor = TextPrimary,
+            containerColor = SurfaceLight,
+            contentColor = Navy,
             tonalElevation = 0.dp
         ) {
             AdminBottomDestination.items.forEach { screen ->
@@ -280,8 +268,8 @@ fun NearAiBottomNavBarStateless(
                         selectedIconColor = Navy,
                         selectedTextColor = Navy,
                         indicatorColor = Indigo.copy(alpha = 0.12f),
-                        unselectedIconColor = TextMuted,
-                        unselectedTextColor = TextMuted
+                        unselectedIconColor = TextSecondaryDark,
+                        unselectedTextColor = TextSecondaryDark
                     )
                 )
             }
@@ -296,7 +284,7 @@ fun NearAiBottomNavBarStateless(
 @Preview(showBackground = true, widthDp = 390)
 @Composable
 fun NearAiBottomNavBarPreview() {
-    Surface(color = BackgroundSurface) {
+    Surface(color = BackgroundLight) {
         NearAiBottomNavBarStateless(
             currentRoute = AdminBottomDestination.Overview::class.java.simpleName,
             onTabSelected = {}
@@ -307,7 +295,7 @@ fun NearAiBottomNavBarPreview() {
 @Preview(showBackground = true, widthDp = 390)
 @Composable
 fun NearAiBottomNavBarAiTabActivePreview() {
-    Surface(color = BackgroundSurface) {
+    Surface(color = BackgroundLight) {
         NearAiBottomNavBarStateless(
             currentRoute = AdminBottomDestination.AIUsage::class.java.simpleName,
             onTabSelected = {}

@@ -155,14 +155,14 @@ fun FleetStatusBanner() {
                         modifier = Modifier
                             .size(12.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF10B981))
+                            .background(EmeraldSuccess)
                     )
                     Column {
                         Text(
                             text = "Fleet Operational",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF10B981)
+                            color = EmeraldSuccess
                         )
                         Text(
                             text = "All systems running normally",
@@ -173,7 +173,7 @@ fun FleetStatusBanner() {
                 }
                 StatusPill(
                     label = "0 incidents",
-                    dotColor = Color(0xFF10B981)
+                    dotColor = EmeraldSuccess
                 )
             }
             Spacer(modifier = Modifier.height(14.dp))
@@ -200,7 +200,7 @@ fun FleetStatusBanner() {
                         text = "5/5",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF10B981)
+                        color = EmeraldSuccess
                     )
                     Text(
                         text = "services healthy",
@@ -344,7 +344,7 @@ fun ServiceMetric(
             text = value,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
-            color = if (warning) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurface
+            color = if (warning) AmberWarning else MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = label,
@@ -358,9 +358,9 @@ enum class ServiceStatus(
     val label: String,
     val color: Color
 ) {
-    Healthy("Healthy", Color(0xFF10B981)),
-    Degraded("Degraded", Color(0xFFF59E0B)),
-    Down("Down", Color(0xFFEF4444))
+    Healthy("Healthy", EmeraldSuccess),
+    Degraded("Degraded", AmberWarning),
+    Down("Down", RoseError)
 }
 
 /**
@@ -591,7 +591,7 @@ fun QuickActionButton(
                     .size(40.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(
-                        if (isDestructive) Color(0xFFEF4444).copy(alpha = 0.1f)
+                        if (isDestructive) RoseError.copy(alpha = 0.1f)
                         else Indigo.copy(alpha = 0.1f)
                     ),
                 contentAlignment = Alignment.Center
@@ -599,7 +599,7 @@ fun QuickActionButton(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = if (isDestructive) Color(0xFFEF4444) else Indigo,
+                    tint = if (isDestructive) RoseError else Indigo,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -608,7 +608,7 @@ fun QuickActionButton(
                     text = title,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (isDestructive) Color(0xFFEF4444)
+                    color = if (isDestructive) RoseError
                             else MaterialTheme.colorScheme.onSurface
                 )
                 Text(
