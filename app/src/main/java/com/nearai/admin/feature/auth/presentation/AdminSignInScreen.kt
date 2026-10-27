@@ -514,7 +514,8 @@ private fun EmailField(
             placeholder = {
                 Text(
                     text = "alex.founder@nearai.internal",
-                    color = TextSecondaryDark
+                    color = TextSecondaryDark,
+                    fontSize = 14.sp
                 )
             },
             leadingIcon = {
@@ -537,6 +538,7 @@ private fun EmailField(
             },
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
@@ -594,7 +596,8 @@ private fun PasswordField(
             placeholder = {
                 Text(
                     text = "Enter your master passphrase",
-                    color = TextSecondaryDark
+                    color = TextSecondaryDark,
+                    fontSize = 14.sp
                 )
             },
             leadingIcon = {
@@ -616,6 +619,7 @@ private fun PasswordField(
             visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done

@@ -60,16 +60,17 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun NearAiAdminTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    // NearAI Admin is designed for light theme only.
+    // Force light theme to prevent mixed dark/light appearance on devices with system dark mode.
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
 

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Explore
@@ -23,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
 
 // =============================================================================
 // Bottom Navigation Destination Routes & Definitions
@@ -110,99 +111,92 @@ fun NearAiBottomNavBar(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    Surface(
+    NavigationBar(
         modifier = modifier
             .fillMaxWidth()
             .border(width = 1.dp, color = BorderSubtle),
-        color = SurfaceLight,
-        tonalElevation = 0.dp,
-        shadowElevation = 8.dp
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 0.dp
     ) {
-        NavigationBar(
-            modifier = Modifier.fillMaxWidth(),
-            containerColor = SurfaceLight,
-            contentColor = Navy,
-            tonalElevation = 0.dp
-        ) {
-            AdminBottomDestination.items.forEach { screen ->
-                // The route property is a @Serializable object. We compare by checking
-                // whether the current destination route string matches the simple name
-                // of the route object class (e.g. "OverviewRoute", "UsersRoute", etc.)
-                val routeSimpleName = screen.route::class.java.simpleName
-                val isSelected = currentRoute?.endsWith(routeSimpleName) == true
+        AdminBottomDestination.items.forEach { screen ->
+            // The route property is a @Serializable object. We compare by checking
+            // whether the current destination route string matches the simple name
+            // of the route object class (e.g. "OverviewRoute", "UsersRoute", etc.)
+            val routeSimpleName = screen.route::class.java.simpleName
+            val isSelected = currentRoute?.endsWith(routeSimpleName) == true
 
-                NavigationBarItem(
-                    selected = isSelected,
-                    onClick = {
-                        if (!isSelected) {
-                            navController.navigate(screen.route) {
-                                // Pop up to Overview (first main tab) to avoid accumulating screens,
-                                // without popping back to LoginRoute which is the graph start destination
-                                popUpTo<OverviewRoute> {
-                                    saveState = true
-                                }
-                                // Avoid multiple copies of same destination
-                                launchSingleTop = true
-                                // Restore state when re-selecting a tab
-                                restoreState = true
+            NavigationBarItem(
+                selected = isSelected,
+                onClick = {
+                    if (!isSelected) {
+                        navController.navigate(screen.route) {
+                            // Pop up to Overview (first main tab) to avoid accumulating screens,
+                            // without popping back to LoginRoute which is the graph start destination
+                            popUpTo<OverviewRoute> {
+                                saveState = true
                             }
+                            // Avoid multiple copies of same destination
+                            launchSingleTop = true
+                            // Restore state when re-selecting a tab
+                            restoreState = true
                         }
-                    },
-                    icon = {
-                        BadgedBox(
-                            badge = {
-                                when {
-                                    screen.badgeCount != null -> {
-                                        Badge(
-                                            containerColor = RoseError,
-                                            contentColor = Color.White
-                                        ) {
-                                            Text(
-                                                text = screen.badgeCount.toString(),
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-
-                                    screen.hasAlertDot -> {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(7.dp)
-                                                .clip(CircleShape)
-                                                .background(Indigo)
+                    }
+                },
+                icon = {
+                    BadgedBox(
+                        badge = {
+                            when {
+                                screen.badgeCount != null -> {
+                                    Badge(
+                                        containerColor = RoseError,
+                                        contentColor = Color.White
+                                    ) {
+                                        Text(
+                                            text = screen.badgeCount.toString(),
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold
                                         )
                                     }
                                 }
+
+                                screen.hasAlertDot -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(7.dp)
+                                            .clip(CircleShape)
+                                            .background(Indigo)
+                                    )
+                                }
                             }
-                        ) {
-                            Icon(
-                                imageVector = if (isSelected) screen.selectedIcon else screen.unselectedIcon,
-                                contentDescription = screen.label,
-                                modifier = Modifier.size(22.dp)
-                            )
                         }
-                    },
-                    label = {
-                        Text(
-                            text = screen.label,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            letterSpacing = 0.2.sp
+                    ) {
+                        Icon(
+                            imageVector = if (isSelected) screen.selectedIcon else screen.unselectedIcon,
+                            contentDescription = screen.label,
+                            modifier = Modifier.size(22.dp)
                         )
-                    },
-                    alwaysShowLabel = true,
-                    colors = NavigationBarItemDefaults.colors(
-                        // Active tab pill indicator styling
-                        selectedIconColor = Navy,
-                        selectedTextColor = Navy,
-                        indicatorColor = Indigo.copy(alpha = 0.12f),
-                        // Inactive tab styling
-                        unselectedIconColor = TextSecondaryDark,
-                        unselectedTextColor = TextSecondaryDark
+                    }
+                },
+                label = {
+                    Text(
+                        text = screen.label,
+                        fontSize = 11.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        letterSpacing = 0.2.sp
                     )
+                },
+                alwaysShowLabel = true,
+                colors = NavigationBarItemDefaults.colors(
+                    // Active tab styling
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    // Inactive tab styling
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
+            )
         }
     }
 }
@@ -217,62 +211,56 @@ fun NearAiBottomNavBarStateless(
     onTabSelected: (AdminBottomDestination) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    NavigationBar(
         modifier = modifier
             .fillMaxWidth()
             .border(width = 1.dp, color = BorderSubtle),
-        color = SurfaceLight,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp
     ) {
-        NavigationBar(
-            modifier = Modifier.fillMaxWidth(),
-            containerColor = SurfaceLight,
-            contentColor = Navy,
-            tonalElevation = 0.dp
-        ) {
-            AdminBottomDestination.items.forEach { screen ->
-                val isSelected = currentRoute == screen::class.java.simpleName
+        AdminBottomDestination.items.forEach { screen ->
+            val isSelected = currentRoute == screen::class.java.simpleName
 
-                NavigationBarItem(
-                    selected = isSelected,
-                    onClick = { onTabSelected(screen) },
-                    icon = {
-                        BadgedBox(
-                            badge = {
-                                if (screen.hasAlertDot) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(7.dp)
-                                            .clip(CircleShape)
-                                            .background(Indigo)
-                                    )
-                                }
+            NavigationBarItem(
+                selected = isSelected,
+                onClick = { onTabSelected(screen) },
+                icon = {
+                    BadgedBox(
+                        badge = {
+                            if (screen.hasAlertDot) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(7.dp)
+                                        .clip(CircleShape)
+                                        .background(Indigo)
+                                )
                             }
-                        ) {
-                            Icon(
-                                imageVector = if (isSelected) screen.selectedIcon else screen.unselectedIcon,
-                                contentDescription = screen.label,
-                                modifier = Modifier.size(22.dp)
-                            )
                         }
-                    },
-                    label = {
-                        Text(
-                            text = screen.label,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    ) {
+                        Icon(
+                            imageVector = if (isSelected) screen.selectedIcon else screen.unselectedIcon,
+                            contentDescription = screen.label,
+                            modifier = Modifier.size(22.dp)
                         )
-                    },
-                    alwaysShowLabel = true,
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Navy,
-                        selectedTextColor = Navy,
-                        indicatorColor = Indigo.copy(alpha = 0.12f),
-                        unselectedIconColor = TextSecondaryDark,
-                        unselectedTextColor = TextSecondaryDark
+                    }
+                },
+                label = {
+                    Text(
+                        text = screen.label,
+                        fontSize = 11.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                     )
+                },
+                alwaysShowLabel = true,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
+            )
         }
     }
 }
@@ -284,7 +272,7 @@ fun NearAiBottomNavBarStateless(
 @Preview(showBackground = true, widthDp = 390)
 @Composable
 fun NearAiBottomNavBarPreview() {
-    Surface(color = BackgroundLight) {
+    NearAiAdminTheme {
         NearAiBottomNavBarStateless(
             currentRoute = AdminBottomDestination.Overview::class.java.simpleName,
             onTabSelected = {}
@@ -295,7 +283,7 @@ fun NearAiBottomNavBarPreview() {
 @Preview(showBackground = true, widthDp = 390)
 @Composable
 fun NearAiBottomNavBarAiTabActivePreview() {
-    Surface(color = BackgroundLight) {
+    NearAiAdminTheme {
         NearAiBottomNavBarStateless(
             currentRoute = AdminBottomDestination.AIUsage::class.java.simpleName,
             onTabSelected = {}
