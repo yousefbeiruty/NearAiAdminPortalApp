@@ -95,7 +95,9 @@ fun AppNavHost(
         // Sub-destinations under More
         composable<InventoryRoute> {
             com.nearai.admin.feature.inventory.presentation.InventoryScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onAddSku = { navController.navigate(ProductEditRoute) },
+                onEditSku = { _ -> navController.navigate(ProductEditRoute) }
             )
         }
 
@@ -120,6 +122,12 @@ fun AppNavHost(
                         popUpTo<OverviewRoute> { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable<ProductEditRoute> {
+            com.nearai.admin.feature.inventory.presentation.ProductEditScreen(
+                onDismiss = { navController.popBackStack() }
             )
         }
     }

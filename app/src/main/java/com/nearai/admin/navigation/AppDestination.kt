@@ -35,3 +35,6 @@ object SystemHealthRoute
 
 @Serializable
 object AuditLogsRoute
+
+@Serializable
+object ProductEditRoute
