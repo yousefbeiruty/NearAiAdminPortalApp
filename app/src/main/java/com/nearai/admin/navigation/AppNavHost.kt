@@ -6,7 +6,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import com.nearai.admin.core.security.SessionManager
-import com.nearai.admin.feature.auth.presentation.LoginScreen
+import com.nearai.admin.feature.auth.presentation.AdminSignInScreen
 import com.nearai.admin.feature.dashboard.presentation.DashboardScreen
 import com.nearai.admin.feature.more.presentation.MoreScreen
 import com.nearai.admin.feature.aiusage.presentation.AiUsageScreen
@@ -42,8 +42,8 @@ fun AppNavHost(
     ) {
         // Authentication
         composable<LoginRoute> {
-            LoginScreen(
-                onLoginSuccess = {
+            AdminSignInScreen(
+                onSignInSuccess = {
                     navController.navigate(OverviewRoute) {
                         popUpTo<LoginRoute> { inclusive = true }
                     }
