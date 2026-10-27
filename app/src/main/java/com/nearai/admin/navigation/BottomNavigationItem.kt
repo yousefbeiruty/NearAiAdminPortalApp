@@ -9,14 +9,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Explore
-import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -92,11 +92,11 @@ sealed class AdminBottomDestination(
         unselectedIcon = Icons.Outlined.Explore
     )
 
-    object Inventory : AdminBottomDestination(
-        route = InventoryRoute,
-        label = "Products",
-        selectedIcon = Icons.Filled.Inventory2,
-        unselectedIcon = Icons.Outlined.Inventory2
+    object More : AdminBottomDestination(
+        route = MoreRoute,
+        label = "More",
+        selectedIcon = Icons.Filled.MoreHoriz,
+        unselectedIcon = Icons.Outlined.MoreHoriz
     )
 
     companion object {
@@ -105,7 +105,7 @@ sealed class AdminBottomDestination(
             Users,
             AIUsage,
             Places,
-            Inventory
+            More
         )
     }
 }

@@ -53,9 +53,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,24 +69,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.nearai.admin.core.designsystem.theme.Indigo
 import com.nearai.admin.core.designsystem.theme.Navy
 
 /**
- * UI State for the Admin Sign-In screen.
- */
-data class AdminSignInUiState(
-    val email: String = "",
-    val password: String = "",
-    val totpDigits: List<String> = List(6) { "" },
-    val isPasswordVisible: Boolean = false,
-    val isLoading: Boolean = false,
-    val errorMessage: String? = null,
-    val isTotpFocused: Boolean = false
-)
-
-/**
  * Admin Sign-In & Zero-Trust Authentication Screen.
+ *
+ * Uses [AuthViewModel] for state management and authentication logic.
  *
  * Features:
  * - Email and password fields with SSO partition indicator
@@ -96,6 +85,7 @@ data class AdminSignInUiState(
  * - 6-digit TOTP input grid
  * - Biometrics and FIDO2/NFC hardware key options
  * - Cluster boundary footer with TLS status
+ * - Development-only quick sign-in when backend is not connected
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,54 +93,17 @@ fun AdminSignInScreen(
     onSignInSuccess: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var uiState by remember { mutableStateOf(AdminSignInUiState()) }
-    var totpFocusIndex by remember { mutableStateOf(0) }
-    val coroutineScope = rememberCoroutineScope()
+    val viewModel: AuthViewModel = hiltViewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Callbacks
-    val onEmailChanged: (String) -> Unit = { uiState = uiState.copy(email = it, errorMessage = null) }
-    val onPasswordChanged: (String) -> Unit = { uiState = uiState.copy(password = it, errorMessage = null) }
-    val onTotpDigitChanged: (Int, String) -> Unit = { index, digit ->
-        if (digit.length <= 1 && digit.matches(Regex("\\d"))) {
-            val newDigits = uiState.totpDigits.toMutableList()
-            newDigits[index] = digit
-            uiState = uiState.copy(totpDigits = newDigits)
-            // Auto-advance to next digit
-            if (digit.isNotEmpty() && index < 5) {
-                totpFocusIndex = index + 1
+    // Handle navigation events
+    var totpFocusIndex by remember { mutableStateOf(0) }
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { event ->
+            if (event is AuthEvent.NavigateToDashboard) {
+                onSignInSuccess()
             }
         }
-    }
-    val onAuthenticate: () -> Unit = {
-        // Validate inputs
-        when {
-            uiState.email.isBlank() -> {
-                uiState = uiState.copy(errorMessage = "Email is required.")
-            }
-            uiState.password.isBlank() -> {
-                uiState = uiState.copy(errorMessage = "Password is required.")
-            }
-            uiState.totpDigits.joinToString("").length < 6 -> {
-                uiState = uiState.copy(errorMessage = "Please enter all 6 TOTP digits.")
-            }
-            else -> {
-                uiState = uiState.copy(isLoading = true, errorMessage = null)
-                // ⚠️ DEVELOPMENT-ONLY FAKE AUTHENTICATION — DO NOT USE IN PRODUCTION
-                // Replace this block with a real authentication API call via ViewModel + repository.
-                // The fake path simulates network latency and immediately succeeds to allow
-                // navigation to the Dashboard during development before the backend is ready.
-                coroutineScope.launch {
-                    kotlinx.coroutines.delay(800)
-                    onSignInSuccess()
-                }
-            }
-        }
-    }
-    val onBiometricTrigger: () -> Unit = {
-        // TODO: Integrate with Android BiometricPrompt
-    }
-    val onFido2Trigger: () -> Unit = {
-        // TODO: Integrate with FIDO2/NFC hardware key
     }
 
     Scaffold(
@@ -213,12 +166,19 @@ fun AdminSignInScreen(
             // Multi-Factor Authentication Card
             MfaCard(
                 uiState = uiState,
-                onEmailChanged = onEmailChanged,
-                onPasswordChanged = onPasswordChanged,
-                onTotpDigitChanged = onTotpDigitChanged,
-                onAuthenticate = onAuthenticate,
-                onBiometricTrigger = onBiometricTrigger,
-                onFido2Trigger = onFido2Trigger,
+                onEmailChanged = viewModel::onEmailChanged,
+                onPasswordChanged = viewModel::onPasswordChanged,
+                onTotpDigitChanged = viewModel::onTotpDigitChanged,
+                onAuthenticate = {
+                    // In development mode, use the fake sign-in path
+                    viewModel.onDevSignIn()
+                },
+                onBiometricTrigger = {
+                    // TODO: Integrate with Android BiometricPrompt
+                },
+                onFido2Trigger = {
+                    // TODO: Integrate with FIDO2/NFC hardware key
+                },
                 totpFocusIndex = totpFocusIndex,
                 onTotpFocusChanged = { totpFocusIndex = it }
             )
@@ -355,7 +315,7 @@ private fun TelemetryMfaCard() {
  */
 @Composable
 private fun MfaCard(
-    uiState: AdminSignInUiState,
+    uiState: AuthUiState,
     onEmailChanged: (String) -> Unit,
     onPasswordChanged: (String) -> Unit,
     onTotpDigitChanged: (Int, String) -> Unit,
@@ -385,11 +345,12 @@ private fun MfaCard(
             )
 
             // Master Passphrase field
+            var isPasswordVisible by remember { mutableStateOf(false) }
             PasswordField(
                 value = uiState.password,
                 onValueChange = onPasswordChanged,
-                isPasswordVisible = uiState.isPasswordVisible,
-                onTogglePasswordVisibility = { /* TODO: Implement toggle */ }
+                isPasswordVisible = isPasswordVisible,
+                onTogglePasswordVisibility = { isPasswordVisible = !isPasswordVisible }
             )
 
             // TOTP input
@@ -401,7 +362,7 @@ private fun MfaCard(
             )
 
             // Error message
-            uiState.errorMessage?.let { error ->
+            uiState.error?.let { error ->
                 Text(
                     text = error,
                     style = MaterialTheme.typography.bodySmall,

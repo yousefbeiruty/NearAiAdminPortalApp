@@ -29,7 +29,7 @@ fun MoreScreen(
     modifier: Modifier = Modifier
 ) {
     val menuItems = listOf(
-        MoreMenuItem("Products & Inventory", Icons.Default.Inventory, onNavigateToInventory),
+        MoreMenuItem("Products & Inventory", Icons.Default.Inventory2, onNavigateToInventory),
         MoreMenuItem("System Health", Icons.Default.MonitorHeart, onNavigateToSystemHealth),
         MoreMenuItem("Audit Logs", Icons.Default.ListAlt, onNavigateToAuditLogs),
         MoreMenuItem("Settings", Icons.Default.Settings, onNavigateToSettings)

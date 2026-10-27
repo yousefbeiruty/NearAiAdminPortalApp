@@ -3,6 +3,11 @@ package com.nearai.admin.core.network
 import com.nearai.admin.BuildConfig
 import com.nearai.admin.core.common.AppError
 import com.nearai.admin.core.common.toAppError
+import com.nearai.admin.core.security.TokenStorage
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -10,14 +15,70 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import javax.inject.Singleton
+import java.util.concurrent.TimeUnit
 
 private const val JSON_CONTENT_TYPE = "application/json"
 
-private val json = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    encodeDefaults = false
+/**
+ * Hilt module providing networking dependencies: Json, OkHttpClient, and Retrofit.
+ * Installed in the SingletonComponent so these instances are app-wide singletons.
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+object NetworkModule {
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        encodeDefaults = false
+    }
+
+    @Provides
+    fun provideJson(): Json = json
+
+    @Provides
+    fun provideOkHttpClient(
+        tokenStorage: TokenStorage
+    ): OkHttpClient {
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
+        }
+
+        return OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            // Authorization header interceptor — reads access token from secure storage
+            .addInterceptor { chain ->
+                val token = tokenStorage.getAccessToken()
+                val request = if (!token.isNullOrBlank()) {
+                    chain.request().newBuilder()
+                        .addHeader("Authorization", "Bearer $token")
+                        .build()
+                } else {
+                    chain.request()
+                }
+                chain.proceed(request)
+            }
+            .callTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    fun provideRetrofit(
+        okHttpClient: OkHttpClient,
+        json: Json
+    ): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.API_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory(JSON_CONTENT_TYPE.toMediaType()))
+            .build()
+    }
 }
 
 /**
@@ -45,43 +106,17 @@ object ApiErrorParser {
 
     private fun extractDetail(httpException: HttpException): String? {
         // FastAPI returns {"detail": "message"} on errors
+        val localJson = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
         return httpException.response()?.errorBody()?.string()?.let { body ->
             try {
-                val jsonElement = json.parseToJsonElement(body)
+                val jsonElement = localJson.parseToJsonElement(body)
                 (jsonElement as? kotlinx.serialization.json.JsonObject)?.get("detail")?.toString()?.removeSurrounding("\"")
             } catch (_: Exception) {
                 null
             }
         }
     }
-}
-
-@Singleton
-fun provideJson(): Json = json
-
-@Singleton
-fun provideOkHttpClient(): OkHttpClient {
-    val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = if (BuildConfig.DEBUG) {
-            HttpLoggingInterceptor.Level.BODY
-        } else {
-            HttpLoggingInterceptor.Level.NONE
-        }
-    }
-
-    return OkHttpClient.Builder()
-        .addInterceptor(loggingInterceptor)
-        .callTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
-        .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .build()
-}
-
-@Singleton
-fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
-    return Retrofit.Builder()
-        .baseUrl(BuildConfig.API_BASE_URL)
-        .client(okHttpClient)
-        .addConverterFactory(json.asConverterFactory(JSON_CONTENT_TYPE.toMediaType()))
-        .build()
 }
