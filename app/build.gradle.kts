@@ -88,6 +88,9 @@ dependencies {
     // Security
     implementation(libs.androidx.security.crypto)
 
+    // Image Loading
+    implementation(libs.coil.compose)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -54,6 +54,15 @@ class SessionManager @Inject constructor(
     }
 
     /**
+     * Development-only: mark the session as authenticated without real tokens.
+     * This is used only when the backend API is not yet connected.
+     * ⚠️ DO NOT USE IN PRODUCTION.
+     */
+    fun devAuthenticate(email: String = "admin@nearai.dev") {
+        _sessionState.value = SessionState.Authenticated(email = email)
+    }
+
+    /**
      * Called when the server returns 401 or the session is determined to be expired.
      */
     fun onSessionExpired() {

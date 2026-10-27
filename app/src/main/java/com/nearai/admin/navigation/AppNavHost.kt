@@ -44,6 +44,8 @@ fun AppNavHost(
         composable<LoginRoute> {
             AdminSignInScreen(
                 onSignInSuccess = {
+                    // ⚠️ DEVELOPMENT-ONLY: mark session as authenticated without real backend call
+                    sessionManager.devAuthenticate()
                     navController.navigate(OverviewRoute) {
                         popUpTo<LoginRoute> { inclusive = true }
                     }
