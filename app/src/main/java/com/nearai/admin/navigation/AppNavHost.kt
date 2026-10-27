@@ -59,6 +59,9 @@ fun AppNavHost(
                 onNavigateToDetails = { /* TODO */ },
                 onNavigateToSystemHealth = {
                     navController.navigate(SystemHealthRoute)
+                },
+                onNavigateToAuditLogs = {
+                    navController.navigate(AuditLogsRoute)
                 }
             )
         }

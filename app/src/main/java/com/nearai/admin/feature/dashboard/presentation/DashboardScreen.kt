@@ -73,6 +73,7 @@ data class ActivityStreamEvent(
 fun DashboardScreen(
     onNavigateToDetails: () -> Unit = {},
     onNavigateToSystemHealth: () -> Unit = {},
+    onNavigateToAuditLogs: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -118,7 +119,7 @@ fun DashboardScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = { /* TODO: audit log */ },
+                        onClick = { /* TODO: notifications */ },
                         modifier = Modifier.size(48.dp)
                     ) {
                         BadgedBox(
@@ -137,6 +138,16 @@ fun DashboardScreen(
                                 tint = TextPrimary
                             )
                         }
+                    }
+                    IconButton(
+                        onClick = onNavigateToAuditLogs,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ReceiptLong,
+                            contentDescription = "Audit Logs",
+                            tint = TextPrimary
+                        )
                     }
                     Box(
                         modifier = Modifier
