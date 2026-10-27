@@ -56,7 +56,10 @@ fun AppNavHost(
         // Main app destinations
         composable<OverviewRoute> {
             DashboardScreen(
-                onNavigateToDetails = { /* TODO */ }
+                onNavigateToDetails = { /* TODO */ },
+                onNavigateToSystemHealth = {
+                    navController.navigate(SystemHealthRoute)
+                }
             )
         }
 

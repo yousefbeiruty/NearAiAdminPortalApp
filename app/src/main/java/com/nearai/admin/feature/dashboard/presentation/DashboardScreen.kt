@@ -71,7 +71,8 @@ data class ActivityStreamEvent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    onNavigateToDetails: () -> Unit,
+    onNavigateToDetails: () -> Unit = {},
+    onNavigateToSystemHealth: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -702,7 +703,7 @@ fun DashboardScreen(
                     colors = CardDefaults.cardColors(containerColor = NavyPrimary),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { /* TODO: onNavigateToSystemHealth */ }
+                        .clickable { onNavigateToSystemHealth() }
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -919,6 +920,6 @@ val RoseError = Color(0xFFEF4444)
 @Composable
 fun OverviewDashboardPreview() {
     MaterialTheme {
-        DashboardScreen(onNavigateToDetails = {})
+        DashboardScreen(onNavigateToDetails = {}, onNavigateToSystemHealth = {})
     }
 }
