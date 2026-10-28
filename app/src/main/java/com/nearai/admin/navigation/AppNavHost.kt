@@ -1,7 +1,9 @@
 package com.nearai.admin.navigation
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
@@ -10,7 +12,12 @@ import com.nearai.admin.feature.auth.presentation.AdminSignInScreen
 import com.nearai.admin.feature.dashboard.presentation.DashboardScreen
 import com.nearai.admin.feature.more.presentation.MoreScreen
 import com.nearai.admin.feature.aiusage.presentation.AiUsageScreen
+import com.nearai.admin.feature.auditlogs.presentation.AuditLogsScreen
 import com.nearai.admin.feature.discovery.presentation.DiscoveryScreen
+import com.nearai.admin.feature.inventory.presentation.InventoryScreen
+import com.nearai.admin.feature.inventory.presentation.ProductEditScreen
+import com.nearai.admin.feature.settings.presentation.SettingsScreen
+import com.nearai.admin.feature.systemhealth.presentation.SystemHealthScreen
 import com.nearai.admin.feature.users.presentation.UsersScreen
 
 /**
@@ -38,7 +45,6 @@ fun AppNavHost(
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = modifier
     ) {
         // Authentication
         composable<LoginRoute> {
@@ -95,7 +101,7 @@ fun AppNavHost(
 
         // Sub-destinations under More
         composable<InventoryRoute> {
-            com.nearai.admin.feature.inventory.presentation.InventoryScreen(
+            InventoryScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onAddSku = { navController.navigate(ProductEditRoute) },
                 onEditSku = { _ -> navController.navigate(ProductEditRoute) }
@@ -103,19 +109,19 @@ fun AppNavHost(
         }
 
         composable<SystemHealthRoute> {
-            com.nearai.admin.feature.systemhealth.presentation.SystemHealthScreen(
+            SystemHealthScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
         composable<AuditLogsRoute> {
-            com.nearai.admin.feature.auditlogs.presentation.AuditLogsScreen(
+            AuditLogsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
         composable<SettingsRoute> {
-            com.nearai.admin.feature.settings.presentation.SettingsScreen(
+            SettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onLogout = {
                     sessionManager.logout()
@@ -127,7 +133,7 @@ fun AppNavHost(
         }
 
         composable<ProductEditRoute> {
-            com.nearai.admin.feature.inventory.presentation.ProductEditScreen(
+            ProductEditScreen(
                 onDismiss = { navController.popBackStack() }
             )
         }

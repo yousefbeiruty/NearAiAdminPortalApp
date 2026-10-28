@@ -104,6 +104,7 @@ fun UsersScreen(
                     onClick = { selectedUser = user }
                 )
             }
+            item { Spacer(modifier = Modifier.height(76.dp)) }
         }
     }
 
