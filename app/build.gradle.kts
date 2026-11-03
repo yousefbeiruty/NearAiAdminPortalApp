@@ -21,14 +21,20 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "API_BASE_URL", "\"https://api.nearai.dev/\"")
+        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8081/\"")
     }
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"https://api-dev.nearai.dev/\"")
+            // Local development backend on Android emulator (10.0.2.2 = localhost on host)
+            // Base URL must NOT include "/api/v1/" — endpoint paths in AuthApiService and
+            // OrderApiService already start with "api/v1/...". Retrofit concatenates
+            // baseUrl + endpoint path, so the final URL is:
+            //   http://10.0.2.2:8081/api/v1/auth/login
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8081/\"")
         }
         release {
+            // Production backend — same rule: no "/api/v1/" in base URL.
             buildConfigField("String", "API_BASE_URL", "\"https://api.nearai.dev/\"")
             optimization {
                 enable = true

@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -12,6 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
 import com.nearai.admin.core.security.SessionManager
 import com.nearai.admin.core.security.SessionState
@@ -30,8 +31,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Restore session on startup
-        sessionManager.restoreSession()
+        // Restore session on startup asynchronously off the main thread to prevent ANR
+        lifecycleScope.launch {
+            sessionManager.restoreSession()
+        }
 
         setContent {
             NearAiAdminTheme {

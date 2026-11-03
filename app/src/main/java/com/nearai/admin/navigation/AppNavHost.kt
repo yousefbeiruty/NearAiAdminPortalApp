@@ -33,16 +33,37 @@ fun AppNavHost(
     modifier: Modifier = Modifier,
     startDestination: Any = LoginRoute
 ) {
-    val sessionState = sessionManager.sessionState.collectAsStateWithLifecycle()
+    val sessionState by sessionManager.sessionState.collectAsStateWithLifecycle()
 
-    // If session expires or user is not admin, navigate to login
-    LaunchedEffect(sessionState.value) {
-        val isUnauthorized = sessionState.value is com.nearai.admin.core.security.SessionState.SessionExpired ||
-                sessionState.value is com.nearai.admin.core.security.SessionState.NotAdmin
-        if (isUnauthorized) {
-            navController.navigate(LoginRoute) {
-                popUpTo<OverviewRoute> { inclusive = true }
+    // Observe sessionState changes and sync navigation accordingly
+    LaunchedEffect(sessionState) {
+        val currentDestinationRoute = navController.currentDestination?.route
+        when (sessionState) {
+            is com.nearai.admin.core.security.SessionState.Authenticated -> {
+                // If user is authenticated and currently on login screen, navigate to overview
+                val isLoginScreen = currentDestinationRoute == null ||
+                        currentDestinationRoute.endsWith("LoginRoute") ||
+                        currentDestinationRoute.contains("LoginRoute")
+                if (isLoginScreen) {
+                    navController.navigate(OverviewRoute) {
+                        popUpTo<LoginRoute> { inclusive = true }
+                    }
+                }
             }
+            is com.nearai.admin.core.security.SessionState.SessionExpired,
+            is com.nearai.admin.core.security.SessionState.NotAdmin,
+            is com.nearai.admin.core.security.SessionState.Unauthenticated -> {
+                // If user is unauthenticated/expired and not on login screen, navigate to login
+                val isNotLoginScreen = currentDestinationRoute != null &&
+                        !currentDestinationRoute.endsWith("LoginRoute") &&
+                        !currentDestinationRoute.contains("LoginRoute")
+                if (isNotLoginScreen) {
+                    navController.navigate(LoginRoute) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            }
+            else -> {}
         }
     }
 

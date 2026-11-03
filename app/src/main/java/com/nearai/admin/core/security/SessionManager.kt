@@ -1,8 +1,10 @@
 package com.nearai.admin.core.security
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -39,12 +41,13 @@ class SessionManager @Inject constructor(
     /**
      * Called on app startup to restore any existing session from secure storage.
      * Validates that the stored user has the admin role.
+     * Runs on Dispatchers.IO to prevent UI main thread blocking and ANRs.
      *
      * Note: This is a local validation. The backend is the authoritative source.
      * If the access token is expired, the OkHttp Authenticator will attempt to
      * refresh it automatically. If refresh fails, [onSessionExpired] will be called.
      */
-    fun restoreSession() {
+    suspend fun restoreSession() = withContext(Dispatchers.IO) {
         if (tokenStorage.hasValidAdminSession()) {
             val role = tokenStorage.getUserRole() ?: "admin"
             val email = tokenStorage.getUserEmail() ?: "admin"

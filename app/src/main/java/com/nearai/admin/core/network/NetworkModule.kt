@@ -4,105 +4,30 @@ import com.nearai.admin.BuildConfig
 import com.nearai.admin.core.common.AppError
 import com.nearai.admin.core.common.toAppError
 import com.nearai.admin.core.security.TokenStorage
-import com.nearai.admin.feature.auth.data.AuthApiService
-import com.nearai.admin.feature.auth.data.RefreshRequest
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import okhttp3.Authenticator
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Route
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 private const val JSON_CONTENT_TYPE = "application/json"
 
 /**
- * OkHttp Authenticator that handles automatic token refresh on 401 responses.
- *
- * Key behaviors:
- * - Only retries once per request to prevent infinite loops.
- * - Serializes concurrent refresh attempts so only one refresh happens at a time.
- * - Does not retry authentication endpoints (login, refresh, logout) to avoid loops.
- * - On refresh failure, clears the stored tokens so the app can redirect to login.
- *
- * Uses a lazy [authApiServiceProvider] to avoid circular dependencies:
- * OkHttpClient → Authenticator → AuthApiService → Retrofit → OkHttpClient
+ * Returns true if the given URL path is an authentication endpoint.
+ * Authentication endpoints should never have their request bodies logged
+ * (contain passwords, tokens) and should never be auto-retried on 401.
  */
-class TokenRefreshAuthenticator(
-    private val tokenStorage: TokenStorage,
-    private val authApiServiceProvider: () -> AuthApiService,
-    private val tokenCleared: AtomicBoolean = AtomicBoolean(false)
-) : Authenticator {
-
-    private var isRefreshing = false
-
-    override fun authenticate(route: Route?, response: okhttp3.Response): Request? {
-        // Never retry authentication endpoints to avoid infinite loops
-        val path = response.request.url.encodedPath
-        if (path.contains("auth/login") || path.contains("auth/refresh") || path.contains("auth/logout")) {
-            return null
-        }
-
-        // Only retry once per response to prevent infinite loops
-        if (response.priorResponse != null) {
-            return null
-        }
-
-        val refreshToken = tokenStorage.getRefreshToken()
-            ?: return null
-
-        var newAccessToken: String?
-
-        synchronized(this) {
-            if (isRefreshing) {
-                // Another thread is already refreshing — just return null to let this
-                // request fail; the caller will see the 401 and handle it.
-                return null
-            }
-            isRefreshing = true
-        }
-
-        try {
-            newAccessToken = runBlocking {
-                try {
-                    val apiService = authApiServiceProvider()
-                    val refreshResponse = apiService.refreshToken(RefreshRequest(refreshToken))
-                    // Store rotated tokens atomically
-                    tokenStorage.saveAccessToken(refreshResponse.accessToken)
-                    tokenStorage.saveRefreshToken(refreshResponse.refreshToken)
-                    refreshResponse.accessToken
-                } catch (e: Exception) {
-                    // Refresh failed — clear tokens so the app can redirect to login
-                    if (tokenCleared.compareAndSet(false, true)) {
-                        tokenStorage.clearAll()
-                    }
-                    null
-                }
-            }
-        } finally {
-            synchronized(this) {
-                isRefreshing = false
-            }
-        }
-
-        return if (!newAccessToken.isNullOrBlank()) {
-            response.request.newBuilder()
-                .header("Authorization", "Bearer $newAccessToken")
-                .build()
-        } else {
-            null
-        }
-    }
+private fun isAuthEndpoint(path: String): Boolean {
+    return path.contains("auth/login") ||
+        path.contains("auth/refresh") ||
+        path.contains("auth/logout")
 }
 
 /**
@@ -124,27 +49,30 @@ object NetworkModule {
 
     @Provides
     fun provideOkHttpClient(
-        tokenStorage: TokenStorage,
-        retrofitProvider: dagger.Lazy<Retrofit>
+        tokenStorage: TokenStorage
     ): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
+        // Secure logging interceptor:
+        // - In debug builds, log headers only (never request/response bodies)
+        // - This prevents passwords, tokens, and sensitive data from appearing in logs
+        // - Use HttpLoggingInterceptor.Level.HEADERS for debugging network issues
+        //   without exposing sensitive request bodies
+        val loggingInterceptor = HttpLoggingInterceptor(object : HttpLoggingInterceptor.Logger {
+            override fun log(message: String) {
+                // Filter out Authorization headers from logs
+                if (!message.contains("Authorization", ignoreCase = true)) {
+                    android.util.Log.d("OkHttp", message)
+                }
+            }
+        }).apply {
             level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BODY
+                // HEADERS level logs method, URL, and headers — but we filter Authorization above
+                // Do NOT use BODY level as it logs the entire request/response body including
+                // passwords (login), refresh tokens (refresh), and sensitive user data
+                HttpLoggingInterceptor.Level.HEADERS
             } else {
                 HttpLoggingInterceptor.Level.NONE
             }
         }
-
-        // Flag to ensure tokens are cleared only once on refresh failure
-        val tokenCleared = AtomicBoolean(false)
-
-        // Lazy provider for AuthApiService to break circular dependency:
-        // OkHttpClient → Authenticator → AuthApiService → Retrofit → OkHttpClient
-        val refreshAuthenticator = TokenRefreshAuthenticator(
-            tokenStorage = tokenStorage,
-            authApiServiceProvider = { retrofitProvider.get().create(AuthApiService::class.java) },
-            tokenCleared = tokenCleared
-        )
 
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
@@ -160,9 +88,16 @@ object NetworkModule {
                 }
                 chain.proceed(request)
             }
-            .authenticator(refreshAuthenticator)
+            // Note: OkHttp Authenticator removed because Retrofit suspend functions
+            // cannot be called synchronously. Token refresh on 401 is handled at the
+            // repository/ViewModel level instead. See RealAuthRepository.refreshToken().
             .callTimeout(30, TimeUnit.SECONDS)
-            .connectTimeout(15, TimeUnit.SECONDS)
+            // Connect timeout set to 3 seconds to stay safely under Android's 5-second ANR
+            // threshold. DNS resolution failures (UnknownHostException) are the most common
+            // cause of login ANRs. With 3s, the network error surfaces ~2 seconds before the
+            // system watchdog reports "Application Not Responding", giving the UI time to
+            // transition from loading state to error state and remain responsive to input.
+            .connectTimeout(3, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()
     }
@@ -191,6 +126,15 @@ object ApiErrorParser {
             401 -> AppError.UnauthorizedError()
             403 -> AppError.AuthenticationError("Access denied. Insufficient permissions.")
             404 -> AppError.NotFoundError("The requested resource was not found.")
+            422 -> {
+                // FastAPI Pydantic 422 errors return {"detail": [{"loc": [...], "msg": "...", "type": "..."}]}
+                // Parse the array of validation errors into a readable message
+                val validationErrors = extractPydanticValidationErrors(httpException)
+                AppError.ServerError(
+                    message = validationErrors ?: "Validation failed. Please check your input.",
+                    statusCode = 422
+                )
+            }
             in 400..499 -> AppError.ServerError(
                 message = extractDetail(httpException) ?: "Request failed with status ${httpException.code()}",
                 statusCode = httpException.code()
@@ -200,6 +144,70 @@ object ApiErrorParser {
                 statusCode = httpException.code()
             )
             else -> httpException.toAppError()
+        }
+    }
+
+    /**
+     * Extracts a human-readable message from a FastAPI Pydantic 422 validation error response.
+     *
+     * Pydantic 422 responses have this structure:
+     * ```json
+     * {
+     *   "detail": [
+     *     {"loc": ["body", "email"], "msg": "field required", "type": "missing"},
+     *     {"loc": ["header", "authorization"], "msg": "value is not a valid uuid", "type": "type_error.uuid"}
+     *   ]
+     * }
+     * ```
+     *
+     * Returns a joined string like: "Field required in body: 'email'. Value is not a valid uuid in header: 'authorization'"
+     */
+    private fun extractPydanticValidationErrors(httpException: HttpException): String? {
+        val localJson = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
+        val body = httpException.response()?.errorBody()?.string() ?: return null
+
+        return try {
+            val jsonElement = localJson.parseToJsonElement(body)
+            val jsonObject = jsonElement as? kotlinx.serialization.json.JsonObject ?: return null
+            val detailElement = jsonObject["detail"] ?: return null
+
+            when (detailElement) {
+                is kotlinx.serialization.json.JsonArray -> {
+                    // Pydantic validation error array
+                    val messages = detailElement.mapNotNull { errorObj ->
+                        try {
+                            val obj = errorObj as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+                            val loc = obj["loc"] as? kotlinx.serialization.json.JsonArray
+                            val msg = obj["msg"]?.toString()?.removeSurrounding("\"")
+                            val fieldPath = loc?.map { it.toString().removeSurrounding("\"") }?.joinToString(".") ?: ""
+                            if (fieldPath.isNotBlank() && msg != null) {
+                                "$msg in $fieldPath"
+                            } else if (msg != null) {
+                                msg
+                            } else {
+                                null
+                            }
+                        } catch (_: Exception) {
+                            null
+                        }
+                    }
+                    if (messages.isNotEmpty()) {
+                        messages.joinToString(". ")
+                    } else {
+                        null
+                    }
+                }
+                is kotlinx.serialization.json.JsonPrimitive -> {
+                    // Some FastAPI configs return detail as a plain string even for 422
+                    detailElement.content.removeSurrounding("\"")
+                }
+                else -> null
+            }
+        } catch (_: Exception) {
+            null
         }
     }
 

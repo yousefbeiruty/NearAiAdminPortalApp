@@ -17,11 +17,23 @@ class TokenStorage @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+    private val masterKey by lazy {
+        MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+    }
 
-    private val prefs = EncryptedSharedPreferences.create(
+    private val prefs by lazy {
+        try {
+            createEncryptedSharedPreferences()
+        } catch (_: Exception) {
+            // Clear corrupted shared preferences and recreate if KeyStore/encryption state is invalid
+            context.deleteSharedPreferences("nearai_auth_prefs")
+            createEncryptedSharedPreferences()
+        }
+    }
+
+    private fun createEncryptedSharedPreferences() = EncryptedSharedPreferences.create(
         context,
         "nearai_auth_prefs",
         masterKey,

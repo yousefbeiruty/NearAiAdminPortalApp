@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        Allow cleartext (HTTP) traffic for local development only.
+        The debug build uses http://10.0.2.2:8081 (Android emulator localhost)
+        to connect to the FastAPI backend running on the host machine.
+
+        This is NOT enabled in release builds — production uses HTTPS only.
+    -->
+    <application
+        android:usesCleartextTraffic="true"
+        tools:targetApi="28" />
+
+</manifest>

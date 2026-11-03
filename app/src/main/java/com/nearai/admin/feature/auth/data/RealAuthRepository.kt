@@ -36,18 +36,33 @@ class RealAuthRepository @Inject constructor(
         return try {
             val response = authApiService.login(LoginRequest(email, password))
 
+            // Store tokens BEFORE calling /auth/me so the authorization interceptor
+            // can attach the access token to the request. Without this, the interceptor
+            // reads an empty TokenStorage and sends no Authorization header, causing
+            // the backend to return 401 "session expired".
+            tokenStorage.saveAccessToken(response.accessToken)
+            tokenStorage.saveRefreshToken(response.refreshToken)
+
             // Fetch full user info to get role, is_active, email_verified
             val userInfo = authApiService.getCurrentUser()
 
             // Validate account is active
             if (!userInfo.is_active) {
+                // Clear tokens for inactive accounts — they should not be stored
+                tokenStorage.clearAll()
                 return Result.Error(AppError.AuthenticationError("Account is inactive. Contact administrator."))
             }
 
             // Validate email is verified
             if (!userInfo.emailVerified) {
+                // Clear tokens for unverified accounts
+                tokenStorage.clearAll()
                 return Result.Error(AppError.AuthenticationError("Email not verified. Please verify your email first."))
             }
+
+            // Save role after validation passes
+            tokenStorage.saveUserRole(userInfo.role)
+            tokenStorage.saveUserEmail(userInfo.email)
 
             val session = AdminSession(
                 email = userInfo.email,
@@ -56,12 +71,12 @@ class RealAuthRepository @Inject constructor(
                 refreshToken = response.refreshToken
             )
 
-            // Store tokens immediately on successful login
-            tokenStorage.saveAccessToken(session.accessToken)
-            tokenStorage.saveRefreshToken(session.refreshToken)
-            tokenStorage.saveUserRole(session.role)
             Result.Success(SignInResponse.Session(session))
         } catch (e: HttpException) {
+            // If login itself failed (401), clear any partially stored tokens
+            if (e.code() == 401) {
+                tokenStorage.clearAll()
+            }
             val appError = ApiErrorParser.parse(e)
             Result.Error(appError)
         } catch (e: Exception) {
@@ -85,8 +100,18 @@ class RealAuthRepository @Inject constructor(
 
             val response = authApiService.refreshToken(RefreshRequest(storedRefreshToken))
 
+            // Store rotated tokens BEFORE calling /auth/me so the authorization interceptor
+            // can attach the NEW access token. Without this, /auth/me uses the old expired
+            // token and returns 401. New refresh token replaces old one immediately to
+            // prevent concurrent reuse (backend revokes all sessions on reuse detection).
+            tokenStorage.saveAccessToken(response.accessToken)
+            tokenStorage.saveRefreshToken(response.refreshToken)
+
             // Get current user info to retrieve role
             val userInfo = authApiService.getCurrentUser()
+
+            tokenStorage.saveUserRole(userInfo.role)
+            tokenStorage.saveUserEmail(userInfo.email)
 
             val session = AdminSession(
                 email = userInfo.email,
@@ -95,13 +120,12 @@ class RealAuthRepository @Inject constructor(
                 refreshToken = response.refreshToken
             )
 
-            // Store rotated tokens atomically — new refresh token replaces old one immediately
-            tokenStorage.saveAccessToken(session.accessToken)
-            tokenStorage.saveRefreshToken(session.refreshToken)
-            tokenStorage.saveUserRole(session.role)
-
             Result.Success(session)
         } catch (e: HttpException) {
+            // If refresh failed (401), the refresh token was revoked — clear all tokens
+            if (e.code() == 401) {
+                tokenStorage.clearAll()
+            }
             val appError = ApiErrorParser.parse(e)
             Result.Error(appError)
         } catch (e: Exception) {

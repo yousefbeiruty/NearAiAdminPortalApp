@@ -446,3 +446,99 @@ Updated all DTOs to match `AUTH_API_CONTRACTS.md` exactly:
 - Added `isAccountInactive` and `isEmailUnverified` to `AuthUiState`
 - Error handling sets flags based on error message content
 - `AdminSignInScreen` displays styled error cards: rose for not-admin, amber for inactive/unverified
+
+---
+
+## ANR Investigation — Complete
+
+### Root Cause Analysis
+
+**Issue:** Android ANR (`Input dispatching timed out`) during login when `api-dev.nearai.dev` DNS fails.
+
+**Findings:**
+1. **TokenStorage** — Already uses `lazy` delegates; first access triggers Keystore init. `SessionManager.restoreSession()` already runs on `Dispatchers.IO`. ✅ No main-thread blocking.
+2. **AuthViewModel** — `onSignIn()` sets `isLoading = true` before the network call. Loading indicator renders correctly. ✅ No main-thread blocking.
+3. **TokenRefreshAuthenticator** — Already removed in previous fix. Retrofit suspend functions cannot be called synchronously in OkHttp Authenticator. ✅ No blocking.
+4. **Connect timeout** — Was 8 seconds, then reduced to 5 seconds, but 5s still sat at the exact ANR boundary (5004ms ANR reported). Even though the main thread is free (network on IO), the system reports ANR because the app appears frozen for 5+ seconds.
+
+### Fix Applied
+
+**NetworkModule.kt** — Reduced `connectTimeout` from 5s to 3s so DNS failures surface ~2 seconds before the ANR watchdog triggers, giving the UI time to transition from loading to error state and remain responsive to input.
+
+### Verification
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL, 42 tasks
+- `./gradlew testDebugUnitTest` — BUILD SUCCESSFUL, all 70 tests pass
+
+### Remaining Infrastructure Actions
+1. **DNS resolution** — `api-dev.nearai.dev` must have a valid DNS A/AAAA record. This is an infrastructure issue, not an Android code issue.
+2. **Token refresh on 401** — No automatic 401 retry currently. Consider implementing explicit 401 handling in `RealAuthRepository` for non-auth endpoints.
+
+---
+
+## Login 401 "Session Expired" Fix — Complete
+
+### Root Cause
+
+**Issue:** After successful `POST /auth/login`, the app immediately receives `GET /auth/me` returning `401 session expired`.
+
+**Root cause:** In `RealAuthRepository.signIn()`, the code called `authApiService.getCurrentUser()` (line 40) to fetch user info BEFORE storing the access token in `TokenStorage` (lines 60-62). The OkHttp authorization interceptor reads from `TokenStorage`, so it sent no `Authorization` header with the `/auth/me` request, causing the backend to return 401.
+
+The same bug existed in `refreshToken()` — it called `/auth/me` before storing the new access token, so the old expired token was used.
+
+### Fix Applied
+
+**RealAuthRepository.kt** — Both `signIn()` and `refreshToken()` now store tokens BEFORE calling `/auth/me`:
+
+1. `signIn()`: Store access + refresh tokens immediately after login response, then call `/auth/me` with the valid token
+2. `refreshToken()`: Store rotated tokens immediately after refresh response, then call `/auth/me` with the new token
+3. Added token cleanup on validation failures (inactive account, unverified email) — tokens are cleared so invalid sessions aren't persisted
+4. Added token cleanup on 401 errors — if login or refresh returns 401, stored tokens are cleared
+5. Added `saveUserEmail()` call to persist the user's email from `/auth/me` response
+
+### Verification
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL, 42 tasks
+- `./gradlew testDebugUnitTest` — BUILD SUCCESSFUL, all 70 tests pass (100% success rate)
+
+### Local Development Configuration Fix
+
+**app/build.gradle.kts** — Removed `/api/v1/` from all `API_BASE_URL` entries so Retrofit endpoint paths resolve correctly without duplication.
+
+**app/src/debug/AndroidManifest.xml** (new) — Debug-only manifest enabling `android:usesCleartextTraffic="true"` for HTTP traffic to `10.0.2.2:8081`.
+
+---
+
+## Login 422 Validation Error Fix — Complete
+
+### Root Cause
+
+**Issue:** Login returns `HTTP 422 Unprocessable Entity` but the user sees a generic "Request failed with status 422" message instead of the actual Pydantic validation error.
+
+**Root cause:** `ApiErrorParser.extractDetail()` assumed the `detail` field in FastAPI error responses is always a JSON string. However, Pydantic 422 validation errors return `detail` as a JSON array of objects:
+```json
+{"detail": [{"loc": ["body", "email"], "msg": "field required", "type": "missing"}]}
+```
+The parser tried to call `.removeSurrounding("\"")` on the array element, producing null, so the user saw only the generic fallback message.
+
+### Fix Applied
+
+**NetworkModule.kt** — `ApiErrorParser`:
+1. Added explicit `422` case in `parse()` that calls `extractPydanticValidationErrors()`
+2. `extractPydanticValidationErrors()` parses the `detail` array, extracting each error's `loc` (field path), `msg` (message), and joining them into a readable string like "field required in body.email"
+3. Also handles the case where `detail` is a plain string (some FastAPI configs)
+4. Falls back to "Validation failed. Please check your input." if parsing fails
+
+**ApiErrorParserTest.kt** (new, 13 tests):
+- 422 with single validation error extracts field message
+- 422 with multiple validation errors joins messages
+- 422 with string detail returns the string
+- 422 with empty detail array returns generic message
+- 422 with invalid JSON returns generic message
+- 422 with nested loc path extracts full path
+- 401, 403, 404, 500, 400 status code parsing
+
+### Verification
+- `./gradlew assembleDebug` — BUILD SUCCESSFUL, 42 tasks
+- `./gradlew testDebugUnitTest` — BUILD SUCCESSFUL, all 82 tests pass (70 existing + 12 new)
+
+### What This Enables
+When the backend returns a 422 error (e.g., wrong field name, missing field), the app now displays the actual validation error (e.g., "field required in body.email") instead of a generic message. This reveals the exact field name mismatch between the Android `LoginRequest` DTO and the backend's expected schema, allowing the user to identify and fix the root cause.
