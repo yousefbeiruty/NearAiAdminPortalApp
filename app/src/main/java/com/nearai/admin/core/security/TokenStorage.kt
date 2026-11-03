@@ -32,6 +32,8 @@ class TokenStorage @Inject constructor(
     companion object {
         private const val KEY_ACCESS_TOKEN = "access_token"
         private const val KEY_REFRESH_TOKEN = "refresh_token"
+        private const val KEY_USER_ROLE = "user_role"
+        private const val KEY_USER_EMAIL = "user_email"
     }
 
     fun getAccessToken(): String? = prefs.getString(KEY_ACCESS_TOKEN, null)
@@ -46,9 +48,27 @@ class TokenStorage @Inject constructor(
         prefs.edit().putString(KEY_REFRESH_TOKEN, token).apply()
     }
 
+    fun getUserRole(): String? = prefs.getString(KEY_USER_ROLE, null)
+
+    fun saveUserRole(role: String) {
+        prefs.edit().putString(KEY_USER_ROLE, role).apply()
+    }
+
+    fun getUserEmail(): String? = prefs.getString(KEY_USER_EMAIL, null)
+
+    fun saveUserEmail(email: String) {
+        prefs.edit().putString(KEY_USER_EMAIL, email).apply()
+    }
+
     fun clearAll() {
         prefs.edit().clear().apply()
     }
 
     fun hasValidSession(): Boolean = !getAccessToken().isNullOrBlank()
+
+    /**
+     * Returns true if the stored session exists and the user has the admin role.
+     */
+    fun hasValidAdminSession(): Boolean =
+        !getAccessToken().isNullOrBlank() && getUserRole()?.equals("admin", ignoreCase = true) == true
 }

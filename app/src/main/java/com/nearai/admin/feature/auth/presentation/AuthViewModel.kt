@@ -26,7 +26,9 @@ data class AuthUiState(
     val error: String? = null,
     val isMfaRequired: Boolean = false,
     val mfaHint: String? = null,
-    val isDevelopmentMode: Boolean = true
+    val isNotAdmin: Boolean = false,
+    val isAccountInactive: Boolean = false,
+    val isEmailUnverified: Boolean = false
 )
 
 /**
@@ -103,17 +105,20 @@ class AuthViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false) }
                     when (result.data) {
                         is SignInResponse.Session -> {
-                            // Direct session — sign in successful
                             val session = result.data.session
+                            if (!session.isAdmin) {
+                                _uiState.update { it.copy(isNotAdmin = true, error = "Access denied. Admin role required.") }
+                                return@launch
+                            }
                             sessionManager.login(
                                 accessToken = session.accessToken,
                                 refreshToken = session.refreshToken,
-                                email = session.email
+                                email = session.email,
+                                role = session.role
                             )
                             _event.value = AuthEvent.NavigateToDashboard
                         }
                         is SignInResponse.MfaRequired -> {
-                            // MFA required — show TOTP input
                             currentChallengeId = result.data.challenge.challengeId
                             _uiState.update {
                                 it.copy(
@@ -125,10 +130,15 @@ class AuthViewModel @Inject constructor(
                     }
                 }
                 is Result.Error -> {
+                    val errorMsg = result.exception.message ?: "Authentication failed."
+                    val isInactive = errorMsg.contains("inactive", ignoreCase = true)
+                    val isUnverified = errorMsg.contains("not verified", ignoreCase = true)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            error = result.exception.message
+                            error = errorMsg,
+                            isAccountInactive = isInactive,
+                            isEmailUnverified = isUnverified
                         )
                     }
                 }
@@ -164,10 +174,15 @@ class AuthViewModel @Inject constructor(
                 is Result.Success -> {
                     _uiState.update { it.copy(isLoading = false) }
                     val session = result.data
+                    if (!session.isAdmin) {
+                        _uiState.update { it.copy(isNotAdmin = true, error = "Access denied. Admin role required.") }
+                        return@launch
+                    }
                     sessionManager.login(
                         accessToken = session.accessToken,
                         refreshToken = session.refreshToken,
-                        email = session.email
+                        email = session.email,
+                        role = session.role
                     )
                     _event.value = AuthEvent.NavigateToDashboard
                 }
@@ -183,23 +198,6 @@ class AuthViewModel @Inject constructor(
                     // No-op
                 }
             }
-        }
-    }
-
-    /**
-     * Development-only: bypasses the real auth flow and navigates to dashboard.
-     * ⚠️ DO NOT USE IN PRODUCTION.
-     */
-    fun onDevSignIn() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            // Simulate brief loading state
-            kotlinx.coroutines.delay(800)
-
-            sessionManager.devAuthenticate()
-            _uiState.update { it.copy(isLoading = false) }
-            _event.value = AuthEvent.NavigateToDashboard
         }
     }
 

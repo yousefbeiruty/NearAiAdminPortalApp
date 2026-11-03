@@ -1,61 +1,106 @@
 package com.nearai.admin.feature.auth.data
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 
 /**
  * Retrofit service interface for authentication endpoints.
  *
- * NOTE: These endpoints are defined based on the expected FastAPI backend contract.
- * The exact paths and response shapes must be confirmed with the backend team.
+ * Backend contract (FastAPI) — AUTH_API_CONTRACTS.md:
  *
- * Expected contract:
- * - POST /auth/sign-in  → { "accessToken": "...", "refreshToken": "..." }
- *   or { "challengeId": "...", "method": "totp" } when MFA is required
- * - POST /auth/verify-mfa → { "accessToken": "...", "refreshToken": "..." }
- * - POST /auth/refresh   → { "accessToken": "...", "refreshToken": "..." }
+ * POST /api/v1/auth/login
+ *   Request: { "email": "...", "password": "..." }
+ *   Response: { "access_token": "...", "refresh_token": "...", "token_type": "bearer",
+ *               "expires_in": 3600, "user_id": "...", "email": "..." }
+ *
+ * POST /api/v1/auth/refresh
+ *   Request: { "refresh_token": "..." }
+ *   Response: { "access_token": "...", "refresh_token": "...", "token_type": "bearer",
+ *               "expires_in": 3600 }
+ *   Note: New refresh token must immediately replace the old one (rotation).
+ *
+ * POST /api/v1/auth/logout
+ *   Request: { "refresh_token": "..." }
+ *   Response: { "message": "..." }
+ *   Note: Revokes the refresh token but does not immediately blacklist the access token.
+ *
+ * GET /api/v1/auth/me
+ *   Header: Authorization: Bearer <access_token>
+ *   Response: { "id": "...", "email": "...", "role": "...", "is_active": true,
+ *               "email_verified": true, "created_at": "..." }
+ *
+ * Error responses:
+ * - 401: Invalid credentials or expired token
+ * - 403: User does not have admin role (on admin endpoints)
+ * - 422: Validation error (e.g., missing fields)
  */
 interface AuthApiService {
 
-    @POST("auth/sign-in")
-    suspend fun signIn(@Body request: SignInRequest): SignInResponseDto
+    @POST("api/v1/auth/login")
+    suspend fun login(@Body request: LoginRequest): LoginResponseDto
 
-    @POST("auth/verify-mfa")
-    suspend fun verifyMfa(@Body request: MfaVerifyRequest): SessionDto
+    @POST("api/v1/auth/refresh")
+    suspend fun refreshToken(@Body request: RefreshRequest): TokenResponseDto
 
-    @POST("auth/refresh")
-    suspend fun refreshToken(@Body request: RefreshRequest): SessionDto
+    @POST("api/v1/auth/logout")
+    suspend fun logout(@Body request: LogoutRequest)
+
+    @GET("api/v1/auth/me")
+    suspend fun getCurrentUser(): UserInfoDto
 }
 
 // --- Request DTOs ---
 
-data class SignInRequest(
+@Serializable
+data class LoginRequest(
     val email: String,
     val password: String
 )
 
-data class MfaVerifyRequest(
-    val challengeId: String,
-    val code: String
+@Serializable
+data class RefreshRequest(
+    @SerialName("refresh_token") val refreshToken: String
 )
 
-data class RefreshRequest(
-    val refreshToken: String
+@Serializable
+data class LogoutRequest(
+    @SerialName("refresh_token") val refreshToken: String
 )
 
 // --- Response DTOs ---
 
-/**
- * Sign-in response may contain either a session or an MFA challenge.
- * FastAPI typically returns one shape or the other.
- */
-sealed interface SignInResponseDto {
-    data class Session(val session: SessionDto) : SignInResponseDto
-    data class MfaRequired(val challengeId: String, val method: String, val hint: String? = null) : SignInResponseDto
-}
-
-data class SessionDto(
-    val accessToken: String,
-    val refreshToken: String,
+@Serializable
+data class LoginResponseDto(
+    @SerialName("access_token") val accessToken: String,
+    @SerialName("refresh_token") val refreshToken: String,
+    @SerialName("token_type") val tokenType: String = "bearer",
+    @SerialName("expires_in") val expiresIn: Int = 3600,
+    @SerialName("user_id") val userId: String? = null,
     val email: String? = null
+)
+
+@Serializable
+data class TokenResponseDto(
+    @SerialName("access_token") val accessToken: String,
+    @SerialName("refresh_token") val refreshToken: String,
+    @SerialName("token_type") val tokenType: String = "bearer",
+    @SerialName("expires_in") val expiresIn: Int = 3600
+)
+
+@Serializable
+data class UserInfoDto(
+    val id: String,
+    val email: String,
+    val role: String,
+    val is_active: Boolean = true,
+    @SerialName("email_verified") val emailVerified: Boolean = true,
+    @SerialName("created_at") val createdAt: String? = null
+)
+
+@Serializable
+data class LogoutResponseDto(
+    val message: String
 )

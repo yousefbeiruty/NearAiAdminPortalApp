@@ -3,24 +3,34 @@ package com.nearai.admin.feature.auth.data
 import com.nearai.admin.feature.auth.domain.AuthRepository
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import retrofit2.Retrofit
 import javax.inject.Singleton
 
 /**
- * Hilt module that binds [AuthRepository] to [FakeAuthRepository].
+ * Hilt module for the Auth feature.
  *
- * ⚠️ Currently bound to the development-only fake implementation.
- * When the backend API is ready, replace [FakeAuthRepository] with
- * [RealAuthRepository] (or whichever real implementation is created).
+ * Binds [AuthRepository] to [RealAuthRepository] for production.
+ * Provides [AuthApiService] via Retrofit.
  */
 @Module
 @InstallIn(SingletonComponent::class)
-interface AuthModule {
+abstract class AuthModule {
 
     @Binds
     @Singleton
-    fun bindsAuthRepository(
-        fakeAuthRepository: FakeAuthRepository
+    abstract fun bindsAuthRepository(
+        realAuthRepository: RealAuthRepository
     ): AuthRepository
+
+    companion object {
+
+        @Provides
+        @Singleton
+        fun provideAuthApiService(
+            retrofit: Retrofit
+        ): AuthApiService = retrofit.create(AuthApiService::class.java)
+    }
 }

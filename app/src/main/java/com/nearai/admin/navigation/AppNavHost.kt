@@ -35,9 +35,11 @@ fun AppNavHost(
 ) {
     val sessionState = sessionManager.sessionState.collectAsStateWithLifecycle()
 
-    // If session expires while in the app, navigate to login
+    // If session expires or user is not admin, navigate to login
     LaunchedEffect(sessionState.value) {
-        if (sessionState.value is com.nearai.admin.core.security.SessionState.SessionExpired) {
+        val isUnauthorized = sessionState.value is com.nearai.admin.core.security.SessionState.SessionExpired ||
+                sessionState.value is com.nearai.admin.core.security.SessionState.NotAdmin
+        if (isUnauthorized) {
             navController.navigate(LoginRoute) {
                 popUpTo<OverviewRoute> { inclusive = true }
             }

@@ -41,6 +41,21 @@ class FakeAuthRepository @Inject constructor(
         }
     }
 
+    /**
+     * Returns the current user info for session validation.
+     * In dev mode, always returns a valid admin user.
+     */
+    suspend fun getCurrentUserInfo(): com.nearai.admin.feature.auth.data.UserInfoDto {
+        return com.nearai.admin.feature.auth.data.UserInfoDto(
+            id = "dev-user-001",
+            email = "admin@nearai.dev",
+            role = "admin",
+            is_active = true,
+            emailVerified = true,
+            createdAt = "2024-01-01T00:00:00Z"
+        )
+    }
+
     override suspend fun verifyMfa(challengeId: String, code: String): Result<AdminSession> {
         return try {
             // Simulate network latency
@@ -53,6 +68,7 @@ class FakeAuthRepository @Inject constructor(
 
             val session = AdminSession(
                 email = "admin@nearai.dev",
+                role = "admin",
                 accessToken = "dev-access-token-placeholder",
                 refreshToken = "dev-refresh-token-placeholder"
             )
@@ -68,14 +84,15 @@ class FakeAuthRepository @Inject constructor(
     }
 
     override suspend fun refreshToken(): Result<AdminSession> {
-        // In dev mode, simply return the existing session
         val accessToken = tokenStorage.getAccessToken()
         val refreshToken = tokenStorage.getRefreshToken()
+        val role = tokenStorage.getUserRole() ?: "admin"
 
         return if (!accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank()) {
             Result.Success(
                 AdminSession(
                     email = "admin@nearai.dev",
+                    role = role,
                     accessToken = accessToken,
                     refreshToken = refreshToken
                 )
@@ -87,28 +104,5 @@ class FakeAuthRepository @Inject constructor(
 
     override suspend fun signOut() {
         tokenStorage.clearAll()
-    }
-}
-
-// --- DTO to Domain Mappers ---
-
-fun SessionDto.toDomain(): AdminSession {
-    return AdminSession(
-        email = this.email ?: "admin",
-        accessToken = this.accessToken,
-        refreshToken = this.refreshToken
-    )
-}
-
-fun SignInResponseDto.toDomain(): SignInResponse {
-    return when (this) {
-        is SignInResponseDto.Session -> SignInResponse.Session(this.session.toDomain())
-        is SignInResponseDto.MfaRequired -> SignInResponse.MfaRequired(
-            challenge = MfaChallenge(
-                challengeId = this.challengeId,
-                method = this.method,
-                hint = this.hint
-            )
-        )
     }
 }

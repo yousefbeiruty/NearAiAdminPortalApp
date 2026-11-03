@@ -169,8 +169,12 @@ fun AdminSignInScreen(
                 onPasswordChanged = viewModel::onPasswordChanged,
                 onTotpDigitChanged = viewModel::onTotpDigitChanged,
                 onAuthenticate = {
-                    // In development mode, use the fake sign-in path
-                    viewModel.onDevSignIn()
+                    val state = uiState
+                    if (state.isMfaRequired) {
+                        viewModel.onVerifyMfa()
+                    } else {
+                        viewModel.onSignIn()
+                    }
                 },
                 onBiometricTrigger = {
                     // TODO: Integrate with Android BiometricPrompt
@@ -360,10 +364,85 @@ private fun MfaCard(
                 onFocusChanged = onTotpFocusChanged
             )
 
-            // Error message
-            uiState.error?.let { error ->
+            // Error message with styled cards for specific cases
+            if (uiState.isNotAdmin) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = RoseBg),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, RoseError.copy(alpha = 0.2f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Lock,
+                            contentDescription = null,
+                            tint = RoseDark,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = uiState.error ?: "Access denied. Admin role required.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = RoseDark
+                        )
+                    }
+                }
+            } else if (uiState.isAccountInactive) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = AmberBg),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, AmberWarning.copy(alpha = 0.2f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Lock,
+                            contentDescription = null,
+                            tint = AmberDark,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = uiState.error ?: "Account is inactive.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AmberDark
+                        )
+                    }
+                }
+            } else if (uiState.isEmailUnverified) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = AmberBg),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, AmberWarning.copy(alpha = 0.2f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Mail,
+                            contentDescription = null,
+                            tint = AmberDark,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = uiState.error ?: "Email not verified.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AmberDark
+                        )
+                    }
+                }
+            } else if (!uiState.error.isNullOrBlank()) {
                 Text(
-                    text = error,
+                    text = uiState.error,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )

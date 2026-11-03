@@ -98,7 +98,7 @@ class AuthViewModelTest {
 
     @Test
     fun `onSignIn success with direct session navigates to dashboard`() = runTest {
-        val session = AdminSession("admin@nearai.dev", "access", "refresh")
+        val session = AdminSession("admin@nearai.dev", "admin", "access", "refresh")
         coEvery { authRepository.signIn(any(), any()) } returns Result.Success(
             SignInResponse.Session(session)
         )
@@ -108,7 +108,7 @@ class AuthViewModelTest {
         viewModel.onPasswordChanged("password")
         viewModel.onSignIn()
 
-        coVerify { sessionManager.login("access", "refresh", "admin@nearai.dev") }
+        coVerify { sessionManager.login("access", "refresh", "admin@nearai.dev", "admin") }
 
         viewModel.event.test {
             val event = awaitItem()
@@ -189,7 +189,7 @@ class AuthViewModelTest {
         coEvery { authRepository.signIn(any(), any()) } returns Result.Success(
             SignInResponse.MfaRequired(challenge)
         )
-        val session = AdminSession("admin@nearai.dev", "access", "refresh")
+        val session = AdminSession("admin@nearai.dev", "admin", "access", "refresh")
         coEvery { authRepository.verifyMfa("ch-001", "123456") } returns Result.Success(session)
 
         val viewModel = createViewModel()
@@ -206,7 +206,7 @@ class AuthViewModelTest {
         viewModel.onTotpDigitChanged(5, "6")
         viewModel.onVerifyMfa()
 
-        coVerify { sessionManager.login("access", "refresh", "admin@nearai.dev") }
+        coVerify { sessionManager.login("access", "refresh", "admin@nearai.dev", "admin") }
 
         viewModel.event.test {
             val event = awaitItem()

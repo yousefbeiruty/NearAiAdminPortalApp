@@ -3,7 +3,6 @@ package com.nearai.admin.core.security
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,14 +12,18 @@ import javax.inject.Singleton
 sealed interface SessionState {
     object Unauthenticated : SessionState
     object Authenticating : SessionState
-    data class Authenticated(val email: String) : SessionState
+    data class Authenticated(val email: String, val role: String) : SessionState
     object SessionExpired : SessionState
+    object NotAdmin : SessionState
 }
 
 /**
  * Manages the admin session lifecycle: restoration, login, logout,
  * and session expiry detection. Exposes a single [StateFlow] that
  * the navigation layer observes to gate protected destinations.
+ *
+ * Session restoration validates the stored user has the admin role.
+ * The backend is the authoritative source for role and account status.
  */
 @Singleton
 class SessionManager @Inject constructor(
@@ -35,31 +38,42 @@ class SessionManager @Inject constructor(
 
     /**
      * Called on app startup to restore any existing session from secure storage.
+     * Validates that the stored user has the admin role.
+     *
+     * Note: This is a local validation. The backend is the authoritative source.
+     * If the access token is expired, the OkHttp Authenticator will attempt to
+     * refresh it automatically. If refresh fails, [onSessionExpired] will be called.
      */
     fun restoreSession() {
-        if (tokenStorage.hasValidSession()) {
-            _sessionState.value = SessionState.Authenticated(email = "admin")
+        if (tokenStorage.hasValidAdminSession()) {
+            val role = tokenStorage.getUserRole() ?: "admin"
+            val email = tokenStorage.getUserEmail() ?: "admin"
+            _sessionState.value = SessionState.Authenticated(email = email, role = role)
         } else {
+            // Clear invalid non-admin sessions
+            if (tokenStorage.hasValidSession() && !tokenStorage.hasValidAdminSession()) {
+                clearSession()
+            }
             _sessionState.value = SessionState.Unauthenticated
         }
     }
 
     /**
      * Called after successful authentication. Persists tokens and updates state.
+     * Rejects non-admin users.
      */
-    fun login(accessToken: String, refreshToken: String, email: String) {
+    fun login(accessToken: String, refreshToken: String, email: String, role: String) {
+        if (!role.equals("admin", ignoreCase = true)) {
+            // Non-admin user attempted to access admin app — clear any tokens
+            tokenStorage.clearAll()
+            _sessionState.value = SessionState.NotAdmin
+            return
+        }
         tokenStorage.saveAccessToken(accessToken)
         tokenStorage.saveRefreshToken(refreshToken)
-        _sessionState.value = SessionState.Authenticated(email = email)
-    }
-
-    /**
-     * Development-only: mark the session as authenticated without real tokens.
-     * This is used only when the backend API is not yet connected.
-     * ⚠️ DO NOT USE IN PRODUCTION.
-     */
-    fun devAuthenticate(email: String = "admin@nearai.dev") {
-        _sessionState.value = SessionState.Authenticated(email = email)
+        tokenStorage.saveUserRole(role)
+        tokenStorage.saveUserEmail(email)
+        _sessionState.value = SessionState.Authenticated(email = email, role = role)
     }
 
     /**

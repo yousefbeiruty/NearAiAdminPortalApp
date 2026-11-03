@@ -7,9 +7,16 @@ import com.nearai.admin.core.common.Result
  */
 data class AdminSession(
     val email: String,
+    val role: String,
     val accessToken: String,
     val refreshToken: String
-)
+) {
+    /**
+     * Returns true if this session belongs to a user with the admin role.
+     */
+    val isAdmin: Boolean
+        get() = role.equals("admin", ignoreCase = true)
+}
 
 /**
  * Domain model representing the MFA challenge state returned by the backend
