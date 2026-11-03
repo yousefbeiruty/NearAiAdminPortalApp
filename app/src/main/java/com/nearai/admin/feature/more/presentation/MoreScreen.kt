@@ -24,6 +24,7 @@ data class MoreMenuItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoreScreen(
+    onNavigateToOrders: () -> Unit,
     onNavigateToInventory: () -> Unit,
     onNavigateToSystemHealth: () -> Unit,
     onNavigateToAuditLogs: () -> Unit,
@@ -31,6 +32,7 @@ fun MoreScreen(
     modifier: Modifier = Modifier
 ) {
     val menuItems = listOf(
+        MoreMenuItem("Orders", Icons.Default.ReceiptLong, onNavigateToOrders),
         MoreMenuItem("Products & Inventory", Icons.Default.Inventory2, onNavigateToInventory),
         MoreMenuItem("System Health", Icons.Default.MonitorHeart, onNavigateToSystemHealth),
         MoreMenuItem("Audit Logs", Icons.Default.ListAlt, onNavigateToAuditLogs),
@@ -93,6 +95,7 @@ fun MoreScreen(
 fun MoreScreenPreview() {
     NearAiAdminTheme {
         MoreScreen(
+            onNavigateToOrders = { },
             onNavigateToInventory = { },
             onNavigateToSystemHealth = { },
             onNavigateToAuditLogs = { },

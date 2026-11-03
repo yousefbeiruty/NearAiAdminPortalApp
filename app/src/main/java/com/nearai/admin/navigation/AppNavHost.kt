@@ -16,6 +16,8 @@ import com.nearai.admin.feature.auditlogs.presentation.AuditLogsScreen
 import com.nearai.admin.feature.discovery.presentation.DiscoveryScreen
 import com.nearai.admin.feature.inventory.presentation.InventoryScreen
 import com.nearai.admin.feature.inventory.presentation.ProductEditScreen
+import com.nearai.admin.feature.orders.presentation.OrderDetailsScreen
+import com.nearai.admin.feature.orders.presentation.OrdersListScreen
 import com.nearai.admin.feature.settings.presentation.SettingsScreen
 import com.nearai.admin.feature.systemhealth.presentation.SystemHealthScreen
 import com.nearai.admin.feature.users.presentation.UsersScreen
@@ -84,6 +86,9 @@ fun AppNavHost(
 
         composable<MoreRoute> {
             MoreScreen(
+                onNavigateToOrders = {
+                    navController.navigate(OrdersRoute)
+                },
                 onNavigateToInventory = {
                     navController.navigate(InventoryRoute)
                 },
@@ -96,6 +101,24 @@ fun AppNavHost(
                 onNavigateToSettings = {
                     navController.navigate(SettingsRoute)
                 }
+            )
+        }
+
+        // Orders
+        composable<OrdersRoute> {
+            OrdersListScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToOrder = { orderId ->
+                    navController.navigate(OrderDetailsRoute(orderId))
+                }
+            )
+        }
+
+        // Order Details
+        composable<OrderDetailsRoute> { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            OrderDetailsScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

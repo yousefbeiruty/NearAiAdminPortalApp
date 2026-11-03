@@ -38,3 +38,9 @@ object AuditLogsRoute
 
 @Serializable
 object ProductEditRoute
+
+@Serializable
+object OrdersRoute
+
+@Serializable
+data class OrderDetailsRoute(val orderId: String)

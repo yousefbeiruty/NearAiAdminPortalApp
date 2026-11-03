@@ -1,0 +1,350 @@
+package com.nearai.admin.feature.orders.presentation
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.feature.orders.domain.FulfillmentStatus
+import com.nearai.admin.feature.orders.domain.OrderStatus
+import com.nearai.admin.feature.orders.domain.OrderSummary
+
+/**
+ * Orders list screen with filters, pagination, and pull-to-refresh.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OrdersListScreen(
+    onNavigateBack: () -> Unit,
+    onNavigateToOrder: (String) -> Unit,
+    viewModel: OrdersListViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val event by viewModel.event.collectAsStateWithLifecycle()
+
+    // Handle navigation events
+    LaunchedEffect(event) {
+        event?.let {
+            if (it is OrdersListEvent.NavigateToOrder) {
+                onNavigateToOrder(it.orderId)
+            }
+        }
+    }
+
+    val listState = rememberLazyListState()
+
+    // Auto-load more when user scrolls near the end
+    LaunchedEffect(listState, uiState.hasMore, uiState.isLoadingMore) {
+        if (uiState.hasMore && !uiState.isLoadingMore) {
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            if (lastVisible >= uiState.orders.size - 3) {
+                viewModel.loadMore()
+            }
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        "Orders",
+                        fontWeight = FontWeight.Bold,
+                        color = Navy
+                    )
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onNavigateBack,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Navy
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        }
+    ) { padding ->
+        when {
+            uiState.isLoading && uiState.orders.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Indigo)
+                }
+            }
+            uiState.error != null && uiState.orders.isEmpty() -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(32.dp),
+                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Error loading orders",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Navy
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = uiState.error.orEmpty(),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = TextSecondaryLight
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { viewModel.onRetry() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Navy)
+                    ) {
+                        Text("Retry", color = Color.White)
+                    }
+                }
+            }
+            uiState.orders.isEmpty() && uiState.error == null -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(32.dp),
+                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "No orders found",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Navy
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "There are no orders matching your filters.",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = TextSecondaryLight
+                        )
+                    )
+                    if (uiState.filterOrderStatus != null || uiState.filterFulfillmentStatus != null) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        TextButton(onClick = { viewModel.clearFilters() }) {
+                            Text("Clear Filters", color = Indigo)
+                        }
+                    }
+                }
+            }
+            else -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    // Filter chips
+                    FilterSection(
+                        uiState = uiState,
+                        onOrderStatusFilter = { viewModel.setFilterOrderStatus(it) },
+                        onFulfillmentStatusFilter = { viewModel.setFilterFulfillmentStatus(it) },
+                        onClearFilters = { viewModel.clearFilters() },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+
+                    // Order count
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${uiState.totalItems} orders",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = TextSecondaryLight,
+                                fontWeight = FontWeight.Medium
+                            )
+                        )
+                        if (uiState.totalPages > 1) {
+                            Text(
+                                text = "Page ${uiState.currentPage} of ${uiState.totalPages}",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = TextSecondaryLight
+                                )
+                            )
+                        }
+                    }
+
+                    // Orders list
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(uiState.orders, key = { it.id }) { order ->
+                            OrderSummaryCard(
+                                order = order,
+                                onClick = { viewModel.onOrderClicked(order.id) }
+                            )
+                        }
+                        // Loading more indicator
+                        if (uiState.isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        color = Indigo,
+                                        strokeWidth = 2.dp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Filter section with order status and fulfillment status chips.
+ */
+@Composable
+private fun FilterSection(
+    uiState: OrdersListUiState,
+    onOrderStatusFilter: (OrderStatus?) -> Unit,
+    onFulfillmentStatusFilter: (FulfillmentStatus?) -> Unit,
+    onClearFilters: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        // Order status filters
+        Text(
+            text = "Order Status",
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = TextSecondaryLight,
+                fontWeight = FontWeight.SemiBold
+            )
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        androidx.compose.foundation.lazy.LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                FilterChip(
+                    selected = uiState.filterOrderStatus == null,
+                    onClick = { onOrderStatusFilter(null) },
+                    label = { Text("All") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Navy,
+                        selectedLabelColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            }
+            items(OrderStatus.values().toList()) { status ->
+                FilterChip(
+                    selected = uiState.filterOrderStatus == status,
+                    onClick = { onOrderStatusFilter(status) },
+                    label = { Text(status.displayLabel) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Navy,
+                        selectedLabelColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Fulfillment status filters
+        Text(
+            text = "Fulfillment",
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = TextSecondaryLight,
+                fontWeight = FontWeight.SemiBold
+            )
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        androidx.compose.foundation.lazy.LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                FilterChip(
+                    selected = uiState.filterFulfillmentStatus == null,
+                    onClick = { onFulfillmentStatusFilter(null) },
+                    label = { Text("All") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Navy,
+                        selectedLabelColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            }
+            items(FulfillmentStatus.values().toList()) { status ->
+                FilterChip(
+                    selected = uiState.filterFulfillmentStatus == status,
+                    onClick = { onFulfillmentStatusFilter(status) },
+                    label = { Text(status.displayLabel) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Navy,
+                        selectedLabelColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            }
+        }
+
+        // Clear filters button
+        if (uiState.filterOrderStatus != null || uiState.filterFulfillmentStatus != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(
+                onClick = onClearFilters,
+                modifier = Modifier.align(androidx.compose.ui.Alignment.Start)
+            ) {
+                Text("Clear Filters", color = Indigo, fontSize = 13.sp)
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+fun OrdersListScreenPreview() {
+    NearAiAdminTheme {
+        OrdersListScreen(
+            onNavigateBack = { },
+            onNavigateToOrder = { }
+        )
+    }
+}

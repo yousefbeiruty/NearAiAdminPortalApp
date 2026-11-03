@@ -1,0 +1,123 @@
+package com.nearai.admin.feature.orders.domain
+
+import com.nearai.admin.core.common.Result
+
+/**
+ * Domain model for a single item in an order.
+ */
+data class OrderItem(
+    val productId: String,
+    val productName: String,
+    val quantity: Int,
+    val price: Double,
+    val lineTotal: Double?
+)
+
+/**
+ * Compact order summary for the orders list screen.
+ */
+data class OrderSummary(
+    val id: String,
+    val createdAt: String,
+    val status: OrderStatus,
+    val fulfillmentStatus: FulfillmentStatus,
+    val totalAmount: Double,
+    val currency: String,
+    val recipientName: String?,
+    val recipientPhone: String?
+)
+
+/**
+ * Full order details including items, delivery address, and payment summary.
+ */
+data class OrderDetails(
+    val id: String,
+    val createdAt: String,
+    val status: OrderStatus,
+    val fulfillmentStatus: FulfillmentStatus,
+    val items: List<OrderItem>,
+    val subtotal: Double,
+    val totalAmount: Double,
+    val currency: String,
+    val recipientName: String?,
+    val recipientPhone: String?,
+    val deliveryAddress: String?,
+    val buildingNumber: String?,
+    val apartment: String?,
+    val deliveryInstructions: String?
+)
+
+/**
+ * Single entry in the order status history timeline.
+ */
+data class StatusHistoryEntry(
+    val previousStatus: String?,
+    val newStatus: String,
+    val statusType: String, // "order" or "fulfillment"
+    val actorRole: String?,
+    val reason: String?,
+    val timestamp: String
+)
+
+/**
+ * Paginated list of order summaries.
+ */
+data class PaginatedOrders(
+    val orders: List<OrderSummary>,
+    val page: Int,
+    val size: Int,
+    val totalPages: Int,
+    val totalItems: Int
+)
+
+/**
+ * Repository interface for order management operations.
+ * Belongs in the domain layer so the presentation layer depends on an abstraction.
+ */
+interface OrderRepository {
+
+    /**
+     * Fetches a paginated list of orders with optional filters.
+     */
+    suspend fun listOrders(
+        page: Int = 1,
+        size: Int = 20,
+        status: OrderStatus? = null,
+        fulfillmentStatus: FulfillmentStatus? = null
+    ): Result<PaginatedOrders>
+
+    /**
+     * Fetches full details for a specific order.
+     */
+    suspend fun getOrderDetails(orderId: String): Result<OrderDetails>
+
+    /**
+     * Fetches the status history timeline for a specific order.
+     */
+    suspend fun getStatusHistory(orderId: String): Result<List<StatusHistoryEntry>>
+
+    /**
+     * Confirms a pending order.
+     */
+    suspend fun confirmOrder(orderId: String): Result<Unit>
+
+    /**
+     * Rejects a pending order with a mandatory reason.
+     */
+    suspend fun rejectOrder(orderId: String, reason: String): Result<Unit>
+
+    /**
+     * Processes a confirmed order.
+     */
+    suspend fun processOrder(orderId: String): Result<Unit>
+
+    /**
+     * Dispatches a processed order for delivery.
+     */
+    suspend fun dispatchOrder(orderId: String): Result<Unit>
+
+    /**
+     * Marks an order as delivered.
+     */
+    suspend fun deliverOrder(orderId: String): Result<Unit>
+}
