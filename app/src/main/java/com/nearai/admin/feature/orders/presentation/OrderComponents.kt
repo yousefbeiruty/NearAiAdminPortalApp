@@ -69,7 +69,7 @@ fun OrderSummaryCard(
             ) {
                 Column(horizontalAlignment = Alignment.Start) {
                     Text(
-                        text = order.recipientName ?: "No recipient",
+                        text = order.deliveryRecipientName ?: "No recipient",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -144,6 +144,7 @@ val OrderStatus.badgeTint: Color
 
 val FulfillmentStatus.displayLabel: String
     get() = when (this) {
+        FulfillmentStatus.UNFULILLED -> "Unfulfilled"
         FulfillmentStatus.AWAITING_CONFIRMATION -> "Awaiting"
         FulfillmentStatus.CONFIRMED -> "Confirmed"
         FulfillmentStatus.PROCESSING -> "Processing"
@@ -153,6 +154,7 @@ val FulfillmentStatus.displayLabel: String
 
 val FulfillmentStatus.badgeTint: Color
     get() = when (this) {
+        FulfillmentStatus.UNFULILLED -> Indigo
         FulfillmentStatus.AWAITING_CONFIRMATION -> Indigo
         FulfillmentStatus.CONFIRMED -> EmeraldSuccess
         FulfillmentStatus.PROCESSING -> Indigo
@@ -175,9 +177,17 @@ fun OrderSummaryCardPreview() {
                 status = OrderStatus.PENDING,
                 fulfillmentStatus = FulfillmentStatus.AWAITING_CONFIRMATION,
                 totalAmount = 45.50,
+                subtotalAmount = 40.00,
                 currency = "USD",
-                recipientName = "John Doe",
-                recipientPhone = "+1234567890"
+                items = emptyList(),
+                deliveryRecipientName = "John Doe",
+                deliveryPhone = "+1234567890",
+                deliveryCity = null,
+                deliveryArea = null,
+                deliveryStreet = null,
+                deliveryBuildingNumber = null,
+                deliveryApartment = null,
+                deliveryInstructions = null
             ),
             onClick = { }
         )

@@ -266,7 +266,7 @@ class OrderDetailsViewModelTest {
         assertEquals(2, order!!.items.size)
         assertEquals("Widget A", order.items[0].productName)
         assertEquals(3, order.items[0].quantity)
-        assertEquals(29.99, order.items[0].price, 0.001)
+        assertEquals(29.99, order.items[0].unitPriceAmount, 0.001)
         assertEquals("USD", order.currency)
     }
 
@@ -298,17 +298,19 @@ class OrderDetailsViewModelTest {
         status = OrderStatus.PENDING,
         fulfillmentStatus = FulfillmentStatus.AWAITING_CONFIRMATION,
         items = listOf(
-            OrderItem("prod-1", "Widget A", 3, 29.99, 89.97),
-            OrderItem("prod-2", "Widget B", 1, 15.00, 15.00)
+            OrderItem("var-1", "Widget A", "W-001", 3, 29.99, "USD", 89.97),
+            OrderItem("var-2", "Widget B", "W-002", 1, 15.00, "USD", 15.00)
         ),
-        subtotal = 104.97,
+        subtotalAmount = 104.97,
         totalAmount = 104.97,
         currency = "USD",
-        recipientName = "John Doe",
-        recipientPhone = "+1234567890",
-        deliveryAddress = "123 Main St",
-        buildingNumber = "4A",
-        apartment = "Apt 5",
+        deliveryRecipientName = "John Doe",
+        deliveryPhone = "+1234567890",
+        deliveryCity = "New York",
+        deliveryArea = "Manhattan",
+        deliveryStreet = "123 Main St",
+        deliveryBuildingNumber = "4A",
+        deliveryApartment = "Apt 5",
         deliveryInstructions = "Leave at door"
     )
 

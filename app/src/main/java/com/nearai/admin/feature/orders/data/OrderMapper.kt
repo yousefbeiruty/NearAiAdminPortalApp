@@ -20,9 +20,17 @@ object OrderMapper {
         status = OrderStatus.fromString(dto.status),
         fulfillmentStatus = FulfillmentStatus.fromString(dto.fulfillmentStatus),
         totalAmount = dto.totalAmount,
+        subtotalAmount = dto.subtotalAmount,
         currency = dto.currency,
-        recipientName = dto.recipientName,
-        recipientPhone = dto.recipientPhone
+        items = dto.items.map { mapOrderItem(it) },
+        deliveryRecipientName = dto.deliveryRecipientName,
+        deliveryPhone = dto.deliveryPhone,
+        deliveryCity = dto.deliveryCity,
+        deliveryArea = dto.deliveryArea,
+        deliveryStreet = dto.deliveryStreet,
+        deliveryBuildingNumber = dto.deliveryBuildingNumber,
+        deliveryApartment = dto.deliveryApartment,
+        deliveryInstructions = dto.deliveryInstructions
     )
 
     fun mapOrderDetails(dto: OrderDetailsResponse): OrderDetails = OrderDetails(
@@ -31,23 +39,27 @@ object OrderMapper {
         status = OrderStatus.fromString(dto.status),
         fulfillmentStatus = FulfillmentStatus.fromString(dto.fulfillmentStatus),
         items = dto.items.map { mapOrderItem(it) },
-        subtotal = dto.subtotal,
+        subtotalAmount = dto.subtotalAmount,
         totalAmount = dto.totalAmount,
         currency = dto.currency,
-        recipientName = dto.recipientName,
-        recipientPhone = dto.recipientPhone,
-        deliveryAddress = dto.deliveryAddress,
-        buildingNumber = dto.buildingNumber,
-        apartment = dto.apartment,
+        deliveryRecipientName = dto.deliveryRecipientName,
+        deliveryPhone = dto.deliveryPhone,
+        deliveryCity = dto.deliveryCity,
+        deliveryArea = dto.deliveryArea,
+        deliveryStreet = dto.deliveryStreet,
+        deliveryBuildingNumber = dto.deliveryBuildingNumber,
+        deliveryApartment = dto.deliveryApartment,
         deliveryInstructions = dto.deliveryInstructions
     )
 
     fun mapOrderItem(dto: OrderItemDto): OrderItem = OrderItem(
-        productId = dto.productId,
+        variantId = dto.variantId,
         productName = dto.productName,
+        sku = dto.sku,
         quantity = dto.quantity,
-        price = dto.price,
-        lineTotal = dto.lineTotal
+        unitPriceAmount = dto.unitPriceAmount,
+        unitPriceCurrency = dto.unitPriceCurrency,
+        subtotalAmount = dto.subtotalAmount
     )
 
     fun mapStatusHistoryEntry(dto: StatusHistoryEntryDto): StatusHistoryEntry = StatusHistoryEntry(
@@ -64,6 +76,6 @@ object OrderMapper {
         page = dto.page,
         size = dto.size,
         totalPages = dto.totalPages,
-        totalItems = dto.totalItems
+        totalItems = dto.total
     )
 }

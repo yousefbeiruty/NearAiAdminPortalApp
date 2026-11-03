@@ -70,19 +70,22 @@ data class RejectRequest(val reason: String)
 
 /**
  * Paginated list of orders response.
- * Backend returns: { "items": [...], "page": N, "size": N, "total_pages": N, "total_items": N }
+ * Backend returns: { "items": [...], "total": N, "page": N, "size": N, "total_pages": N }
  */
 @Serializable
 data class OrdersListResponse(
     @SerialName("items") val items: List<OrderSummaryDto>,
+    @SerialName("total") val total: Int,
     @SerialName("page") val page: Int,
     @SerialName("size") val size: Int,
-    @SerialName("total_pages") val totalPages: Int,
-    @SerialName("total_items") val totalItems: Int
+    @SerialName("total_pages") val totalPages: Int
 )
 
 /**
  * Order summary DTO for the list response.
+ * Backend fields: id, status, fulfillment_status, currency, subtotal_amount, total_amount,
+ * items, delivery_recipient_name, delivery_phone, delivery_city, delivery_area,
+ * delivery_street, delivery_building_number, delivery_apartment, delivery_instructions, created_at
  */
 @Serializable
 data class OrderSummaryDto(
@@ -91,13 +94,24 @@ data class OrderSummaryDto(
     @SerialName("status") val status: String,
     @SerialName("fulfillment_status") val fulfillmentStatus: String,
     @SerialName("total_amount") val totalAmount: Double,
+    @SerialName("subtotal_amount") val subtotalAmount: Double? = null,
     @SerialName("currency") val currency: String,
-    @SerialName("recipient_name") val recipientName: String? = null,
-    @SerialName("recipient_phone") val recipientPhone: String? = null
+    @SerialName("items") val items: List<OrderItemDto>,
+    @SerialName("delivery_recipient_name") val deliveryRecipientName: String? = null,
+    @SerialName("delivery_phone") val deliveryPhone: String? = null,
+    @SerialName("delivery_city") val deliveryCity: String? = null,
+    @SerialName("delivery_area") val deliveryArea: String? = null,
+    @SerialName("delivery_street") val deliveryStreet: String? = null,
+    @SerialName("delivery_building_number") val deliveryBuildingNumber: String? = null,
+    @SerialName("delivery_apartment") val deliveryApartment: String? = null,
+    @SerialName("delivery_instructions") val deliveryInstructions: String? = null
 )
 
 /**
  * Full order details response.
+ * Backend fields: id, status, fulfillment_status, currency, subtotal_amount, total_amount,
+ * items, delivery_recipient_name, delivery_phone, delivery_city, delivery_area,
+ * delivery_street, delivery_building_number, delivery_apartment, delivery_instructions, created_at
  */
 @Serializable
 data class OrderDetailsResponse(
@@ -106,27 +120,34 @@ data class OrderDetailsResponse(
     @SerialName("status") val status: String,
     @SerialName("fulfillment_status") val fulfillmentStatus: String,
     @SerialName("items") val items: List<OrderItemDto>,
-    @SerialName("subtotal") val subtotal: Double,
+    @SerialName("subtotal_amount") val subtotalAmount: Double? = null,
     @SerialName("total_amount") val totalAmount: Double,
     @SerialName("currency") val currency: String,
-    @SerialName("recipient_name") val recipientName: String? = null,
-    @SerialName("recipient_phone") val recipientPhone: String? = null,
-    @SerialName("delivery_address") val deliveryAddress: String? = null,
-    @SerialName("building_number") val buildingNumber: String? = null,
-    @SerialName("apartment") val apartment: String? = null,
+    @SerialName("delivery_recipient_name") val deliveryRecipientName: String? = null,
+    @SerialName("delivery_phone") val deliveryPhone: String? = null,
+    @SerialName("delivery_city") val deliveryCity: String? = null,
+    @SerialName("delivery_area") val deliveryArea: String? = null,
+    @SerialName("delivery_street") val deliveryStreet: String? = null,
+    @SerialName("delivery_building_number") val deliveryBuildingNumber: String? = null,
+    @SerialName("delivery_apartment") val deliveryApartment: String? = null,
     @SerialName("delivery_instructions") val deliveryInstructions: String? = null
 )
 
 /**
  * Order item DTO.
+ * Backend fields: id, variant_id, product_name, sku, quantity, unit_price_amount,
+ * unit_price_currency, subtotal_amount
  */
 @Serializable
 data class OrderItemDto(
-    @SerialName("product_id") val productId: String,
+    @SerialName("id") val id: String? = null,
+    @SerialName("variant_id") val variantId: String,
     @SerialName("product_name") val productName: String,
+    @SerialName("sku") val sku: String? = null,
     @SerialName("quantity") val quantity: Int,
-    @SerialName("price") val price: Double,
-    @SerialName("line_total") val lineTotal: Double? = null
+    @SerialName("unit_price_amount") val unitPriceAmount: Double,
+    @SerialName("unit_price_currency") val unitPriceCurrency: String? = null,
+    @SerialName("subtotal_amount") val subtotalAmount: Double? = null
 )
 
 /**

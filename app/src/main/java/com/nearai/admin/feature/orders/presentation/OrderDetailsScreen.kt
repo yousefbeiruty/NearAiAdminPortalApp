@@ -240,11 +240,19 @@ private fun CustomerDeliveryCard(order: OrderDetails) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Customer & Delivery", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
-            InfoRow(label = "Recipient", value = order.recipientName ?: "—")
-            InfoRow(label = "Phone", value = order.recipientPhone ?: "—")
-            InfoRow(label = "Address", value = order.deliveryAddress ?: "—")
-            if (!order.buildingNumber.isNullOrBlank() || !order.apartment.isNullOrBlank()) {
-                val building = listOf(order.buildingNumber, order.apartment).filterNotNull().joinToString(", ")
+            InfoRow(label = "Recipient", value = order.deliveryRecipientName ?: "—")
+            InfoRow(label = "Phone", value = order.deliveryPhone ?: "—")
+            if (!order.deliveryCity.isNullOrBlank()) {
+                InfoRow(label = "City", value = order.deliveryCity)
+            }
+            if (!order.deliveryArea.isNullOrBlank()) {
+                InfoRow(label = "Area", value = order.deliveryArea)
+            }
+            if (!order.deliveryStreet.isNullOrBlank()) {
+                InfoRow(label = "Street", value = order.deliveryStreet)
+            }
+            if (!order.deliveryBuildingNumber.isNullOrBlank() || !order.deliveryApartment.isNullOrBlank()) {
+                val building = listOf(order.deliveryBuildingNumber, order.deliveryApartment).filterNotNull().joinToString(", ")
                 InfoRow(label = "Building", value = building)
             }
             if (!order.deliveryInstructions.isNullOrBlank()) {
@@ -267,9 +275,9 @@ private fun OrderItemsCard(order: OrderDetails) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(item.productName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, color = Navy))
-                        Text("Qty: ${item.quantity} × ${order.currency} ${"%.2f".format(item.price)}", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
+                        Text("Qty: ${item.quantity} × ${order.currency} ${"%.2f".format(item.unitPriceAmount)}", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
                     }
-                    Text("${order.currency} ${"%.2f".format(item.lineTotal ?: (item.price * item.quantity))}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
+                    Text("${order.currency} ${"%.2f".format(item.subtotalAmount ?: (item.unitPriceAmount * item.quantity))}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
                 }
                 if (index < order.items.size - 1) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
@@ -288,7 +296,9 @@ private fun PaymentSummaryCard(order: OrderDetails) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Payment Summary", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
-            InfoRow(label = "Subtotal", value = "${order.currency} ${"%.2f".format(order.subtotal)}")
+            order.subtotalAmount?.let {
+                InfoRow(label = "Subtotal", value = "${order.currency} ${"%.2f".format(it)}")
+            }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Total", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))

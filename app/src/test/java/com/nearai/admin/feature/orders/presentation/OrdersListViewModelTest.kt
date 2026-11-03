@@ -220,9 +220,17 @@ class OrdersListViewModelTest {
                 status = status,
                 fulfillmentStatus = fulfillmentStatus,
                 totalAmount = 45.50,
+                subtotalAmount = 40.00,
                 currency = "USD",
-                recipientName = "John Doe",
-                recipientPhone = "+1234567890"
+                items = emptyList(),
+                deliveryRecipientName = "John Doe",
+                deliveryPhone = "+1234567890",
+                deliveryCity = null,
+                deliveryArea = null,
+                deliveryStreet = null,
+                deliveryBuildingNumber = null,
+                deliveryApartment = null,
+                deliveryInstructions = null
             ),
             OrderSummary(
                 id = "${orderIdPrefix}bc67890-abc1-5678-9012-34567890abcd",
@@ -230,9 +238,17 @@ class OrdersListViewModelTest {
                 status = status,
                 fulfillmentStatus = fulfillmentStatus,
                 totalAmount = 120.00,
+                subtotalAmount = 110.00,
                 currency = "USD",
-                recipientName = "Jane Smith",
-                recipientPhone = "+0987654321"
+                items = emptyList(),
+                deliveryRecipientName = "Jane Smith",
+                deliveryPhone = "+0987654321",
+                deliveryCity = null,
+                deliveryArea = null,
+                deliveryStreet = null,
+                deliveryBuildingNumber = null,
+                deliveryApartment = null,
+                deliveryInstructions = null
             )
         ),
         page = page,

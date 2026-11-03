@@ -417,9 +417,9 @@ Tests for real repository, session role enforcement, ViewModel state transitions
 Run `assembleDebug` and `testDebugUnitTest`, verify all tests pass.
 
 - `./gradlew assembleDebug` — BUILD SUCCESSFUL, 42 tasks
-- `./gradlew testDebugUnitTest` — BUILD SUCCESSFUL, all 70 tests pass
+- `./gradlew testDebugUnitTest` — BUILD SUCCESSFUL, all 82 tests pass (70 existing + 12 new)
 - Created `OrderMapperTest.kt` — 16 tests: DTO-to-domain mapping for summary, details, item, history entry, paginated orders, nullable fields, enum fromString (lowercase, uppercase, snake_case, unknown fallback)
-- All 70 tests pass (28 existing + 42 new)
+- All 82 tests pass (70 existing + 12 new)
 
 ### ✓ Step 9: Update AuthApiService DTOs to match backend contract
 Updated all DTOs to match `AUTH_API_CONTRACTS.md` exactly:

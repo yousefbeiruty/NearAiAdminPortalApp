@@ -6,11 +6,13 @@ import com.nearai.admin.core.common.Result
  * Domain model for a single item in an order.
  */
 data class OrderItem(
-    val productId: String,
+    val variantId: String,
     val productName: String,
+    val sku: String?,
     val quantity: Int,
-    val price: Double,
-    val lineTotal: Double?
+    val unitPriceAmount: Double,
+    val unitPriceCurrency: String?,
+    val subtotalAmount: Double?
 )
 
 /**
@@ -22,9 +24,17 @@ data class OrderSummary(
     val status: OrderStatus,
     val fulfillmentStatus: FulfillmentStatus,
     val totalAmount: Double,
+    val subtotalAmount: Double?,
     val currency: String,
-    val recipientName: String?,
-    val recipientPhone: String?
+    val items: List<OrderItem>,
+    val deliveryRecipientName: String?,
+    val deliveryPhone: String?,
+    val deliveryCity: String?,
+    val deliveryArea: String?,
+    val deliveryStreet: String?,
+    val deliveryBuildingNumber: String?,
+    val deliveryApartment: String?,
+    val deliveryInstructions: String?
 )
 
 /**
@@ -36,14 +46,16 @@ data class OrderDetails(
     val status: OrderStatus,
     val fulfillmentStatus: FulfillmentStatus,
     val items: List<OrderItem>,
-    val subtotal: Double,
+    val subtotalAmount: Double?,
     val totalAmount: Double,
     val currency: String,
-    val recipientName: String?,
-    val recipientPhone: String?,
-    val deliveryAddress: String?,
-    val buildingNumber: String?,
-    val apartment: String?,
+    val deliveryRecipientName: String?,
+    val deliveryPhone: String?,
+    val deliveryCity: String?,
+    val deliveryArea: String?,
+    val deliveryStreet: String?,
+    val deliveryBuildingNumber: String?,
+    val deliveryApartment: String?,
     val deliveryInstructions: String?
 )
 

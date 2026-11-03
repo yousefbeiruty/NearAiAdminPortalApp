@@ -15,9 +15,19 @@ class OrderMapperTest {
             status = "pending",
             fulfillmentStatus = "awaiting_confirmation",
             totalAmount = 45.50,
+            subtotalAmount = 40.00,
             currency = "USD",
-            recipientName = "John Doe",
-            recipientPhone = "+1234567890"
+            items = listOf(
+                OrderItemDto(variantId = "var-1", productName = "Widget", sku = "W-001", quantity = 2, unitPriceAmount = 20.0, unitPriceCurrency = "USD", subtotalAmount = 40.0)
+            ),
+            deliveryRecipientName = "John Doe",
+            deliveryPhone = "+1234567890",
+            deliveryCity = "New York",
+            deliveryArea = "Manhattan",
+            deliveryStreet = "5th Avenue",
+            deliveryBuildingNumber = "100",
+            deliveryApartment = "4B",
+            deliveryInstructions = "Leave at door"
         )
 
         val summary = OrderMapper.mapOrderSummary(dto)
@@ -26,8 +36,17 @@ class OrderMapperTest {
         assertEquals(OrderStatus.PENDING, summary.status)
         assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, summary.fulfillmentStatus)
         assertEquals(45.50, summary.totalAmount, 0.001)
+        assertEquals(40.00, summary.subtotalAmount!!, 0.001)
         assertEquals("USD", summary.currency)
-        assertEquals("John Doe", summary.recipientName)
+        assertEquals("John Doe", summary.deliveryRecipientName)
+        assertEquals("+1234567890", summary.deliveryPhone)
+        assertEquals("New York", summary.deliveryCity)
+        assertEquals("Manhattan", summary.deliveryArea)
+        assertEquals("5th Avenue", summary.deliveryStreet)
+        assertEquals("100", summary.deliveryBuildingNumber)
+        assertEquals("4B", summary.deliveryApartment)
+        assertEquals("Leave at door", summary.deliveryInstructions)
+        assertEquals(1, summary.items.size)
     }
 
     @Test
@@ -38,15 +57,31 @@ class OrderMapperTest {
             status = "pending",
             fulfillmentStatus = "awaiting_confirmation",
             totalAmount = 45.50,
+            subtotalAmount = null,
             currency = "USD",
-            recipientName = null,
-            recipientPhone = null
+            items = emptyList(),
+            deliveryRecipientName = null,
+            deliveryPhone = null,
+            deliveryCity = null,
+            deliveryArea = null,
+            deliveryStreet = null,
+            deliveryBuildingNumber = null,
+            deliveryApartment = null,
+            deliveryInstructions = null
         )
 
         val summary = OrderMapper.mapOrderSummary(dto)
 
-        assertNull(summary.recipientName)
-        assertNull(summary.recipientPhone)
+        assertNull(summary.subtotalAmount)
+        assertNull(summary.deliveryRecipientName)
+        assertNull(summary.deliveryPhone)
+        assertNull(summary.deliveryCity)
+        assertNull(summary.deliveryArea)
+        assertNull(summary.deliveryStreet)
+        assertNull(summary.deliveryBuildingNumber)
+        assertNull(summary.deliveryApartment)
+        assertNull(summary.deliveryInstructions)
+        assertTrue(summary.items.isEmpty())
     }
 
     @Test
@@ -57,16 +92,18 @@ class OrderMapperTest {
             status = "pending",
             fulfillmentStatus = "awaiting_confirmation",
             items = listOf(
-                OrderItemDto("prod-1", "Widget A", 3, 29.99, 89.97)
+                OrderItemDto(variantId = "var-1", productName = "Widget A", sku = "W-001", quantity = 3, unitPriceAmount = 29.99, unitPriceCurrency = "USD", subtotalAmount = 89.97)
             ),
-            subtotal = 89.97,
+            subtotalAmount = 89.97,
             totalAmount = 89.97,
             currency = "USD",
-            recipientName = "John Doe",
-            recipientPhone = "+1234567890",
-            deliveryAddress = "123 Main St",
-            buildingNumber = "4A",
-            apartment = "Apt 5",
+            deliveryRecipientName = "John Doe",
+            deliveryPhone = "+1234567890",
+            deliveryCity = "New York",
+            deliveryArea = "Manhattan",
+            deliveryStreet = "123 Main St",
+            deliveryBuildingNumber = "4A",
+            deliveryApartment = "Apt 5",
             deliveryInstructions = "Leave at door"
         )
 
@@ -76,10 +113,19 @@ class OrderMapperTest {
         assertEquals(OrderStatus.PENDING, details.status)
         assertEquals(1, details.items.size)
         assertEquals("Widget A", details.items[0].productName)
+        assertEquals("var-1", details.items[0].variantId)
+        assertEquals("W-001", details.items[0].sku)
         assertEquals(3, details.items[0].quantity)
-        assertEquals("123 Main St", details.deliveryAddress)
-        assertEquals("4A", details.buildingNumber)
-        assertEquals("Apt 5", details.apartment)
+        assertEquals(29.99, details.items[0].unitPriceAmount, 0.001)
+        assertEquals("USD", details.items[0].unitPriceCurrency)
+        assertEquals(89.97, details.items[0].subtotalAmount!!, 0.001)
+        assertEquals("John Doe", details.deliveryRecipientName)
+        assertEquals("+1234567890", details.deliveryPhone)
+        assertEquals("New York", details.deliveryCity)
+        assertEquals("Manhattan", details.deliveryArea)
+        assertEquals("123 Main St", details.deliveryStreet)
+        assertEquals("4A", details.deliveryBuildingNumber)
+        assertEquals("Apt 5", details.deliveryApartment)
         assertEquals("Leave at door", details.deliveryInstructions)
     }
 
@@ -91,47 +137,72 @@ class OrderMapperTest {
             status = "pending",
             fulfillmentStatus = "awaiting_confirmation",
             items = emptyList(),
-            subtotal = 0.0,
+            subtotalAmount = null,
             totalAmount = 0.0,
             currency = "USD",
-            recipientName = null,
-            recipientPhone = null,
-            deliveryAddress = null,
-            buildingNumber = null,
-            apartment = null,
+            deliveryRecipientName = null,
+            deliveryPhone = null,
+            deliveryCity = null,
+            deliveryArea = null,
+            deliveryStreet = null,
+            deliveryBuildingNumber = null,
+            deliveryApartment = null,
             deliveryInstructions = null
         )
 
         val details = OrderMapper.mapOrderDetails(dto)
 
-        assertNull(details.recipientName)
-        assertNull(details.recipientPhone)
-        assertNull(details.deliveryAddress)
-        assertNull(details.buildingNumber)
-        assertNull(details.apartment)
+        assertNull(details.subtotalAmount)
+        assertNull(details.deliveryRecipientName)
+        assertNull(details.deliveryPhone)
+        assertNull(details.deliveryCity)
+        assertNull(details.deliveryArea)
+        assertNull(details.deliveryStreet)
+        assertNull(details.deliveryBuildingNumber)
+        assertNull(details.deliveryApartment)
         assertNull(details.deliveryInstructions)
     }
 
     @Test
     fun `mapOrderItem converts DTO to domain model`() {
-        val dto = OrderItemDto("prod-1", "Widget A", 3, 29.99, 89.97)
+        val dto = OrderItemDto(
+            variantId = "var-1",
+            productName = "Widget A",
+            sku = "W-001",
+            quantity = 3,
+            unitPriceAmount = 29.99,
+            unitPriceCurrency = "USD",
+            subtotalAmount = 89.97
+        )
 
         val item = OrderMapper.mapOrderItem(dto)
 
-        assertEquals("prod-1", item.productId)
+        assertEquals("var-1", item.variantId)
         assertEquals("Widget A", item.productName)
+        assertEquals("W-001", item.sku)
         assertEquals(3, item.quantity)
-        assertEquals(29.99, item.price, 0.001)
-        assertEquals(89.97, item.lineTotal!!, 0.001)
+        assertEquals(29.99, item.unitPriceAmount, 0.001)
+        assertEquals("USD", item.unitPriceCurrency)
+        assertEquals(89.97, item.subtotalAmount!!, 0.001)
     }
 
     @Test
-    fun `mapOrderItem handles nullable lineTotal`() {
-        val dto = OrderItemDto("prod-1", "Widget A", 3, 29.99, null)
+    fun `mapOrderItem handles nullable fields`() {
+        val dto = OrderItemDto(
+            variantId = "var-1",
+            productName = "Widget A",
+            sku = null,
+            quantity = 3,
+            unitPriceAmount = 29.99,
+            unitPriceCurrency = null,
+            subtotalAmount = null
+        )
 
         val item = OrderMapper.mapOrderItem(dto)
 
-        assertNull(item.lineTotal)
+        assertNull(item.sku)
+        assertNull(item.unitPriceCurrency)
+        assertNull(item.subtotalAmount)
     }
 
     @Test
@@ -183,15 +254,23 @@ class OrderMapperTest {
                     status = "pending",
                     fulfillmentStatus = "awaiting_confirmation",
                     totalAmount = 45.50,
+                    subtotalAmount = 40.00,
                     currency = "USD",
-                    recipientName = "John Doe",
-                    recipientPhone = "+1234567890"
+                    items = emptyList(),
+                    deliveryRecipientName = "John Doe",
+                    deliveryPhone = "+1234567890",
+                    deliveryCity = null,
+                    deliveryArea = null,
+                    deliveryStreet = null,
+                    deliveryBuildingNumber = null,
+                    deliveryApartment = null,
+                    deliveryInstructions = null
                 )
             ),
+            total = 100,
             page = 1,
             size = 20,
-            totalPages = 5,
-            totalItems = 100
+            totalPages = 5
         )
 
         val paginated = OrderMapper.mapPaginatedOrders(dto)
@@ -224,6 +303,7 @@ class OrderMapperTest {
 
     @Test
     fun `FulfillmentStatus fromString handles snake_case`() {
+        assertEquals(FulfillmentStatus.UNFULILLED, FulfillmentStatus.fromString("unfulfilled"))
         assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("awaiting_confirmation"))
         assertEquals(FulfillmentStatus.CONFIRMED, FulfillmentStatus.fromString("confirmed"))
         assertEquals(FulfillmentStatus.PROCESSING, FulfillmentStatus.fromString("processing"))
@@ -232,18 +312,18 @@ class OrderMapperTest {
     }
 
     @Test
-    fun `FulfillmentStatus fromString falls back to AWAITING_CONFIRMATION for unknown`() {
-        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("unknown_status"))
+    fun `FulfillmentStatus fromString falls back to UNFULILLED for unknown`() {
+        assertEquals(FulfillmentStatus.UNFULILLED, FulfillmentStatus.fromString("unknown_status"))
     }
 
     @Test
     fun `empty paginated orders maps correctly`() {
         val dto = OrdersListResponse(
             items = emptyList(),
+            total = 0,
             page = 1,
             size = 20,
-            totalPages = 0,
-            totalItems = 0
+            totalPages = 0
         )
 
         val paginated = OrderMapper.mapPaginatedOrders(dto)
