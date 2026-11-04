@@ -25,19 +25,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.feature.catalog.domain.ProductStatus
 import kotlin.math.roundToInt
 
 /**
- * Product Creation and Editing screen with billing classification, metadata, pricing,
- * quota limits, model routing, and lifecycle operations.
- *
- * Uses development-only placeholder data until the backend API is connected.
+ * Product Creation and Editing screen connected to [ProductEditViewModel] for real backend data.
+ * Displays billing classification, metadata, pricing, quota limits, model routing,
+ * and lifecycle operations.
  */
-
-// =============================================================================
-// Color Tokens
-// =============================================================================
-
 
 // =============================================================================
 // UI State & Models
@@ -56,19 +51,38 @@ enum class BillingClassification(val title: String, val subtitle: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductEditScreen(
+    viewModel: ProductEditViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    productId: String? = null,
     onDismiss: () -> Unit = {},
-    onSaveHeaderClick: () -> Unit = {},
-    onDiscard: () -> Unit = {},
-    onPublishAndSave: () -> Unit = {},
-    onDeprecateSku: () -> Unit = {},
-    onDeleteSku: () -> Unit = {}
+    onSaveSuccess: () -> Unit = {}
 ) {
-    // Form State
+    val uiState by viewModel.uiState.collectAsState()
+    val event by viewModel.event.collectAsState()
+
+    // Load product on init if productId provided
+    LaunchedEffect(productId) {
+        productId?.let { viewModel.loadProduct(it) }
+    }
+
+    // Handle events
+    LaunchedEffect(event) {
+        when (event) {
+            is ProductEditEvent.SaveSuccess -> {
+                onSaveSuccess()
+                viewModel.clearEvent()
+            }
+            is ProductEditEvent.NavigateBack -> {
+                onDismiss()
+                viewModel.clearEvent()
+            }
+            else -> {}
+        }
+    }
+
+    // Form State - connected to ViewModel
     var selectedClassification by remember { mutableStateOf(BillingClassification.SUBSCRIPTION) }
-    var displayName by remember { mutableStateOf("Pro Tier Monthly") }
-    val internalIdentifier = "sub_pro_monthly" // Locked
+    val internalIdentifier = uiState.product?.slug ?: "loading..."
     var selectedCategoryTag by remember { mutableStateOf("Developer / Pro Consumer") }
-    var listPrice by remember { mutableStateOf("29.00") }
     var cadenceExpanded by remember { mutableStateOf(false) }
     var selectedCadence by remember { mutableStateOf("Monthly") }
     val cadenceOptions = listOf("Monthly", "Quarterly", "Annual", "Weekly")
@@ -79,6 +93,11 @@ fun ProductEditScreen(
     var claudeSonnetEnabled by remember { mutableStateOf(true) }
     var llama70bEnabled by remember { mutableStateOf(true) }
     var cacheBypassEnabled by remember { mutableStateOf(true) }
+
+    val formData = uiState.formData
+    val nameError = uiState.validationError?.nameError
+    val descriptionError = uiState.validationError?.descriptionError
+    val priceError = uiState.validationError?.priceError
 
     Scaffold(
         topBar = {
@@ -194,7 +213,7 @@ fun ProductEditScreen(
                         }
                         Column {
                             Text(
-                                text = "Configure Product S...",
+                                text = "Configure ${formData.name.take(20)}...",
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = Navy
@@ -205,9 +224,25 @@ fun ProductEditScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
+                                val productStatus = uiState.product?.status ?: ProductStatus.ACTIVE
+                                val statusColor = when (productStatus) {
+                                    ProductStatus.ACTIVE -> EmeraldDark
+                                    ProductStatus.INACTIVE -> RoseDark
+                                    ProductStatus.DRAFT -> PurpleDark
+                                }
+                                val statusBg = when (productStatus) {
+                                    ProductStatus.ACTIVE -> EmeraldBg
+                                    ProductStatus.INACTIVE -> RoseBg
+                                    ProductStatus.DRAFT -> PurpleBg
+                                }
+                                val statusLabel = when (productStatus) {
+                                    ProductStatus.ACTIVE -> "Active"
+                                    ProductStatus.INACTIVE -> "Inactive"
+                                    ProductStatus.DRAFT -> "Draft"
+                                }
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = EmeraldBg
+                                    color = statusBg
                                 ) {
                                     Row(
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -218,19 +253,20 @@ fun ProductEditScreen(
                                             modifier = Modifier
                                                 .size(6.dp)
                                                 .clip(CircleShape)
-                                                .background(EmeraldDark)
+                                                .background(statusColor)
                                         )
                                         Text(
-                                            text = "Active",
+                                            text = statusLabel,
                                             style = MaterialTheme.typography.labelSmall.copy(
-                                                color = EmeraldDark,
+                                                color = statusColor,
                                                 fontWeight = FontWeight.Bold
                                             )
                                         )
                                     }
                                 }
+                                val firstVariant = uiState.variants.firstOrNull()
                                 Text(
-                                    text = "SKU: #SUB-PRO-M",
+                                    text = "SKU: ${firstVariant?.sku ?: internalIdentifier}",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         color = TextSecondaryLight,
                                         fontFamily = FontFamily.Monospace
@@ -240,20 +276,29 @@ fun ProductEditScreen(
                         }
                     }
                     Button(
-                        onClick = onSaveHeaderClick,
+                        onClick = { viewModel.saveProduct() },
+                        enabled = !uiState.isSaving,
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Navy),
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Save,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        if (uiState.isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Outlined.Save,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                        }
                         Text(
-                            text = "Save",
+                            text = if (uiState.isSaving) "Saving..." else "Save",
                             color = Color.White,
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                         )
@@ -374,9 +419,10 @@ fun ProductEditScreen(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
-                            value = displayName,
-                            onValueChange = { displayName = it },
+                            value = formData.name,
+                            onValueChange = { viewModel.setName(it) },
                             modifier = Modifier.fillMaxWidth(),
+                            isError = nameError != null,
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Outlined.Edit,
@@ -390,10 +436,18 @@ fun ProductEditScreen(
                                 focusedContainerColor = BackgroundLight,
                                 unfocusedContainerColor = BackgroundLight,
                                 focusedBorderColor = Indigo,
-                                unfocusedBorderColor = BorderSubtle
+                                unfocusedBorderColor = BorderSubtle,
+                                errorBorderColor = RoseError
                             ),
                             singleLine = true
                         )
+                        if (nameError != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = nameError,
+                                style = MaterialTheme.typography.labelSmall.copy(color = RoseError)
+                            )
+                        }
                         Spacer(modifier = Modifier.height(14.dp))
 
                         // Internal Identifier (Locked)
@@ -601,9 +655,10 @@ fun ProductEditScreen(
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 OutlinedTextField(
-                                    value = listPrice,
-                                    onValueChange = { listPrice = it },
+                                    value = formData.price,
+                                    onValueChange = { viewModel.setPrice(it) },
                                     modifier = Modifier.fillMaxWidth(),
+                                    isError = priceError != null,
                                     leadingIcon = {
                                         Text(
                                             text = "$",
@@ -618,10 +673,18 @@ fun ProductEditScreen(
                                         focusedContainerColor = BackgroundLight,
                                         unfocusedContainerColor = BackgroundLight,
                                         focusedBorderColor = Indigo,
-                                        unfocusedBorderColor = BorderSubtle
+                                        unfocusedBorderColor = BorderSubtle,
+                                        errorBorderColor = RoseError
                                     ),
                                     singleLine = true
                                 )
+                                if (priceError != null) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = priceError,
+                                        style = MaterialTheme.typography.labelSmall.copy(color = RoseError)
+                                    )
+                                }
                             }
                             // Cadence Dropdown
                             Column(modifier = Modifier.weight(1f)) {
@@ -1022,7 +1085,12 @@ fun ProductEditScreen(
                                         )
                                     )
                                     Button(
-                                        onClick = onDeprecateSku,
+                                        onClick = {
+                                            uiState.product?.let { product ->
+                                                viewModel.setStatus(ProductStatus.INACTIVE)
+                                                viewModel.saveProduct()
+                                            }
+                                        },
                                         shape = RoundedCornerShape(8.dp),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = BorderSubtle.copy(alpha = 0.8f),
@@ -1081,7 +1149,7 @@ fun ProductEditScreen(
                                         )
                                     }
                                     Button(
-                                        onClick = onDeleteSku,
+                                        onClick = { /* Delete not yet implemented - backend endpoint required */ },
                                         shape = RoundedCornerShape(8.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = RoseDark),
                                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
@@ -1118,7 +1186,7 @@ fun ProductEditScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedButton(
-                        onClick = onDiscard,
+                        onClick = { viewModel.onNavigateBack() },
                         modifier = Modifier
                             .weight(0.4f)
                             .height(50.dp),
@@ -1135,22 +1203,31 @@ fun ProductEditScreen(
                         )
                     }
                     Button(
-                        onClick = onPublishAndSave,
+                        onClick = { viewModel.saveProduct() },
+                        enabled = !uiState.isSaving,
                         modifier = Modifier
                             .weight(0.6f)
                             .height(50.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Navy)
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CheckCircle,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        if (uiState.isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Outlined.CheckCircle,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                        }
                         Text(
-                            text = "Publish & Save SKU",
+                            text = if (uiState.isSaving) "Saving..." else "Publish & Save SKU",
                             color = Color.White,
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
                         )

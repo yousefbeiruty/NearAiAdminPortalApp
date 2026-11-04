@@ -2,17 +2,16 @@ package com.nearai.admin.feature.dashboard.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nearai.admin.core.common.AppError
 import com.nearai.admin.core.common.Result
-import com.nearai.admin.feature.dashboard.domain.ActivityEvent
 import com.nearai.admin.feature.dashboard.domain.DashboardRepository
-import com.nearai.admin.feature.dashboard.domain.KpiMetric
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -20,34 +19,60 @@ import javax.inject.Inject
  */
 data class DashboardUiState(
     val isLoading: Boolean = false,
-    val kpiMetrics: List<KpiMetricItem> = emptyList(),
-    val activityEvents: List<ActivityEventItem> = emptyList(),
-    val lastUpdated: String = "",
-    val clusterStatus: String = "",
-    val error: String? = null,
-    val isDevelopmentMode: Boolean = true
+    val isRefreshing: Boolean = false,
+    val totalUsers: Int = 0,
+    val totalProducts: Int = 0,
+    val totalCategories: Int = 0,
+    val totalOrders: Int = 0,
+    val pendingOrders: Int = 0,
+    val completedOrders: Int = 0,
+    val revenueByCurrency: List<RevenueItem> = emptyList(),
+    val recentOrders: List<RecentOrderItem> = emptyList(),
+    val recentRegistrations: List<RecentRegistrationItem> = emptyList(),
+    val lowStockAlerts: List<LowStockAlertItem> = emptyList(),
+    val error: String? = null
 )
 
 /**
- * UI-specific KPI metric with display formatting.
+ * UI-specific revenue item with formatted display.
  */
-data class KpiMetricItem(
-    val title: String,
-    val value: String,
-    val delta: String,
-    val isPositive: Boolean
+data class RevenueItem(
+    val currency: String,
+    val amount: Double,
+    val formattedAmount: String
 )
 
 /**
- * UI-specific activity event with display formatting.
+ * UI-specific recent order item.
  */
-data class ActivityEventItem(
+data class RecentOrderItem(
     val id: String,
-    val title: String,
-    val subtitle: String,
-    val timestamp: String,
-    val statusLabel: String,
-    val statusType: String
+    val userName: String,
+    val orderDate: String,
+    val status: String,
+    val total: Double,
+    val currency: String,
+    val formattedTotal: String
+)
+
+/**
+ * UI-specific recent registration item.
+ */
+data class RecentRegistrationItem(
+    val id: String,
+    val name: String,
+    val email: String,
+    val registrationDate: String
+)
+
+/**
+ * UI-specific low stock alert item.
+ */
+data class LowStockAlertItem(
+    val productName: String,
+    val sku: String,
+    val currentStock: Int,
+    val threshold: Int
 )
 
 /**
@@ -81,7 +106,13 @@ class DashboardViewModel @Inject constructor(
      */
     fun loadDashboard() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = _uiState.value.recentOrders.isEmpty(),
+                    isRefreshing = _uiState.value.recentOrders.isNotEmpty(),
+                    error = null
+                )
+            }
 
             when (val result = dashboardRepository.getDashboardData()) {
                 is Result.Success -> {
@@ -89,26 +120,47 @@ class DashboardViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            kpiMetrics = data.kpiMetrics.map { kpi ->
-                                KpiMetricItem(
-                                    title = kpi.title,
-                                    value = kpi.value,
-                                    delta = kpi.delta,
-                                    isPositive = kpi.isPositive
+                            isRefreshing = false,
+                            totalUsers = data.totalUsers,
+                            totalProducts = data.totalProducts,
+                            totalCategories = data.totalCategories,
+                            totalOrders = data.totalOrders,
+                            pendingOrders = data.pendingOrders,
+                            completedOrders = data.completedOrders,
+                            revenueByCurrency = data.revenueByCurrency.map { rev ->
+                                RevenueItem(
+                                    currency = rev.currency,
+                                    amount = rev.amount,
+                                    formattedAmount = formatCurrency(rev.amount, rev.currency)
                                 )
                             },
-                            activityEvents = data.activityEvents.map { evt ->
-                                ActivityEventItem(
-                                    id = evt.id,
-                                    title = evt.title,
-                                    subtitle = evt.subtitle,
-                                    timestamp = evt.timestamp,
-                                    statusLabel = evt.statusLabel,
-                                    statusType = evt.statusType
+                            recentOrders = data.recentOrders.map { order ->
+                                RecentOrderItem(
+                                    id = order.id,
+                                    userName = order.userName,
+                                    orderDate = order.orderDate,
+                                    status = order.status,
+                                    total = order.total,
+                                    currency = order.currency,
+                                    formattedTotal = formatCurrency(order.total, order.currency)
                                 )
                             },
-                            lastUpdated = data.lastUpdated,
-                            clusterStatus = data.clusterStatus
+                            recentRegistrations = data.recentRegistrations.map { reg ->
+                                RecentRegistrationItem(
+                                    id = reg.id,
+                                    name = reg.name,
+                                    email = reg.email,
+                                    registrationDate = reg.registrationDate
+                                )
+                            },
+                            lowStockAlerts = data.lowStockAlerts.map { alert ->
+                                LowStockAlertItem(
+                                    productName = alert.productName,
+                                    sku = alert.sku,
+                                    currentStock = alert.currentStock,
+                                    threshold = alert.threshold
+                                )
+                            }
                         )
                     }
                 }
@@ -116,6 +168,7 @@ class DashboardViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
+                            isRefreshing = false,
                             error = result.exception.message
                         )
                     }
@@ -128,9 +181,31 @@ class DashboardViewModel @Inject constructor(
     }
 
     /**
+     * Formats a currency amount using the locale-aware formatter.
+     */
+    private fun formatCurrency(amount: Double, currencyCode: String): String {
+        return try {
+            val format = NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
+                currency = java.util.Currency.getInstance(currencyCode.ifBlank { "USD" })
+            }
+            format.format(amount)
+        } catch (_: Exception) {
+            // Fallback if currency code is invalid
+            String.format(Locale.getDefault(), "%.2f %s", amount, currencyCode)
+        }
+    }
+
+    /**
      * Retries loading after an error.
      */
     fun onRetry() {
+        loadDashboard()
+    }
+
+    /**
+     * Pull-to-refresh action.
+     */
+    fun onRefresh() {
         loadDashboard()
     }
 

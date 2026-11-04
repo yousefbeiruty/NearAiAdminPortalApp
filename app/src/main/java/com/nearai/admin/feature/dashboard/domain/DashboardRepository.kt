@@ -3,36 +3,59 @@ package com.nearai.admin.feature.dashboard.domain
 import com.nearai.admin.core.common.Result
 
 /**
- * Domain model for a single KPI metric displayed on the dashboard.
+ * Revenue amount for a single currency.
  */
-data class KpiMetric(
-    val title: String,
-    val value: String,
-    val delta: String,
-    val isPositive: Boolean,
-    val iconLabel: String
+data class RevenueByCurrency(
+    val currency: String,
+    val amount: Double
 )
 
 /**
- * Domain model for a live activity stream event.
+ * A recent order summary for the dashboard.
  */
-data class ActivityEvent(
+data class RecentOrder(
     val id: String,
-    val title: String,
-    val subtitle: String,
-    val timestamp: String,
-    val statusLabel: String,
-    val statusType: String // "success", "warning", "error", "info"
+    val userName: String,
+    val orderDate: String,
+    val status: String,
+    val total: Double,
+    val currency: String
+)
+
+/**
+ * A recent user registration for the dashboard.
+ */
+data class RecentRegistration(
+    val id: String,
+    val name: String,
+    val email: String,
+    val registrationDate: String
+)
+
+/**
+ * A low stock alert for a product variant.
+ */
+data class LowStockAlert(
+    val productName: String,
+    val sku: String,
+    val currentStock: Int,
+    val threshold: Int
 )
 
 /**
  * Aggregated dashboard data returned by the repository.
  */
 data class DashboardData(
-    val kpiMetrics: List<KpiMetric>,
-    val activityEvents: List<ActivityEvent>,
-    val lastUpdated: String,
-    val clusterStatus: String
+    val totalUsers: Int = 0,
+    val totalProducts: Int = 0,
+    val totalCategories: Int = 0,
+    val totalOrders: Int = 0,
+    val pendingOrders: Int = 0,
+    val completedOrders: Int = 0,
+    val revenueByCurrency: List<RevenueByCurrency> = emptyList(),
+    val recentOrders: List<RecentOrder> = emptyList(),
+    val recentRegistrations: List<RecentRegistration> = emptyList(),
+    val lowStockAlerts: List<LowStockAlert> = emptyList()
 )
 
 /**

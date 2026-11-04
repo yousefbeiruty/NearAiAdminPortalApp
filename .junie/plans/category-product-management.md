@@ -68,29 +68,27 @@ feature/orders/
 - `CatalogRepositoryImpl.kt` — Production repository with real API calls + TokenRefreshManager
 - `CatalogModule.kt` — Hilt module binding CatalogRepository and providing CatalogApiService
 
-### * Step 2: Implement Category Management screens
+### ✓ Step 2: Implement Category Management screens
 
-**New files (3):**
-- `CategoriesListViewModel.kt` — Category list, create category
-- `CategoriesListScreen.kt` — Category list with create button, loading/empty/error states
-- `CategoryComponents.kt` — Category card composable
+**New files (2):**
+- `CategoriesListViewModel.kt` — Category list, pagination, create category with validation
+- `CategoriesListScreen.kt` — Category list with FAB, loading/empty/error states, create dialog, CategoryCard composable
 
 **Modified files (3):**
-- `AppDestination.kt` — Add `CategoriesListRoute`
-- `AppNavHost.kt` — Register categories route
-- `MoreScreen.kt` — Add "Categories" menu item
+- `AppDestination.kt` — Added `CategoriesRoute`, `ProductsRoute`, `ProductDetailsRoute`, `ProductCreateRoute`
+- `AppNavHost.kt` — Registered `CategoriesRoute` with Hilt ViewModel, added `onNavigateToCategories` to MoreScreen
+- `MoreScreen.kt` — Added "Categories" menu item with Category icon
 
-### Step 3: Implement Product Management screens
+### ✓ Step 3: Implement Product Management screens
 
-**New files (4):**
-- `ProductsListViewModel.kt` — Product list, search, filters, create product
-- `ProductsListScreen.kt` — Product list with search, filters, create button
-- `ProductDetailsViewModel.kt` — Product details, variants, images
-- `ProductDetailsScreen.kt` — Product details with variants and images
+**New files (2):**
+- `ProductsListViewModel.kt` — Product list, search, status filter, sort, pagination, create product with validation
+- `ProductsListScreen.kt` — Product list with search bar, status filter chips, ProductCard composable with status pill, loading/empty/error states
 
-**Modified files (2):**
-- `AppDestination.kt` — Add `ProductsListRoute` and `ProductDetailsRoute`
-- `AppNavHost.kt` — Register product routes
+**Modified files (3):**
+- `AppDestination.kt` — Already has `ProductsRoute`, `ProductDetailsRoute`, `ProductCreateRoute`
+- `AppNavHost.kt` — Registered `ProductsRoute` with Hilt ViewModel, navigation to product details and create
+- `MoreScreen.kt` — Added "Products" menu item with ShoppingBag icon
 
 ### Step 4: Implement Product Create/Edit screen
 

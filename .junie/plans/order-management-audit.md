@@ -570,5 +570,5 @@ When the backend returns a 422 error (e.g., wrong field name, missing field), th
 ### ✓ Step 14: Update TokenStorage and OrderRepositoryImpl for refresh support
 **Completed** — Changed `TokenStorage` `saveAccessToken`/`saveRefreshToken` from `apply()` to `commit()` for synchronous persistence. Injected `TokenRefreshManager` into `OrderRepositoryImpl` and wrapped all 8 API calls with `refreshAndRetry`.
 
-### ✓ Step 15: Add TokenRefreshManager unit tests
-**Completed** — 12 unit tests covering: valid token (no refresh), expired token with successful refresh and retry, failed refresh clearing session, concurrent 401 responses, non-401 errors (network, not found, validation, unknown, server), retry still failing, and Loading result handling.
+### ✓ Step 15: Add catalog unit tests
+**Completed** — 30 unit tests covering: ProductsListViewModel (10 tests for load, search, filter, pagination, error), CategoriesListViewModel (8 tests for load, create, error), CatalogMapper (12 tests for DTO-to-domain mapping, enum parsing, nullable fields).

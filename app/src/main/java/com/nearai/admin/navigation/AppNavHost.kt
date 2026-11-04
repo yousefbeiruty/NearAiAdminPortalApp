@@ -16,7 +16,9 @@ import com.nearai.admin.feature.aiusage.presentation.AiUsageScreen
 import com.nearai.admin.feature.auditlogs.presentation.AuditLogsScreen
 import com.nearai.admin.feature.discovery.presentation.DiscoveryScreen
 import com.nearai.admin.feature.inventory.presentation.InventoryScreen
+import com.nearai.admin.feature.inventory.presentation.InventoryViewModel
 import com.nearai.admin.feature.inventory.presentation.ProductEditScreen
+import com.nearai.admin.feature.inventory.presentation.ProductEditViewModel
 import com.nearai.admin.feature.orders.presentation.OrderDetailsScreen
 import com.nearai.admin.feature.orders.presentation.OrdersListScreen
 import com.nearai.admin.feature.settings.presentation.SettingsScreen
@@ -156,10 +158,16 @@ fun AppNavHost(
 
         // Sub-destinations under More
         composable<InventoryRoute> {
+            val viewModel: InventoryViewModel = hiltViewModel()
             InventoryScreen(
+                viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() },
-                onAddSku = { navController.navigate(ProductEditRoute) },
-                onEditSku = { _ -> navController.navigate(ProductEditRoute) }
+                onNavigateToEditProduct = { productId ->
+                    navController.navigate(ProductEditRoute)
+                },
+                onNavigateToCreateProduct = {
+                    navController.navigate(ProductEditRoute)
+                }
             )
         }
 
@@ -188,8 +196,11 @@ fun AppNavHost(
         }
 
         composable<ProductEditRoute> {
+            val viewModel: ProductEditViewModel = hiltViewModel()
             ProductEditScreen(
-                onDismiss = { navController.popBackStack() }
+                viewModel = viewModel,
+                onDismiss = { navController.popBackStack() },
+                onSaveSuccess = { navController.popBackStack() }
             )
         }
 

@@ -87,6 +87,12 @@ interface CatalogApiService {
     @POST("api/v1/products/")
     suspend fun createProduct(@Body request: ProductCreateRequest): ProductResponseDto
 
+    @PATCH("api/v1/products/{product_id}")
+    suspend fun updateProduct(
+        @Path("product_id") productId: String,
+        @Body request: ProductUpdateRequest
+    ): ProductResponseDto
+
     // === Product Images ===
 
     @Multipart
@@ -186,6 +192,18 @@ data class ProductCreateRequest(
     val images: List<String>? = null,
     @SerialName("category_id") val categoryId: String? = null,
     val status: String = "active"
+)
+
+@Serializable
+data class ProductUpdateRequest(
+    val name: String? = null,
+    val description: String? = null,
+    val slug: String? = null,
+    @SerialName("price_amount") val priceAmount: Double? = null,
+    @SerialName("price_currency") val priceCurrency: String? = null,
+    val images: List<String>? = null,
+    @SerialName("category_id") val categoryId: String? = null,
+    val status: String? = null
 )
 
 @Serializable

@@ -205,6 +205,18 @@ interface CatalogRepository {
         status: ProductStatus = ProductStatus.ACTIVE
     ): Result<Product>
 
+    suspend fun updateProduct(
+        productId: String,
+        name: String? = null,
+        description: String? = null,
+        slug: String? = null,
+        priceAmount: Double? = null,
+        priceCurrency: String? = null,
+        images: List<String>? = null,
+        categoryId: String? = null,
+        status: ProductStatus? = null
+    ): Result<Product>
+
     // === Product Images ===
 
     suspend fun uploadProductImage(

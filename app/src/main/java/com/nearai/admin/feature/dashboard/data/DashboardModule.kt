@@ -3,23 +3,30 @@ package com.nearai.admin.feature.dashboard.data
 import com.nearai.admin.feature.dashboard.domain.DashboardRepository
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * Hilt module that binds [DashboardRepository] to [FakeDashboardRepository].
- *
- * ⚠️ Currently bound to the development-only fake implementation.
- * Replace with a real implementation when the backend API is connected.
+ * Hilt module that binds [DashboardRepository] to [DashboardRepositoryImpl].
  */
 @Module
 @InstallIn(SingletonComponent::class)
-interface DashboardModule {
+abstract class DashboardModule {
 
     @Binds
     @Singleton
-    fun bindsDashboardRepository(
-        fakeDashboardRepository: FakeDashboardRepository
+    abstract fun bindsDashboardRepository(
+        impl: DashboardRepositoryImpl
     ): DashboardRepository
+
+    companion object {
+
+        @Provides
+        @Singleton
+        fun provideDashboardApiService(
+            retrofit: retrofit2.Retrofit
+        ): DashboardApiService = retrofit.create(DashboardApiService::class.java)
+    }
 }

@@ -30,21 +30,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.feature.catalog.domain.ProductStatus
 
 /**
- * Products & Inventory screen with KPI summary cards, filter tabs, catalog SKU list,
+ * Products & Inventory screen connected to [InventoryViewModel] for real backend data.
+ * Displays KPI summary cards, filter tabs, product catalog with variants and stock,
  * status tags, action buttons, and bottom floating action bar.
- *
- * Uses development-only placeholder data until the backend API is connected.
  */
 
 // =============================================================================
-// Color Tokens
-// =============================================================================
-
-
-// =============================================================================
-// UI Data Models
+// UI Data Models (preserved for SkuProductCard compatibility)
 // =============================================================================
 
 enum class SkuStatus(
@@ -88,6 +83,42 @@ data class SkuItem(
     val isStrikethrough: Boolean = false
 )
 
+/**
+ * Maps [ProductStatus] to [SkuStatus] for display.
+ */
+fun ProductStatus.toSkuStatus(): SkuStatus = when (this) {
+    ProductStatus.ACTIVE -> SkuStatus.ACTIVE
+    ProductStatus.INACTIVE -> SkuStatus.DEPRECATED
+    ProductStatus.DRAFT -> SkuStatus.REVIEWING
+}
+
+/**
+ * Maps [ProductStatus] to a display icon.
+ */
+fun ProductStatus.toLeadingIcon(): ImageVector = when (this) {
+    ProductStatus.ACTIVE -> Icons.Outlined.Security
+    ProductStatus.INACTIVE -> Icons.Outlined.Archive
+    ProductStatus.DRAFT -> Icons.Outlined.Campaign
+}
+
+/**
+ * Maps [ProductStatus] to a display icon background color.
+ */
+fun ProductStatus.toLeadingIconBg(): Color = when (this) {
+    ProductStatus.ACTIVE -> EmeraldBg
+    ProductStatus.INACTIVE -> SurfaceVariantLight
+    ProductStatus.DRAFT -> RoseBg
+}
+
+/**
+ * Maps [ProductStatus] to a display icon tint color.
+ */
+fun ProductStatus.toLeadingIconTint(): Color = when (this) {
+    ProductStatus.ACTIVE -> EmeraldDark
+    ProductStatus.INACTIVE -> TextSecondaryLight
+    ProductStatus.DRAFT -> RoseDark
+}
+
 // =============================================================================
 // Products & Inventory Screen Composable
 // =============================================================================
@@ -95,17 +126,37 @@ data class SkuItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryScreen(
+    viewModel: InventoryViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
     onNavigateBack: () -> Unit = {},
-    onSearchClick: () -> Unit = {},
-    onFilterClick: () -> Unit = {},
-    onAddSku: () -> Unit = {},
-    onEditSku: (SkuItem) -> Unit = {},
-    onDeleteSku: (SkuItem) -> Unit = {},
+    onNavigateToEditProduct: (String) -> Unit = {},
+    onNavigateToCreateProduct: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {}
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val event by viewModel.event.collectAsState()
+
+    // Handle navigation events
+    LaunchedEffect(event) {
+        when (event) {
+            is InventoryEvent.NavigateToEditProduct -> {
+                onNavigateToEditProduct((event as InventoryEvent.NavigateToEditProduct).productId)
+                viewModel.clearEvent()
+            }
+            is InventoryEvent.NavigateToCreateProduct -> {
+                onNavigateToCreateProduct()
+                viewModel.clearEvent()
+            }
+            else -> {}
+        }
+    }
+
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("All Items (18)", "Subscriptions (3)", "AI Credits (11)", "Add-ons (4)")
+    val tabs = listOf(
+        "All (${uiState.totalItems})",
+        "Active (${uiState.kpiActiveSkus})",
+        "Low Stock (${uiState.kpiLowStockCount})"
+    )
 
     Scaffold(
         topBar = {
@@ -152,11 +203,13 @@ fun InventoryScreen(
                     IconButton(onClick = onNotificationClick) {
                         BadgedBox(
                             badge = {
-                                Badge(
-                                    containerColor = RoseError,
-                                    contentColor = Color.White
-                                ) {
-                                    Text("2")
+                                if (uiState.kpiLowStockCount > 0) {
+                                    Badge(
+                                        containerColor = RoseError,
+                                        contentColor = Color.White
+                                    ) {
+                                        Text(uiState.kpiLowStockCount.toString())
+                                    }
                                 }
                             }
                         ) {
@@ -191,7 +244,7 @@ fun InventoryScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = onAddSku,
+                onClick = { viewModel.onCreateProduct() },
                 containerColor = Navy,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(28.dp),
@@ -253,7 +306,7 @@ fun InventoryScreen(
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         IconButton(
-                            onClick = onSearchClick,
+                            onClick = { /* Search handled by filter tabs */ },
                             modifier = Modifier.size(36.dp)
                         ) {
                             Icon(
@@ -263,7 +316,11 @@ fun InventoryScreen(
                             )
                         }
                         IconButton(
-                            onClick = onFilterClick,
+                            onClick = {
+                                if (uiState.filterStatus != null) {
+                                    viewModel.clearFilters()
+                                }
+                            },
                             modifier = Modifier.size(36.dp)
                         ) {
                             Icon(
@@ -281,27 +338,27 @@ fun InventoryScreen(
                 val kpis = listOf(
                     ProductKpi(
                         title = "Active SKUs",
-                        value = "18",
-                        delta = "↗ 100% up",
+                        value = uiState.kpiActiveSkus.toString(),
+                        delta = "Total products",
                         deltaColor = EmeraldDark,
                         icon = Icons.Outlined.Inventory2,
                         iconTint = Indigo
                     ),
                     ProductKpi(
-                        title = "Gross MRR",
-                        value = "$4,820",
-                        delta = "Recurring",
+                        title = "Total Products",
+                        value = uiState.kpiTotalProducts.toString(),
+                        delta = "In catalog",
                         deltaColor = TextSecondaryLight,
                         icon = Icons.Outlined.AccountBalanceWallet,
                         iconTint = Indigo
                     ),
                     ProductKpi(
-                        title = "Alerts",
-                        value = "2",
-                        delta = "Deprecated",
-                        deltaColor = RoseDark,
+                        title = "Low Stock",
+                        value = uiState.kpiLowStockCount.toString(),
+                        delta = if (uiState.kpiLowStockCount > 0) "Needs attention" else "All good",
+                        deltaColor = if (uiState.kpiLowStockCount > 0) RoseDark else EmeraldDark,
                         icon = Icons.Outlined.WarningAmber,
-                        iconTint = RoseError
+                        iconTint = if (uiState.kpiLowStockCount > 0) RoseError else EmeraldDark
                     )
                 )
                 Row(
@@ -331,7 +388,14 @@ fun InventoryScreen(
                             shape = RoundedCornerShape(20.dp),
                             color = if (isSelected) Navy else SurfaceLight,
                             border = if (isSelected) null else BorderStroke(1.dp, BorderSubtle),
-                            modifier = Modifier.clickable { selectedTab = index }
+                            modifier = Modifier.clickable {
+                                selectedTab = index
+                                when (index) {
+                                    0 -> viewModel.clearFilters()
+                                    1 -> viewModel.setFilterStatus(ProductStatus.ACTIVE)
+                                    2 -> viewModel.setFilterStatus(null) // Low stock shown in KPI
+                                }
+                            }
                         ) {
                             Text(
                                 text = tabName,
@@ -365,12 +429,12 @@ fun InventoryScreen(
                             )
                         )
                         Text(
-                            text = "(4 Showing)",
+                            text = "(${uiState.inventoryItems.size} Showing)",
                             style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight)
                         )
                     }
                     Button(
-                        onClick = onAddSku,
+                        onClick = { viewModel.onCreateProduct() },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Navy),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
@@ -391,95 +455,154 @@ fun InventoryScreen(
                 }
             }
 
-            // 5. SKU Items Catalog List
-            val catalogItems = listOf(
-                SkuItem(
-                    id = "sku-1",
-                    title = "Pro Tier Monthly",
-                    skuCode = "#SUB-PRO-M",
-                    price = "$29.00",
-                    billingCycle = "/ month",
-                    status = SkuStatus.ACTIVE,
-                    leadingIcon = Icons.Outlined.Security,
-                    leadingIconBg = PurpleBg,
-                    leadingIconTint = Indigo,
-                    tag1Text = "1,000 AI Credits/mo",
-                    tag1Icon = Icons.Outlined.Bolt,
-                    tag2Text = "142 subscribers",
-                    tag2Icon = Icons.Outlined.People,
-                    footerNote = "Auto-renews",
-                    footerNoteIcon = Icons.Outlined.Autorenew,
-                    footerNoteColor = TextSecondaryLight
-                ),
-                SkuItem(
-                    id = "sku-2",
-                    title = "Power Compute Pack",
-                    skuCode = "#ADDON-PWR-25",
-                    price = "$15.00",
-                    billingCycle = "one-time",
-                    status = SkuStatus.ACTIVE,
-                    leadingIcon = Icons.Outlined.ViewInAr,
-                    leadingIconBg = EmeraldBg,
-                    leadingIconTint = EmeraldDark,
-                    tag1Text = "2,500 bonus credits",
-                    tag1Icon = Icons.Outlined.Stars,
-                    tag2Text = "84 sold this mo",
-                    tag2Icon = Icons.Outlined.ShoppingCart,
-                    footerNote = "Instant Delivery",
-                    footerNoteIcon = Icons.Outlined.History,
-                    footerNoteColor = TextSecondaryLight
-                ),
-                SkuItem(
-                    id = "sku-3",
-                    title = "Sponsored Place Boost...",
-                    skuCode = "#MKT-BOOST-01",
-                    price = "$49.00",
-                    billingCycle = "/ mo",
-                    status = SkuStatus.REVIEWING,
-                    leadingIcon = Icons.Outlined.Campaign,
-                    leadingIconBg = RoseBg,
-                    leadingIconTint = RoseDark,
-                    tag1Text = "10k Impressions / mo",
-                    tag1Icon = Icons.Outlined.Visibility,
-                    tag2Text = "NearAI Discover Feed",
-                    tag2Icon = Icons.Outlined.Storefront,
-                    footerNote = "Merchant Perk",
-                    footerNoteIcon = Icons.Outlined.Schedule,
-                    footerNoteColor = TextSecondaryLight
-                ),
-                SkuItem(
-                    id = "sku-4",
-                    title = "Legacy Starter Tier",
-                    skuCode = "#SUB-LEGACY",
-                    price = "$9.00",
-                    billingCycle = "Archived",
-                    status = SkuStatus.DEPRECATED,
-                    leadingIcon = Icons.Outlined.Archive,
-                    leadingIconBg = SurfaceVariantLight,
-                    leadingIconTint = TextSecondaryLight,
-                    tag1Text = "",
-                    tag1Icon = Icons.Default.Check,
-                    tag2Text = "",
-                    tag2Icon = Icons.Default.Check,
-                    footerNote = "Inactive Catalog Item",
-                    footerNoteIcon = Icons.Outlined.History,
-                    footerNoteColor = RoseDark,
-                    noticeBanner = "Renewal stopped. 3 grandfathered accounts remain scheduled for migration to Pro Tier.",
-                    isStrikethrough = true
-                )
-            )
-            items(catalogItems) { item ->
+            // 5. Loading state
+            if (uiState.isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(color = Navy)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "Loading inventory...",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = TextSecondaryLight
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 6. Error state
+            val errorMessage = uiState.error
+            if (errorMessage != null && uiState.inventoryItems.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Outlined.WarningAmber,
+                                contentDescription = null,
+                                tint = RoseError,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = errorMessage,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = TextSecondaryLight
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = { viewModel.onRetry() },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Navy)
+                            ) {
+                                Text("Retry", color = Color.White)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 7. Empty state
+            if (uiState.inventoryItems.isEmpty() && !uiState.isLoading && uiState.error == null) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Outlined.Inventory2,
+                                contentDescription = null,
+                                tint = TextSecondaryLight,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "No products found",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = TextSecondaryLight
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 8. Product Items List
+            items(uiState.inventoryItems) { item ->
+                val skuItem = item.toSkuItem()
                 SkuProductCard(
-                    item = item,
-                    onEdit = { onEditSku(item) },
-                    onDelete = { onDeleteSku(item) }
+                    item = skuItem,
+                    onEdit = { viewModel.onEditProduct(item.product.id) },
+                    onDelete = { /* Delete not yet implemented */ }
                 )
             }
+
+            // 9. Load more indicator
+            if (uiState.isLoadingMore) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Navy, modifier = Modifier.size(24.dp))
+                    }
+                }
+            }
+
             item {
                 Spacer(modifier = Modifier.height(72.dp)) // Clearance for bottom FAB
             }
         }
     }
+}
+
+/**
+ * Converts an [InventoryItem] to a [SkuItem] for display in SkuProductCard.
+ */
+fun InventoryItem.toSkuItem(): SkuItem {
+    val status = product.status.toSkuStatus()
+    val variant = variants.firstOrNull()
+    val stock = variant?.stock
+
+    return SkuItem(
+        id = product.id,
+        title = product.name,
+        skuCode = variant?.variant?.sku ?: product.slug,
+        price = "$${String.format("%.2f", product.priceAmount)}",
+        billingCycle = "per unit",
+        status = status,
+        leadingIcon = product.status.toLeadingIcon(),
+        leadingIconBg = product.status.toLeadingIconBg(),
+        leadingIconTint = product.status.toLeadingIconTint(),
+        tag1Text = if (stock != null) "Stock: ${stock.availableQuantity}" else "",
+        tag1Icon = Icons.Outlined.Inventory2,
+        tag2Text = if (variants.isNotEmpty()) "${variants.size} variant${if (variants.size > 1) "s" else ""}" else "",
+        tag2Icon = Icons.Outlined.ViewList,
+        footerNote = when (product.status) {
+            ProductStatus.ACTIVE -> "Active product"
+            ProductStatus.INACTIVE -> "Inactive product"
+            ProductStatus.DRAFT -> "Draft"
+        },
+        footerNoteIcon = when (product.status) {
+            ProductStatus.ACTIVE -> Icons.Outlined.Autorenew
+            ProductStatus.INACTIVE -> Icons.Outlined.History
+            ProductStatus.DRAFT -> Icons.Outlined.Schedule
+        },
+        footerNoteColor = when (product.status) {
+            ProductStatus.ACTIVE -> TextSecondaryLight
+            ProductStatus.INACTIVE -> RoseDark
+            ProductStatus.DRAFT -> TextSecondaryLight
+        },
+        noticeBanner = null,
+        isStrikethrough = product.status == ProductStatus.INACTIVE
+    )
 }
 
 // =============================================================================

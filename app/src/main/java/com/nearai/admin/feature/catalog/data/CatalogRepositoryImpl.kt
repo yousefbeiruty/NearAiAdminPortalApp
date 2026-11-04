@@ -117,6 +117,30 @@ class CatalogRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateProduct(
+        productId: String,
+        name: String?,
+        description: String?,
+        slug: String?,
+        priceAmount: Double?,
+        priceCurrency: String?,
+        images: List<String>?,
+        categoryId: String?,
+        status: ProductStatus?
+    ): Result<com.nearai.admin.feature.catalog.domain.Product> {
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                val response = apiService.updateProduct(
+                    productId,
+                    ProductUpdateRequest(name, description, slug, priceAmount, priceCurrency, images, categoryId, status?.name?.lowercase())
+                )
+                Result.Success(CatalogMapper.mapProduct(response))
+            } catch (e: Exception) {
+                handleException(e)
+            }
+        }
+    }
+
     // === Product Images ===
 
     override suspend fun uploadProductImage(productId: String, file: MultipartBody.Part): Result<com.nearai.admin.feature.catalog.domain.ProductImage> {
