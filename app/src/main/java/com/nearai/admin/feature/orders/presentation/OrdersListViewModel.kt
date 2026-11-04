@@ -192,6 +192,13 @@ class OrdersListViewModel @Inject constructor(
     }
 
     /**
+     * Clears the current event after it has been consumed by the UI layer.
+     */
+    fun onEventConsumed() {
+        _event.value = null
+    }
+
+    /**
      * Retries loading after an error.
      */
     fun onRetry() {

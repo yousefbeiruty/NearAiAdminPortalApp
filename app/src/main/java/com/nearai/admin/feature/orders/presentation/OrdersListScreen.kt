@@ -20,7 +20,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderStatus
-import com.nearai.admin.feature.orders.domain.OrderSummary
 
 /**
  * Orders list screen with filters, pagination, and pull-to-refresh.
@@ -35,19 +34,14 @@ fun OrdersListScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val event by viewModel.event.collectAsStateWithLifecycle()
 
-    // Handle navigation events — clear the event after consumption to prevent
+    // Handle navigation events — consume and clear the event in the ViewModel to prevent
     // duplicate navigation when returning from Order Details.
-    var pendingEvent by remember { mutableStateOf<OrdersListEvent?>(null) }
     LaunchedEffect(event) {
-        pendingEvent = event
-    }
-    LaunchedEffect(pendingEvent) {
-        pendingEvent?.let {
+        event?.let {
             if (it is OrdersListEvent.NavigateToOrder) {
                 onNavigateToOrder(it.orderId)
+                viewModel.onEventConsumed()
             }
-            // Clear the event so it doesn't fire again on recomposition
-            pendingEvent = null
         }
     }
 

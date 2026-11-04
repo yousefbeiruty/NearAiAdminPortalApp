@@ -179,41 +179,73 @@ class OrdersListViewModelTest {
     }
 
     @Test
-    fun `onOrderClicked with same order twice updates event value`() = runTest {
-        // Regression test: tapping the same order twice should update the event.
-        // The UI layer (OrdersListScreen) is responsible for consuming each event only once
-        // by clearing the pendingEvent after navigation.
+    fun `onEventConsumed clears NavigateToOrder event preventing duplicate navigation on back`() = runTest {
+        // Regression test: Orders → Order Details → Back
+        // UI consumes event upon navigation and calls onEventConsumed() so returning
+        // to Orders screen sees null and does not re-trigger navigation.
         coEvery { orderRepository.listOrders(any(), any(), any(), any()) } returns successResult()
 
         val viewModel = createViewModel()
 
+        viewModel.onOrderClicked("order-123")
+        assertTrue(viewModel.event.value is OrdersListEvent.NavigateToOrder)
+
+        // UI consumes the event and navigates
+        viewModel.onEventConsumed()
+
+        // After back navigation, the event is null so no duplicate navigation occurs
+        assertNull(viewModel.event.value)
+    }
+
+    @Test
+    fun `repeated taps on the same order with event consumption handles each tap correctly`() = runTest {
+        // Regression test: Repeated taps on the same order
+        // Orders → Order A → Back → Order A → Back
+        coEvery { orderRepository.listOrders(any(), any(), any(), any()) } returns successResult()
+
+        val viewModel = createViewModel()
+
+        // First tap on order-same
         viewModel.onOrderClicked("order-same")
         val event1 = viewModel.event.value
         assertTrue(event1 is OrdersListEvent.NavigateToOrder)
         assertEquals("order-same", (event1 as OrdersListEvent.NavigateToOrder).orderId)
 
+        // UI consumes event
+        viewModel.onEventConsumed()
+        assertNull(viewModel.event.value)
+
+        // Second tap on order-same after returning
         viewModel.onOrderClicked("order-same")
         val event2 = viewModel.event.value
         assertTrue(event2 is OrdersListEvent.NavigateToOrder)
         assertEquals("order-same", (event2 as OrdersListEvent.NavigateToOrder).orderId)
-        // Both events have the same orderId, confirming the ViewModel correctly
-        // handles repeated clicks on the same order.
+
+        // UI consumes event
+        viewModel.onEventConsumed()
+        assertNull(viewModel.event.value)
     }
 
     @Test
-    fun `onOrderClicked with different orders emits different events`() = runTest {
-        // Regression test: navigating Order A → Back → Order B should work correctly.
+    fun `onOrderClicked with different orders emits and consumes events sequentially`() = runTest {
+        // Regression test: Orders → Order A → Back → Order B → Back
         coEvery { orderRepository.listOrders(any(), any(), any(), any()) } returns successResult()
 
         val viewModel = createViewModel()
 
+        // Tap Order A
         viewModel.onOrderClicked("order-A")
         val eventA = viewModel.event.value
         assertEquals("order-A", (eventA as OrdersListEvent.NavigateToOrder).orderId)
+        viewModel.onEventConsumed()
+        assertNull(viewModel.event.value)
 
+        // Tap Order B
         viewModel.onOrderClicked("order-B")
         val eventB = viewModel.event.value
         assertEquals("order-B", (eventB as OrdersListEvent.NavigateToOrder).orderId)
+        viewModel.onEventConsumed()
+        assertNull(viewModel.event.value)
     }
 
     @Test
