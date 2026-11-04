@@ -471,7 +471,24 @@ Updated all DTOs to match `AUTH_API_CONTRACTS.md` exactly:
 
 ### Remaining Infrastructure Actions
 1. **DNS resolution** — `api-dev.nearai.dev` must have a valid DNS A/AAAA record. This is an infrastructure issue, not an Android code issue.
-2. **Token refresh on 401** — No automatic 401 retry currently. Consider implementing explicit 401 handling in `RealAuthRepository` for non-auth endpoints.
+2. **Token refresh on 401** — **Implemented** via `TokenRefreshManager` (see Step 13).
+
+---
+
+## Token Refresh on 401 — Implementation
+
+### Root Cause
+The `TokenRefreshAuthenticator` was removed to fix ANRs. No replacement automatic 401 retry mechanism existed. When the access token expired (15 min lifetime), order API calls returned 401 and the user was shown "Session expired" instead of getting an automatic refresh.
+
+### Solution: Repository-Level TokenRefreshManager
+A `@Singleton` `TokenRefreshManager` in `core/security/` handles single-flight token refresh with `Mutex` synchronization. Each order API call is wrapped with `refreshAndRetry()` — on `UnauthorizedError`, it attempts refresh via `AuthRepository.refreshToken()`, stores rotated tokens, and retries the original request once. Auth endpoints are excluded. Session is cleared on unrecoverable refresh failure.
+
+### Files Changed
+- `TokenRefreshManager.kt` (new) — single-flight refresh with Mutex
+- `TokenStorage.kt` — `saveAccessToken`/`saveRefreshToken` use `commit()` instead of `apply()`
+- `OrderRepositoryImpl.kt` — all 8 API calls wrapped with `refreshAndRetry`
+- `OrderModule.kt` — provides `TokenRefreshManager`
+- `TokenRefreshManagerTest.kt` (new) — 12 unit tests
 
 ---
 
@@ -542,3 +559,16 @@ The parser tried to call `.removeSurrounding("\"")` on the array element, produc
 
 ### What This Enables
 When the backend returns a 422 error (e.g., wrong field name, missing field), the app now displays the actual validation error (e.g., "field required in body.email") instead of a generic message. This reveals the exact field name mismatch between the Android `LoginRequest` DTO and the backend's expected schema, allowing the user to identify and fix the root cause.
+
+---
+
+## Token Refresh Delivery Steps
+
+### ✓ Step 13: Create TokenRefreshManager with single-flight refresh
+**Completed** — Created `TokenRefreshManager` singleton with Mutex-based single-flight synchronization. The `refreshAndRetry` method executes the original request, and on `UnauthorizedError`, attempts refresh via `AuthRepository`, stores rotated tokens, and retries the original request once. Session is cleared on unrecoverable refresh failure.
+
+### ✓ Step 14: Update TokenStorage and OrderRepositoryImpl for refresh support
+**Completed** — Changed `TokenStorage` `saveAccessToken`/`saveRefreshToken` from `apply()` to `commit()` for synchronous persistence. Injected `TokenRefreshManager` into `OrderRepositoryImpl` and wrapped all 8 API calls with `refreshAndRetry`.
+
+### ✓ Step 15: Add TokenRefreshManager unit tests
+**Completed** — 12 unit tests covering: valid token (no refresh), expired token with successful refresh and retry, failed refresh clearing session, concurrent 401 responses, non-401 errors (network, not found, validation, unknown, server), retry still failing, and Loading result handling.

@@ -3,6 +3,7 @@ package com.nearai.admin.feature.orders.data
 import com.nearai.admin.core.common.AppError
 import com.nearai.admin.core.common.Result
 import com.nearai.admin.core.network.ApiErrorParser
+import com.nearai.admin.core.security.TokenRefreshManager
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderDetails
 import com.nearai.admin.feature.orders.domain.OrderRepository
@@ -22,7 +23,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class OrderRepositoryImpl @Inject constructor(
-    private val apiService: OrderApiService
+    private val apiService: OrderApiService,
+    private val tokenRefreshManager: TokenRefreshManager
 ) : OrderRepository {
 
     override suspend fun listOrders(
@@ -31,79 +33,95 @@ class OrderRepositoryImpl @Inject constructor(
         status: OrderStatus?,
         fulfillmentStatus: FulfillmentStatus?
     ): Result<PaginatedOrders> {
-        return try {
-            val response = apiService.listOrders(
-                page = page,
-                size = size,
-                status = status?.name?.lowercase(),
-                fulfillmentStatus = fulfillmentStatus?.name?.lowercase()
-            )
-            Result.Success(OrderMapper.mapPaginatedOrders(response))
-        } catch (e: Exception) {
-            handleOrderException(e)
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                val response = apiService.listOrders(
+                    page = page,
+                    size = size,
+                    status = status?.name?.lowercase(),
+                    fulfillmentStatus = fulfillmentStatus?.name?.lowercase()
+                )
+                Result.Success(OrderMapper.mapPaginatedOrders(response))
+            } catch (e: Exception) {
+                handleOrderException(e)
+            }
         }
     }
 
     override suspend fun getOrderDetails(orderId: String): Result<OrderDetails> {
-        return try {
-            val response = apiService.getOrderDetails(orderId)
-            Result.Success(OrderMapper.mapOrderDetails(response))
-        } catch (e: Exception) {
-            handleOrderException(e)
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                val response = apiService.getOrderDetails(orderId)
+                Result.Success(OrderMapper.mapOrderDetails(response))
+            } catch (e: Exception) {
+                handleOrderException(e)
+            }
         }
     }
 
     override suspend fun getStatusHistory(orderId: String): Result<List<StatusHistoryEntry>> {
-        return try {
-            val response = apiService.getStatusHistory(orderId)
-            Result.Success(response.history.map { OrderMapper.mapStatusHistoryEntry(it) })
-        } catch (e: Exception) {
-            handleOrderException(e)
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                val response = apiService.getStatusHistory(orderId)
+                Result.Success(response.history.map { OrderMapper.mapStatusHistoryEntry(it) })
+            } catch (e: Exception) {
+                handleOrderException(e)
+            }
         }
     }
 
     override suspend fun confirmOrder(orderId: String): Result<Unit> {
-        return try {
-            apiService.confirmOrder(orderId)
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            handleOrderException(e)
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                apiService.confirmOrder(orderId)
+                Result.Success(Unit)
+            } catch (e: Exception) {
+                handleOrderException(e)
+            }
         }
     }
 
     override suspend fun rejectOrder(orderId: String, reason: String): Result<Unit> {
-        return try {
-            apiService.rejectOrder(orderId, RejectRequest(reason))
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            handleOrderException(e)
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                apiService.rejectOrder(orderId, RejectRequest(reason))
+                Result.Success(Unit)
+            } catch (e: Exception) {
+                handleOrderException(e)
+            }
         }
     }
 
     override suspend fun processOrder(orderId: String): Result<Unit> {
-        return try {
-            apiService.processOrder(orderId)
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            handleOrderException(e)
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                apiService.processOrder(orderId)
+                Result.Success(Unit)
+            } catch (e: Exception) {
+                handleOrderException(e)
+            }
         }
     }
 
     override suspend fun dispatchOrder(orderId: String): Result<Unit> {
-        return try {
-            apiService.dispatchOrder(orderId)
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            handleOrderException(e)
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                apiService.dispatchOrder(orderId)
+                Result.Success(Unit)
+            } catch (e: Exception) {
+                handleOrderException(e)
+            }
         }
     }
 
     override suspend fun deliverOrder(orderId: String): Result<Unit> {
-        return try {
-            apiService.deliverOrder(orderId)
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            handleOrderException(e)
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                apiService.deliverOrder(orderId)
+                Result.Success(Unit)
+            } catch (e: Exception) {
+                handleOrderException(e)
+            }
         }
     }
 

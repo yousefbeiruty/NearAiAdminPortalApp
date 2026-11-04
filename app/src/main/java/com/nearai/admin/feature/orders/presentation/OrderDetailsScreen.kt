@@ -88,7 +88,7 @@ fun OrderDetailsScreen(
                 },
                 navigationIcon = {
                     IconButton(
-                        onClick = { viewModel.onNavigateBack() },
+                        onClick = onNavigateBack,
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Navy)

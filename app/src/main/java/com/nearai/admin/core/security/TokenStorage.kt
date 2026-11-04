@@ -51,13 +51,19 @@ class TokenStorage @Inject constructor(
     fun getAccessToken(): String? = prefs.getString(KEY_ACCESS_TOKEN, null)
 
     fun saveAccessToken(token: String) {
-        prefs.edit().putString(KEY_ACCESS_TOKEN, token).apply()
+        // Use commit() for synchronous persistence during token refresh.
+        // apply() is async and can cause race conditions where another request
+        // reads a partially-written token during the refresh window.
+        prefs.edit().putString(KEY_ACCESS_TOKEN, token).commit()
     }
 
     fun getRefreshToken(): String? = prefs.getString(KEY_REFRESH_TOKEN, null)
 
     fun saveRefreshToken(token: String) {
-        prefs.edit().putString(KEY_REFRESH_TOKEN, token).apply()
+        // Use commit() for synchronous persistence during token refresh.
+        // apply() is async and can cause race conditions where another request
+        // reads a partially-written token during the refresh window.
+        prefs.edit().putString(KEY_REFRESH_TOKEN, token).commit()
     }
 
     fun getUserRole(): String? = prefs.getString(KEY_USER_ROLE, null)
