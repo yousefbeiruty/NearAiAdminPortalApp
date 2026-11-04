@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import com.nearai.admin.core.security.SessionManager
+import com.nearai.admin.feature.catalog.presentation.*
 import com.nearai.admin.feature.auth.presentation.AdminSignInScreen
 import com.nearai.admin.feature.dashboard.presentation.DashboardScreen
 import com.nearai.admin.feature.more.presentation.MoreScreen
@@ -21,6 +22,7 @@ import com.nearai.admin.feature.orders.presentation.OrdersListScreen
 import com.nearai.admin.feature.settings.presentation.SettingsScreen
 import com.nearai.admin.feature.systemhealth.presentation.SystemHealthScreen
 import com.nearai.admin.feature.users.presentation.UsersScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 
 /**
  * Root navigation graph. Routes between authentication and main app screens
@@ -70,6 +72,7 @@ fun AppNavHost(
     NavHost(
         navController = navController,
         startDestination = startDestination,
+        modifier = modifier
     ) {
         // Authentication
         composable<LoginRoute> {
@@ -111,6 +114,12 @@ fun AppNavHost(
             MoreScreen(
                 onNavigateToOrders = {
                     navController.navigate(OrdersRoute)
+                },
+                onNavigateToCategories = {
+                    navController.navigate(CategoriesRoute)
+                },
+                onNavigateToProducts = {
+                    navController.navigate(ProductsRoute)
                 },
                 onNavigateToInventory = {
                     navController.navigate(InventoryRoute)
@@ -181,6 +190,50 @@ fun AppNavHost(
         composable<ProductEditRoute> {
             ProductEditScreen(
                 onDismiss = { navController.popBackStack() }
+            )
+        }
+
+        // Categories
+        composable<CategoriesRoute> {
+            val viewModel: CategoriesListViewModel = hiltViewModel()
+            CategoriesListScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Products
+        composable<ProductsRoute> {
+            val viewModel: ProductsListViewModel = hiltViewModel()
+            ProductsListScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToProduct = { productId ->
+                    navController.navigate(ProductDetailsRoute(productId))
+                },
+                onNavigateToCreate = {
+                    navController.navigate(ProductCreateRoute)
+                }
+            )
+        }
+
+        // Product Details
+        composable<ProductDetailsRoute> { backStackEntry ->
+            val productId = backStackEntry.arguments?.getString("productId") ?: ""
+            ProductDetailsScreen(
+                productId = productId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Product Create
+        composable<ProductCreateRoute> {
+            ProductCreateScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onProductCreated = { productId ->
+                    navController.popBackStack()
+                    navController.navigate(ProductDetailsRoute(productId))
+                }
             )
         }
     }
