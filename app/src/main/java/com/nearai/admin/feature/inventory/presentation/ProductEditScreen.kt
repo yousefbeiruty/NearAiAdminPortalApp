@@ -1310,10 +1310,80 @@ fun ModelAccessRow(
 // Preview
 // =============================================================================
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true, widthDp = 390, heightDp = 1400)
 @Composable
 fun ProductEditScreenPreview() {
     MaterialTheme {
-        ProductEditScreen()
+        // Preview with sample form fields — avoids Hilt ViewModel dependency
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(BackgroundLight)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text("Edit Product", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Navy)
+            OutlinedTextField(
+                value = "Wireless Headphones Pro",
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Product Name") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
+            OutlinedTextField(
+                value = "Premium noise-canceling headphones with 30-hour battery life.",
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Description") },
+                minLines = 3,
+                shape = RoundedCornerShape(12.dp)
+            )
+            OutlinedTextField(
+                value = "199.99",
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Price") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
+            OutlinedTextField(
+                value = "WH-PRO-001",
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("SKU") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
+            ExposedDropdownMenuBox(
+                expanded = false,
+                onExpandedChange = {}
+            ) {
+                OutlinedTextField(
+                    value = "Active",
+                    onValueChange = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    label = { Text("Status") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    trailingIcon = { Icon(Icons.Default.ExpandMore, contentDescription = null) }
+                )
+            }
+            Button(
+                onClick = {},
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Navy)
+            ) {
+                Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Save Changes", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        }
     }
 }

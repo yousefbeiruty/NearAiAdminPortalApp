@@ -345,10 +345,57 @@ fun CreateCategoryDialog(
 @Composable
 fun CategoriesListScreenPreview() {
     NearAiAdminTheme {
-        CategoriesListScreen(
-            viewModel = CategoriesListViewModel::class.java.getDeclaredConstructor().newInstance() as CategoriesListViewModel,
-            onNavigateBack = {}
+        // Preview with sample category cards — avoids Hilt ViewModel dependency
+        val sampleCategories = listOf(
+            Category(
+                id = "c1",
+                name = "Electronics",
+                slug = "electronics",
+                description = "Electronic devices and accessories",
+                parentId = null,
+                createdAt = "2024-01-15T10:30:00+00:00"
+            ),
+            Category(
+                id = "c2",
+                name = "Home & Garden",
+                slug = "home-garden",
+                description = "Furniture, decor, and outdoor items",
+                parentId = null,
+                createdAt = "2024-02-20T08:00:00+00:00"
+            ),
+            Category(
+                id = "c3",
+                name = "Clothing",
+                slug = "clothing",
+                description = "Apparel and fashion accessories",
+                parentId = null,
+                createdAt = "2024-03-10T12:00:00+00:00"
+            )
         )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Categories", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Navy)
+                IconButton(onClick = {}) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Add Category",
+                        tint = Navy
+                    )
+                }
+            }
+            sampleCategories.forEach { category ->
+                CategoryCard(category = category)
+            }
+        }
     }
 }
 

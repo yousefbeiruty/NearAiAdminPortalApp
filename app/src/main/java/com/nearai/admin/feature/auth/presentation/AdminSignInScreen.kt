@@ -885,8 +885,59 @@ private fun ClusterBoundaryFooter() {
 @Composable
 fun AdminSignInScreenPreview() {
     com.nearai.admin.core.designsystem.theme.NearAiAdminTheme {
-        AdminSignInScreen(
-            onSignInSuccess = { /* No-op for preview */ }
-        )
+        // Preview with sample sign-in form — avoids Hilt ViewModel dependency
+        androidx.compose.foundation.layout.Column(
+            modifier = androidx.compose.ui.Modifier
+                .fillMaxSize()
+                .background(com.nearai.admin.core.designsystem.theme.BackgroundLight)
+                .padding(24.dp),
+            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+        ) {
+            androidx.compose.material3.Text(
+                text = "NearAI Admin",
+                style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                color = com.nearai.admin.core.designsystem.theme.Navy
+            )
+            androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.height(8.dp))
+            androidx.compose.material3.Text(
+                text = "Sign in to your administrator account",
+                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                color = com.nearai.admin.core.designsystem.theme.TextSecondaryLight
+            )
+            androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.height(32.dp))
+            androidx.compose.material3.OutlinedTextField(
+                value = "",
+                onValueChange = {},
+                modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                label = { androidx.compose.material3.Text("Email") },
+                singleLine = true,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+            )
+            androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.height(12.dp))
+            androidx.compose.material3.OutlinedTextField(
+                value = "",
+                onValueChange = {},
+                modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                label = { androidx.compose.material3.Text("Password") },
+                singleLine = true,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
+            )
+            androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.height(24.dp))
+            androidx.compose.material3.Button(
+                onClick = {},
+                modifier = androidx.compose.ui.Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = com.nearai.admin.core.designsystem.theme.Navy
+                )
+            ) {
+                androidx.compose.material3.Text("Sign In", color = androidx.compose.ui.graphics.Color.White, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            }
+        }
     }
 }

@@ -37,7 +37,7 @@ object SystemHealthRoute
 object AuditLogsRoute
 
 @Serializable
-object ProductEditRoute
+data class ProductEditRoute(val productId: String? = null)
 
 @Serializable
 object OrdersRoute

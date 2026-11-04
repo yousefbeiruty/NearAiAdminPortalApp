@@ -75,6 +75,13 @@ class ProductEditViewModel @Inject constructor(
     val event: StateFlow<ProductEditEvent?> = _event.asStateFlow()
 
     /**
+     * Sets the product ID and loads product details. Called from navigation.
+     */
+    fun setProductId(productId: String) {
+        loadProduct(productId)
+    }
+
+    /**
      * Loads product details by ID.
      */
     fun loadProduct(productId: String) {

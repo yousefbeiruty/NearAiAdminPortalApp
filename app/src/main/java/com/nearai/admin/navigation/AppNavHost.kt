@@ -165,10 +165,10 @@ fun AppNavHost(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToEditProduct = { productId ->
-                    navController.navigate(ProductEditRoute)
+                    navController.navigate(ProductEditRoute(productId))
                 },
                 onNavigateToCreateProduct = {
-                    navController.navigate(ProductEditRoute)
+                    navController.navigate(ProductEditRoute(null))
                 }
             )
         }
@@ -197,8 +197,10 @@ fun AppNavHost(
             )
         }
 
-        composable<ProductEditRoute> {
+        composable<ProductEditRoute> { backStackEntry ->
+            val productId = backStackEntry.arguments?.getString("productId")
             val viewModel: ProductEditViewModel = hiltViewModel()
+            productId?.let { viewModel.setProductId(it) }
             ProductEditScreen(
                 viewModel = viewModel,
                 onDismiss = { navController.popBackStack() },

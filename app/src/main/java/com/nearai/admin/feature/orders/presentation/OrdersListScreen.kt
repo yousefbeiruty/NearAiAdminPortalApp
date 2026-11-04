@@ -343,9 +343,58 @@ private fun FilterSection(
 @Composable
 fun OrdersListScreenPreview() {
     NearAiAdminTheme {
-        OrdersListScreen(
-            onNavigateBack = { },
-            onNavigateToOrder = { }
+        // Preview with sample order cards — avoids Hilt ViewModel dependency
+        val sampleOrders = listOf(
+            com.nearai.admin.feature.orders.domain.OrderSummary(
+                id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                createdAt = "2024-06-15T14:30:00Z",
+                status = com.nearai.admin.feature.orders.domain.OrderStatus.PENDING,
+                fulfillmentStatus = com.nearai.admin.feature.orders.domain.FulfillmentStatus.AWAITING_CONFIRMATION,
+                totalAmount = 35.49,
+                subtotalAmount = 29.99,
+                currency = "USD",
+                items = emptyList(),
+                deliveryRecipientName = "John Doe",
+                deliveryPhone = "+15551234567",
+                deliveryCity = "New York",
+                deliveryArea = "Manhattan",
+                deliveryStreet = "Broadway",
+                deliveryBuildingNumber = "123",
+                deliveryApartment = "Apt 4B",
+                deliveryInstructions = null
+            ),
+            com.nearai.admin.feature.orders.domain.OrderSummary(
+                id = "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+                createdAt = "2024-06-14T10:00:00Z",
+                status = com.nearai.admin.feature.orders.domain.OrderStatus.COMPLETED,
+                fulfillmentStatus = com.nearai.admin.feature.orders.domain.FulfillmentStatus.PROCESSING,
+                totalAmount = 129.99,
+                subtotalAmount = 124.49,
+                currency = "USD",
+                items = emptyList(),
+                deliveryRecipientName = "Jane Smith",
+                deliveryPhone = "+15559876543",
+                deliveryCity = "Los Angeles",
+                deliveryArea = "Hollywood",
+                deliveryStreet = "Sunset Blvd",
+                deliveryBuildingNumber = "456",
+                deliveryApartment = null,
+                deliveryInstructions = null
+            )
         )
+        androidx.compose.foundation.layout.Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("Orders", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Navy)
+            sampleOrders.forEach { order ->
+                OrderSummaryCard(
+                    order = order,
+                    onClick = { }
+                )
+            }
+        }
     }
 }

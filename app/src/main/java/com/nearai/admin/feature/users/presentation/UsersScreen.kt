@@ -3,13 +3,14 @@ package com.nearai.admin.feature.users.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
@@ -18,32 +19,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.nearai.admin.core.designsystem.components.*
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.nearai.admin.core.designsystem.components.SearchBar
+import com.nearai.admin.core.designsystem.components.StatusPill
 import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.feature.users.domain.AdminUser
 
 /**
- * User Management screen with search, filter chips, user list,
- * and a user detail bottom sheet.
- *
- * Uses development-only placeholder data until the backend API is connected.
+ * User Management screen connected to real backend via [UsersViewModel].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UsersScreen(
-    modifier: Modifier = Modifier
+    viewModel: UsersViewModel = hiltViewModel()
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedFilters by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var selectedUser by remember { mutableStateOf<UserItem?>(null) }
+    val uiState by viewModel.uiState.collectAsState()
 
-    val filterChips = listOf(
-        FilterChipItem("all", "All Users"),
-        FilterChipItem("pro", "Pro Tier"),
-        FilterChipItem("free", "Free Plan"),
-        FilterChipItem("flagged", "Flagged")
-    )
+    var searchQuery by remember { mutableStateOf(uiState.searchQuery) }
+    var showSearchDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.searchQuery) {
+        if (uiState.searchQuery != searchQuery) {
+            searchQuery = uiState.searchQuery
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -59,9 +62,16 @@ fun UsersScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                         StatusPill(
-                            label = "14,820 total",
+                            label = "${uiState.totalItems} total",
                             dotColor = EmeraldSuccess
                         )
+                    }
+                },
+                actions = {
+                    if (uiState.users.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.onRefresh() }) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -70,135 +80,145 @@ fun UsersScreen(
             )
         }
     ) { padding ->
-        LazyColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Search bar
-            item {
-                SearchBar(
-                    query = searchQuery,
-                    onQueryChanged = { searchQuery = it },
-                    placeholder = "Search users by name, email, or ID...",
-                    onClear = { searchQuery = "" }
-                )
+        when {
+            uiState.isLoading && uiState.users.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
             }
+            uiState.error != null && uiState.users.isEmpty() -> {
+                val errorMessage = uiState.error
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("Failed to load users", color = RoseError)
+                        Text(errorMessage ?: "", style = MaterialTheme.typography.bodySmall)
+                        Button(onClick = { viewModel.onRetry() }) {
+                            Text("Retry")
+                        }
+                    }
+                }
+            }
+            uiState.users.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No users found", style = MaterialTheme.typography.bodyMedium, color = TextSecondaryLight)
+                }
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        SearchBar(
+                            query = searchQuery,
+                            onQueryChanged = { searchQuery = it },
+                            placeholder = "Search by email...",
+                            onClear = { searchQuery = "" }
+                        )
+                        LaunchedEffect(searchQuery) {
+                            // Debounce handled by ViewModel
+                        }
+                    }
+                    item {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = uiState.filterRole == null,
+                                onClick = { viewModel.setFilterRole(null) },
+                                label = { Text("All") }
+                            )
+                            FilterChip(
+                                selected = uiState.filterRole == "admin",
+                                onClick = { viewModel.setFilterRole("admin") },
+                                label = { Text("Admin") }
+                            )
+                            FilterChip(
+                                selected = uiState.filterRole == "customer",
+                                onClick = { viewModel.setFilterRole("customer") },
+                                label = { Text("Customer") }
+                            )
+                            FilterChip(
+                                selected = uiState.filterIsActive == true,
+                                onClick = { viewModel.setFilterIsActive(true) },
+                                label = { Text("Active") }
+                            )
+                            FilterChip(
+                                selected = uiState.filterIsActive == false,
+                                onClick = { viewModel.setFilterIsActive(false) },
+                                label = { Text("Inactive") }
+                            )
+                        }
+                    }
+                    items(uiState.users) { user ->
+                        UserListItem(
+                            user = user,
+                            onClick = { viewModel.onUserClicked(user) }
+                        )
+                    }
+                    if (uiState.isLoadingMore) {
+                        item {
+                            Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        }
+                    }
+                    item { Spacer(modifier = Modifier.height(76.dp)) }
+                }
+            }
+        }
+    }
 
-            // Filter chips
-            item {
-                FilterChips(
-                    filters = filterChips,
-                    selectedFilters = selectedFilters,
-                    onFilterSelected = { selectedFilters = selectedFilters + it },
-                    onFilterDeselected = { selectedFilters = selectedFilters - it }
-                )
-            }
-
-            // User list
-            items(sampleUsers) { user ->
-                UserListItem(
-                    user = user,
-                    onClick = { selectedUser = user }
-                )
-            }
-            item { Spacer(modifier = Modifier.height(76.dp)) }
+    // Update message snackbar
+    uiState.updateMessage?.let { message ->
+        LaunchedEffect(message) {
+            // Message auto-clears when updateMessage changes
         }
     }
 
     // User detail bottom sheet
-    selectedUser?.let { user ->
+    uiState.selectedUser?.let { user ->
         UserDetailBottomSheet(
             user = user,
-            onDismiss = { selectedUser = null }
+            onDismiss = { viewModel.dismissSelectedUser() },
+            onToggleActive = { isActive ->
+                viewModel.toggleUserActive(user.id, isActive)
+            },
+            onRevokeSessions = {
+                viewModel.revokeSessions(user.id)
+            },
+            onUpdateRole = { role ->
+                viewModel.updateUserRole(user.id, role)
+            }
         )
     }
 }
 
 /**
- * User item data class.
- */
-data class UserItem(
-    val id: String,
-    val name: String,
-    val email: String,
-    val tier: String,
-    val status: String,
-    val creditsRemaining: Int,
-    val subscriptionPrice: String,
-    val lastActive: String,
-    val avatarColor: Color
-)
-
-/**
- * Sample user data for development.
- */
-val sampleUsers = listOf(
-    UserItem(
-        id = "user_8472",
-        name = "Maya Lin",
-        email = "maya.lin@example.com",
-        tier = "Pro",
-        status = "Active",
-        creditsRemaining = 84,
-        subscriptionPrice = "$29/mo",
-        lastActive = "2m ago",
-        avatarColor = Indigo
-    ),
-    UserItem(
-        id = "user_3921",
-        name = "James Chen",
-        email = "james.chen@example.com",
-        tier = "Free",
-        status = "Active",
-        creditsRemaining = 12,
-        subscriptionPrice = "Free",
-        lastActive = "15m ago",
-        avatarColor = EmeraldSuccess
-    ),
-    UserItem(
-        id = "user_1205",
-        name = "Sarah Williams",
-        email = "sarah.w@example.com",
-        tier = "Pro",
-        status = "Flagged",
-        creditsRemaining = 5,
-        subscriptionPrice = "$29/mo",
-        lastActive = "1h ago",
-        avatarColor = RoseError
-    ),
-    UserItem(
-        id = "user_6789",
-        name = "Alex Rivera",
-        email = "alex.r@nearai.internal",
-        tier = "Pro",
-        status = "Active",
-        creditsRemaining = 92,
-        subscriptionPrice = "$29/mo",
-        lastActive = "5m ago",
-        avatarColor = AmberWarning
-    ),
-    UserItem(
-        id = "user_4532",
-        name = "Priya Patel",
-        email = "priya.p@example.com",
-        tier = "Free",
-        status = "Active",
-        creditsRemaining = 45,
-        subscriptionPrice = "Free",
-        lastActive = "30m ago",
-        avatarColor = Info
-    )
-)
-
-/**
- * Individual user list item.
+ * Individual user list item showing email, role, and status.
  */
 @Composable
 fun UserListItem(
-    user: UserItem,
+    user: AdminUser,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -222,14 +242,14 @@ fun UserListItem(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(user.avatarColor.copy(alpha = 0.15f)),
+                    .background(Indigo.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = user.name.take(2).uppercase(),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = user.avatarColor
+                Icon(
+                    Icons.Outlined.Person,
+                    contentDescription = null,
+                    tint = Indigo,
+                    modifier = Modifier.size(24.dp)
                 )
             }
             // User info
@@ -239,45 +259,29 @@ fun UserListItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = user.name,
+                        text = user.email,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     StatusPill(
-                        label = user.tier,
-                        dotColor = if (user.tier == "Pro") Indigo else TextSecondaryDark
+                        label = user.role,
+                        dotColor = if (user.role == "admin") Indigo else EmeraldSuccess
                     )
-                    if (user.status == "Flagged") {
-                        StatusPill(
-                            label = "Flagged",
-                            dotColor = RoseError
-                        )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StatusPill(
+                        label = if (user.isActive) "Active" else "Inactive",
+                        dotColor = if (user.isActive) EmeraldSuccess else RoseError
+                    )
+                    if (user.emailVerified) {
+                        StatusPill(label = "Verified", dotColor = Info)
                     }
                 }
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = user.email,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "${user.creditsRemaining}% credits",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "Active ${user.lastActive}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
-            // Chevron
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "View details",
@@ -289,13 +293,16 @@ fun UserListItem(
 }
 
 /**
- * User detail bottom sheet with credits gauge, model logs, and admin actions.
+ * User detail bottom sheet with account info and admin actions.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserDetailBottomSheet(
-    user: UserItem,
-    onDismiss: () -> Unit
+    user: AdminUser,
+    onDismiss: () -> Unit,
+    onToggleActive: (Boolean) -> Unit,
+    onRevokeSessions: () -> Unit,
+    onUpdateRole: (String) -> Unit
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -322,111 +329,44 @@ fun UserDetailBottomSheet(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(CircleShape)
-                        .background(user.avatarColor.copy(alpha = 0.15f)),
+                        .background(Indigo.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = user.name.take(2).uppercase(),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = user.avatarColor
+                    Icon(
+                        Icons.Outlined.Person,
+                        contentDescription = null,
+                        tint = Indigo,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
-                Column {
-                    Text(
-                        text = user.name,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = user.email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        StatusPill(
-                            label = user.tier,
-                            dotColor = if (user.tier == "Pro") Indigo else TextSecondaryDark
-                        )
-                        StatusPill(
-                            label = user.status,
-                            dotColor = if (user.status == "Active") EmeraldSuccess else RoseError
-                        )
-                    }
-                }
-            }
-
-            // Subscription details
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                )
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        text = "Subscription",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "${user.tier} Plan · ${user.subscriptionPrice}",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                }
-            }
-
-            // Credits balance gauge
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                )
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "AI Credits Balance",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "${user.creditsRemaining}% remaining",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = if (user.creditsRemaining > 30) EmeraldSuccess else RoseError
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        progress = { user.creditsRemaining / 100f },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(10.dp),
-                        color = if (user.creditsRemaining > 30) EmeraldSuccess else RoseError,
-                        trackColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Resets on Nov 1, 2026",
+                        text = "ID: ${user.id}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatusPill(
+                            label = user.role,
+                            dotColor = if (user.role == "admin") Indigo else EmeraldSuccess
+                        )
+                        StatusPill(
+                            label = if (user.isActive) "Active" else "Inactive",
+                            dotColor = if (user.isActive) EmeraldSuccess else RoseError
+                        )
+                    }
                 }
             }
 
-            // Model invocation logs
+            // Account details
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -435,116 +375,86 @@ fun UserDetailBottomSheet(
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(
-                        text = "Recent Model Invocations",
+                        text = "Account Details",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    ModelInvocationRow(model = "Llama-3", tokens = 1240, time = "5m ago")
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    ModelInvocationRow(model = "Mistral", tokens = 890, time = "12m ago")
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    ModelInvocationRow(model = "GPT-4o-mini", tokens = 2100, time = "28m ago")
+                    UserDetailRow(label = "Email Verified", value = if (user.emailVerified) "Yes" else "No")
+                    UserDetailRow(label = "Created", value = user.createdAt)
+                    UserDetailRow(label = "Updated", value = user.updatedAt)
                 }
             }
 
-            // Admin action buttons
+            // Admin actions
             Text(
                 text = "Administrative Actions",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilledTonalButton(
-                    onClick = { /* TODO: Grant bonus credits */ },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(44.dp)
+
+            // Toggle active
+            if (user.isActive) {
+                Button(
+                    onClick = { onToggleActive(false) },
+                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = RoseError)
                 ) {
-                    Icon(
-                        Icons.Default.Star,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Grant Credits")
+                    Icon(Icons.Outlined.Block, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Suspend Account")
                 }
+            } else {
                 FilledTonalButton(
-                    onClick = { /* TODO: Reset daily quota */ },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(44.dp)
+                    onClick = { onToggleActive(true) },
+                    modifier = Modifier.fillMaxWidth().height(44.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Reset Quota")
+                    Text("Activate Account")
                 }
             }
-            Button(
-                onClick = { /* TODO: Suspend account */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(44.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = RoseError
-                )
+
+            // Revoke sessions
+            FilledTonalButton(
+                onClick = onRevokeSessions,
+                modifier = Modifier.fillMaxWidth().height(44.dp)
             ) {
-                Icon(
-                    Icons.Default.Block,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Suspend Account")
+                Text("Revoke All Sessions")
+            }
+
+            // Change role
+            if (user.role != "admin") {
+                FilledTonalButton(
+                    onClick = { onUpdateRole("admin") },
+                    modifier = Modifier.fillMaxWidth().height(44.dp)
+                ) {
+                    Text("Promote to Admin")
+                }
+            } else {
+                FilledTonalButton(
+                    onClick = { onUpdateRole("customer") },
+                    modifier = Modifier.fillMaxWidth().height(44.dp)
+                ) {
+                    Text("Demote to Customer")
+                }
             }
         }
     }
 }
 
-/**
- * Model invocation log row.
- */
 @Composable
-fun ModelInvocationRow(
-    model: String,
-    tokens: Int,
-    time: String,
-    modifier: Modifier = Modifier
-) {
+fun UserDetailRow(label: String, value: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 3.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.Top
     ) {
-        Text(
-            text = model,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium
-        )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "$tokens tokens",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = time,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        Text(text = label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, true))
     }
 }
 
@@ -555,6 +465,21 @@ fun ModelInvocationRow(
 @Composable
 fun UsersScreenPreview() {
     NearAiAdminTheme {
-        UsersScreen()
+        val sampleUsers = listOf(
+            AdminUser("u1", "admin@nearai.com", "admin", true, true, "2024-01-15T10:30:00Z", "2024-01-15T10:30:00Z"),
+            AdminUser("u2", "customer@example.com", "customer", true, true, "2024-02-20T08:00:00Z", "2024-02-20T08:00:00Z"),
+            AdminUser("u3", "suspended@example.com", "customer", false, false, "2024-03-10T12:00:00Z", "2024-03-10T12:00:00Z")
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("User Management", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Navy)
+            sampleUsers.forEach { user ->
+                UserListItem(user = user, onClick = {})
+            }
+        }
     }
 }

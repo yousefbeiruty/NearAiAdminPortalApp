@@ -43,6 +43,7 @@ data class InventoryUiState(
     val error: String? = null,
     val searchQuery: String = "",
     val filterStatus: ProductStatus? = null,
+    val filterStock: StockFilter? = null,
     val currentPage: Int = 1,
     val totalPages: Int = 1,
     val totalItems: Int = 0,
@@ -51,6 +52,7 @@ data class InventoryUiState(
     val kpiActiveSkus: Int = 0,
     val kpiTotalProducts: Int = 0,
     val kpiLowStockCount: Int = 0,
+    val kpiOutOfStockCount: Int = 0,
     val selectedVariantId: String? = null,
     val stockMovements: List<StockMovement> = emptyList(),
     val stockMovementsPage: Int = 1,
@@ -59,6 +61,14 @@ data class InventoryUiState(
     val isLoadingMovements: Boolean = false,
     val isStockOperationLoading: Boolean = false
 )
+
+/**
+ * Stock level filter for inventory listing.
+ */
+enum class StockFilter {
+    LOW_STOCK,
+    OUT_OF_STOCK
+}
 
 /**
  * One-time events emitted from the ViewModel to the UI.
@@ -137,7 +147,8 @@ class InventoryViewModel @Inject constructor(
                                 item.product.status == ProductStatus.ACTIVE
                             },
                             kpiTotalProducts = result.data.totalItems,
-                            kpiLowStockCount = 0 // Updated after stock loads
+                            kpiLowStockCount = 0, // Updated after stock loads
+                            kpiOutOfStockCount = 0 // Updated after stock loads
                         )
                     }
                 }
@@ -181,14 +192,37 @@ class InventoryViewModel @Inject constructor(
                 InventoryItem(product = item.product, variants = inventoryVariants)
             }
 
-            // Calculate low stock count
-            val lowStockCount = updatedItems.flatMap { it.variants }
-                .count { iv -> iv.stock?.availableQuantity ?: 0 < LOW_STOCK_THRESHOLD }
+            // Calculate low stock and out of stock counts
+            val allVariants = updatedItems.flatMap { it.variants }
+            val lowStockCount = allVariants.count { iv ->
+                val qty = iv.stock?.availableQuantity ?: 0
+                qty > 0 && qty < LOW_STOCK_THRESHOLD
+            }
+            val outOfStockCount = allVariants.count { iv ->
+                iv.stock?.availableQuantity ?: 0 == 0
+            }
+
+            // Apply stock filter if active
+            val filteredItems = when (_uiState.value.filterStock) {
+                StockFilter.LOW_STOCK -> updatedItems.filter { item ->
+                    item.variants.any { iv ->
+                        val qty = iv.stock?.availableQuantity ?: 0
+                        qty > 0 && qty < LOW_STOCK_THRESHOLD
+                    }
+                }
+                StockFilter.OUT_OF_STOCK -> updatedItems.filter { item ->
+                    item.variants.any { iv ->
+                        iv.stock?.availableQuantity ?: 0 == 0
+                    }
+                }
+                null -> updatedItems
+            }
 
             _uiState.update {
                 it.copy(
-                    inventoryItems = updatedItems,
-                    kpiLowStockCount = lowStockCount
+                    inventoryItems = filteredItems,
+                    kpiLowStockCount = lowStockCount,
+                    kpiOutOfStockCount = outOfStockCount
                 )
             }
         }
@@ -260,11 +294,19 @@ class InventoryViewModel @Inject constructor(
     }
 
     /**
+     * Sets the stock level filter and reloads inventory.
+     */
+    fun setFilterStock(filter: StockFilter?) {
+        _uiState.update { it.copy(filterStock = filter) }
+        loadInventory()
+    }
+
+    /**
      * Clears all filters and reloads.
      */
     fun clearFilters() {
         _uiState.update {
-            it.copy(filterStatus = null, searchQuery = "")
+            it.copy(filterStatus = null, searchQuery = "", filterStock = null)
         }
         loadInventory()
     }

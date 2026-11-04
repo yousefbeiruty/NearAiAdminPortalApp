@@ -5,7 +5,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -26,11 +37,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.catalog.domain.ProductStatus
+import com.nearai.admin.feature.catalog.domain.StockMovementType
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 /**
  * Products & Inventory screen connected to [InventoryViewModel] for real backend data.
@@ -136,29 +151,109 @@ fun InventoryScreen(
     val uiState by viewModel.uiState.collectAsState()
     val event by viewModel.event.collectAsState()
 
-    // Handle navigation events
-    LaunchedEffect(event) {
-        when (event) {
-            is InventoryEvent.NavigateToEditProduct -> {
-                onNavigateToEditProduct((event as InventoryEvent.NavigateToEditProduct).productId)
-                viewModel.clearEvent()
-            }
-            is InventoryEvent.NavigateToCreateProduct -> {
-                onNavigateToCreateProduct()
-                viewModel.clearEvent()
-            }
-            else -> {}
+    // Two-stage event consumption to prevent duplicate navigation
+    var pendingEvent: InventoryEvent? by remember { mutableStateOf(null) }
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { ev ->
+            pendingEvent = ev
         }
     }
+    // Consume pending event
+    when (val event = pendingEvent) {
+        is InventoryEvent.NavigateToEditProduct -> {
+            pendingEvent = null
+            onNavigateToEditProduct(event.productId)
+            viewModel.clearEvent()
+        }
+        is InventoryEvent.NavigateToCreateProduct -> {
+            pendingEvent = null
+            onNavigateToCreateProduct()
+            viewModel.clearEvent()
+        }
+        is InventoryEvent.StockOperationSuccess -> {
+            pendingEvent = null
+            viewModel.clearEvent()
+        }
+        is InventoryEvent.StockOperationError -> {
+            pendingEvent = null
+            viewModel.clearEvent()
+        }
+        else -> pendingEvent = null
+    }
 
+    // Snackbar for stock operations
+    val snackbarHostState = remember { SnackbarHostState() }
+    var snackbarMessage: String? by remember { mutableStateOf(null) }
+    var snackbarSuccess: Boolean by remember { mutableStateOf(true) }
+
+    // Dialogs state
+    var showReceiveDialog by remember { mutableStateOf(false) }
+    var showAdjustDialog by remember { mutableStateOf(false) }
+    var showMovementsPanel by remember { mutableStateOf(false) }
+    var selectedVariantForAction: InventoryVariant? by remember { mutableStateOf(null) }
+
+    // Determine active tab based on filters
     var selectedTab by remember { mutableIntStateOf(0) }
+    LaunchedEffect(uiState.filterStatus, uiState.filterStock) {
+        selectedTab = when {
+            uiState.filterStock == StockFilter.LOW_STOCK -> 2
+            uiState.filterStock == StockFilter.OUT_OF_STOCK -> 3
+            uiState.filterStatus == ProductStatus.ACTIVE -> 1
+            else -> 0
+        }
+    }
     val tabs = listOf(
         "All (${uiState.totalItems})",
         "Active (${uiState.kpiActiveSkus})",
-        "Low Stock (${uiState.kpiLowStockCount})"
+        "Low Stock (${uiState.kpiLowStockCount})",
+        "Out of Stock (${uiState.kpiOutOfStockCount})"
     )
 
+    // Show dialogs
+    selectedVariantForAction?.let { variant ->
+        if (showReceiveDialog) {
+            StockOperationDialog(
+                title = "Receive Stock",
+                subtitle = "SKU: ${variant.variant.sku}",
+                currentStock = variant.stock?.availableQuantity ?: 0,
+                onDismiss = { showReceiveDialog = false },
+                onConfirm = { quantity, reason ->
+                    viewModel.receiveStock(variant.variant.id, quantity, reason)
+                    showReceiveDialog = false
+                }
+            )
+        }
+        if (showAdjustDialog) {
+            StockAdjustDialog(
+                title = "Adjust Stock",
+                subtitle = "SKU: ${variant.variant.sku}",
+                currentStock = variant.stock?.availableQuantity ?: 0,
+                onDismiss = { showAdjustDialog = false },
+                onConfirm = { delta, reason ->
+                    viewModel.adjustStock(variant.variant.id, delta, reason)
+                    showAdjustDialog = false
+                }
+            )
+        }
+        if (showMovementsPanel) {
+            StockMovementsBottomSheet(
+                variantSku = variant.variant.sku,
+                movements = uiState.stockMovements,
+                isLoading = uiState.isLoadingMovements,
+                hasMore = uiState.stockMovementsHasMore,
+                onLoadMore = { viewModel.loadMoreStockMovements() },
+                onDismiss = {
+                    showMovementsPanel = false
+                },
+                onLoadInitial = {
+                    viewModel.loadStockMovements(variant.variant.id)
+                }
+            )
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -374,7 +469,7 @@ fun InventoryScreen(
                 }
             }
 
-            // 3. Category Filter Tabs Row
+            // 3. Filter Tabs Row
             item {
                 Row(
                     modifier = Modifier
@@ -392,8 +487,18 @@ fun InventoryScreen(
                                 selectedTab = index
                                 when (index) {
                                     0 -> viewModel.clearFilters()
-                                    1 -> viewModel.setFilterStatus(ProductStatus.ACTIVE)
-                                    2 -> viewModel.setFilterStatus(null) // Low stock shown in KPI
+                                    1 -> {
+                                        viewModel.clearFilters()
+                                        viewModel.setFilterStatus(ProductStatus.ACTIVE)
+                                    }
+                                    2 -> {
+                                        viewModel.clearFilters()
+                                        viewModel.setFilterStock(StockFilter.LOW_STOCK)
+                                    }
+                                    3 -> {
+                                        viewModel.clearFilters()
+                                        viewModel.setFilterStock(StockFilter.OUT_OF_STOCK)
+                                    }
                                 }
                             }
                         ) {
@@ -540,10 +645,42 @@ fun InventoryScreen(
             // 8. Product Items List
             items(uiState.inventoryItems) { item ->
                 val skuItem = item.toSkuItem()
+                val hasLowStock = item.variants.any { iv ->
+                    val qty = iv.stock?.availableQuantity ?: 0
+                    qty > 0 && qty < 10
+                }
+                val hasOutOfStock = item.variants.any { iv ->
+                    iv.stock?.availableQuantity ?: 0 == 0
+                }
+                // Find the first variant with stock issues for quick actions
+                val actionVariant = item.variants.firstOrNull { iv ->
+                    val qty = iv.stock?.availableQuantity ?: 0
+                    qty < 10
+                } ?: item.variants.firstOrNull()
                 SkuProductCard(
                     item = skuItem,
                     onEdit = { viewModel.onEditProduct(item.product.id) },
-                    onDelete = { /* Delete not yet implemented */ }
+                    onDelete = { /* Delete not yet implemented */ },
+                    hasLowStock = hasLowStock,
+                    hasOutOfStock = hasOutOfStock,
+                    onReceiveStock = {
+                        actionVariant?.let {
+                            selectedVariantForAction = it
+                            showReceiveDialog = true
+                        }
+                    },
+                    onAdjustStock = {
+                        actionVariant?.let {
+                            selectedVariantForAction = it
+                            showAdjustDialog = true
+                        }
+                    },
+                    onViewMovements = {
+                        actionVariant?.let {
+                            selectedVariantForAction = it
+                            showMovementsPanel = true
+                        }
+                    }
                 )
             }
 
@@ -570,6 +707,12 @@ fun InventoryItem.toSkuItem(): SkuItem {
     val status = product.status.toSkuStatus()
     val variant = variants.firstOrNull()
     val stock = variant?.stock
+    val totalStock = variants.sumOf { iv -> iv.stock?.availableQuantity ?: 0 }
+    val hasLowStock = variants.any { iv ->
+        val qty = iv.stock?.availableQuantity ?: 0
+        qty > 0 && qty < 10
+    }
+    val hasOutOfStock = variants.any { iv -> iv.stock?.availableQuantity ?: 0 == 0 }
 
     return SkuItem(
         id = product.id,
@@ -581,26 +724,32 @@ fun InventoryItem.toSkuItem(): SkuItem {
         leadingIcon = product.status.toLeadingIcon(),
         leadingIconBg = product.status.toLeadingIconBg(),
         leadingIconTint = product.status.toLeadingIconTint(),
-        tag1Text = if (stock != null) "Stock: ${stock.availableQuantity}" else "",
+        tag1Text = if (stock != null) "Stock: $totalStock" else "No stock data",
         tag1Icon = Icons.Outlined.Inventory2,
         tag2Text = if (variants.isNotEmpty()) "${variants.size} variant${if (variants.size > 1) "s" else ""}" else "",
         tag2Icon = Icons.Outlined.ViewList,
-        footerNote = when (product.status) {
-            ProductStatus.ACTIVE -> "Active product"
-            ProductStatus.INACTIVE -> "Inactive product"
-            ProductStatus.DRAFT -> "Draft"
+        footerNote = when {
+            hasOutOfStock -> "Out of stock — needs restock"
+            hasLowStock -> "Low stock — reorder soon"
+            product.status == ProductStatus.ACTIVE -> "Active product"
+            product.status == ProductStatus.INACTIVE -> "Inactive product"
+            else -> "Draft"
         },
-        footerNoteIcon = when (product.status) {
-            ProductStatus.ACTIVE -> Icons.Outlined.Autorenew
-            ProductStatus.INACTIVE -> Icons.Outlined.History
-            ProductStatus.DRAFT -> Icons.Outlined.Schedule
+        footerNoteIcon = when {
+            hasOutOfStock -> Icons.Outlined.WarningAmber
+            hasLowStock -> Icons.Outlined.WarningAmber
+            product.status == ProductStatus.ACTIVE -> Icons.Outlined.Autorenew
+            product.status == ProductStatus.INACTIVE -> Icons.Outlined.History
+            else -> Icons.Outlined.Schedule
         },
-        footerNoteColor = when (product.status) {
-            ProductStatus.ACTIVE -> TextSecondaryLight
-            ProductStatus.INACTIVE -> RoseDark
-            ProductStatus.DRAFT -> TextSecondaryLight
+        footerNoteColor = when {
+            hasOutOfStock -> RoseDark
+            hasLowStock -> RoseDark
+            product.status == ProductStatus.ACTIVE -> TextSecondaryLight
+            product.status == ProductStatus.INACTIVE -> RoseDark
+            else -> TextSecondaryLight
         },
-        noticeBanner = null,
+        noticeBanner = if (hasOutOfStock) "One or more variants are out of stock" else null,
         isStrikethrough = product.status == ProductStatus.INACTIVE
     )
 }
@@ -670,7 +819,12 @@ fun ProductKpiCard(
 fun SkuProductCard(
     item: SkuItem,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    hasLowStock: Boolean = false,
+    hasOutOfStock: Boolean = false,
+    onReceiveStock: () -> Unit = {},
+    onAdjustStock: () -> Unit = {},
+    onViewMovements: () -> Unit = {}
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -865,6 +1019,58 @@ fun SkuProductCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
+            // Stock action buttons (Receive, Adjust, History)
+            if (hasLowStock || hasOutOfStock) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onReceiveStock,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.AddShoppingCart,
+                            contentDescription = null,
+                            tint = EmeraldDark,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Receive", color = EmeraldDark, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                    }
+                    OutlinedButton(
+                        onClick = onAdjustStock,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Tune,
+                            contentDescription = null,
+                            tint = Indigo,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Adjust", color = Indigo, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                    }
+                    OutlinedButton(
+                        onClick = onViewMovements,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.History,
+                            contentDescription = null,
+                            tint = Navy,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("History", color = Navy, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                    }
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
             // Footer Row: Footer Note & Action Buttons (Edit / Delete)
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -888,7 +1094,9 @@ fun SkuProductCard(
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = item.footerNoteColor,
                             fontWeight = FontWeight.Medium
-                        )
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 Row(
@@ -941,6 +1149,276 @@ fun SkuProductCard(
 }
 
 // =============================================================================
+// Stock Operation Dialog (Receive Stock)
+// =============================================================================
+
+@Composable
+fun StockOperationDialog(
+    title: String,
+    subtitle: String,
+    currentStock: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (quantity: Int, reason: String) -> Unit
+) {
+    var quantity by remember { mutableStateOf("") }
+    var reason by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Navy))
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(text = subtitle, style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
+                Text(text = "Current stock: $currentStock", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
+                OutlinedTextField(
+                    value = quantity,
+                    onValueChange = { quantity = it },
+                    label = { Text("Quantity to receive") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { reason = it },
+                    label = { Text("Reason (optional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 2
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val qty = quantity.toIntOrNull() ?: 0
+                    if (qty > 0) {
+                        onConfirm(qty, reason)
+                    }
+                },
+                enabled = quantity.toIntOrNull() != null && quantity.toIntOrNull()!! > 0,
+                colors = ButtonDefaults.buttonColors(containerColor = Navy)
+            ) {
+                Text("Confirm", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = TextSecondaryLight)
+            }
+        }
+    )
+}
+
+// =============================================================================
+// Stock Adjustment Dialog
+// =============================================================================
+
+@Composable
+fun StockAdjustDialog(
+    title: String,
+    subtitle: String,
+    currentStock: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (delta: Int, reason: String) -> Unit
+) {
+    var delta by remember { mutableStateOf("") }
+    var reason by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Navy))
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(text = subtitle, style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
+                Text(text = "Current stock: $currentStock", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
+                Text(text = "Use negative values to decrease stock.", style = MaterialTheme.typography.bodySmall.copy(color = RoseDark))
+                OutlinedTextField(
+                    value = delta,
+                    onValueChange = { delta = it },
+                    label = { Text("Quantity delta (e.g. +5 or -3)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { reason = it },
+                    label = { Text("Reason (required)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 2,
+                    isError = reason.isNotBlank() && reason.length < 3
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val d = delta.toIntOrNull() ?: 0
+                    if (d != 0 && reason.isNotBlank() && reason.length >= 3) {
+                        onConfirm(d, reason)
+                    }
+                },
+                enabled = delta.toIntOrNull() != null && delta.toIntOrNull()!! != 0 && reason.isNotBlank() && reason.length >= 3,
+                colors = ButtonDefaults.buttonColors(containerColor = Navy)
+            ) {
+                Text("Confirm", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = TextSecondaryLight)
+            }
+        }
+    )
+}
+
+// =============================================================================
+// Stock Movements Bottom Sheet
+// =============================================================================
+
+private val movementDateFormat by lazy { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StockMovementsBottomSheet(
+    variantSku: String,
+    movements: List<com.nearai.admin.feature.catalog.domain.StockMovement>,
+    isLoading: Boolean,
+    hasMore: Boolean,
+    onLoadMore: () -> Unit,
+    onDismiss: () -> Unit,
+    onLoadInitial: () -> Unit
+) {
+    // Load movements on first show
+    LaunchedEffect(Unit) {
+        onLoadInitial()
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceLight
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Stock Movement History",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy)
+                )
+                IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Navy, modifier = Modifier.size(20.dp))
+                }
+            }
+            Text(text = "SKU: $variantSku", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight, fontFamily = FontFamily.Monospace))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (isLoading && movements.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Navy)
+                }
+            } else if (movements.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Outlined.History, contentDescription = null, tint = TextSecondaryLight, modifier = Modifier.size(40.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("No movement history", style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(movements) { movement ->
+                        StockMovementCard(movement)
+                    }
+                    if (hasMore) {
+                        item {
+                            Button(
+                                onClick = onLoadMore,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = Navy)
+                            ) {
+                                Text("Load More", color = Color.White)
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+fun StockMovementCard(movement: com.nearai.admin.feature.catalog.domain.StockMovement) {
+    Card(
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = BackgroundLight),
+        border = BorderStroke(1.dp, BorderSubtle),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = when (movement.movementType) {
+                        StockMovementType.RECEIPT -> EmeraldBg
+                        StockMovementType.ADJUSTMENT -> PurpleBg
+                        StockMovementType.SALE -> SurfaceVariantLight
+                        StockMovementType.RETURN -> Indigo.copy(alpha = 0.15f)
+                        StockMovementType.RESERVATION -> RoseBg
+                        StockMovementType.RESERVATION_RELEASE -> EmeraldBg
+                    }
+                ) {
+                    Text(
+                        text = movement.movementType.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = when (movement.movementType) {
+                                StockMovementType.RECEIPT -> EmeraldDark
+                                StockMovementType.ADJUSTMENT -> PurpleDark
+                                else -> TextSecondaryLight
+                            },
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+                Text(
+                    text = if (movement.quantityDelta >= 0) "+${movement.quantityDelta}" else "${movement.quantityDelta}",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = if (movement.quantityDelta >= 0) EmeraldDark else RoseDark
+                    )
+                )
+            }
+            if (movement.reason.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = movement.reason, style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight), maxLines = 2)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = try {
+                    movementDateFormat.format(java.util.Date(movement.createdAt.toLongOrNull() ?: System.currentTimeMillis()))
+                } catch (_: Exception) {
+                    movement.createdAt
+                },
+                style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight)
+            )
+        }
+    }
+}
+
+// =============================================================================
 // Preview
 // =============================================================================
 
@@ -948,6 +1426,98 @@ fun SkuProductCard(
 @Composable
 fun InventoryScreenPreview() {
     MaterialTheme {
-        InventoryScreen()
+        // Preview with sample product cards — avoids Hilt ViewModel dependency
+        val sampleProduct = com.nearai.admin.feature.catalog.domain.Product(
+            id = "p1",
+            name = "Wireless Headphones Pro",
+            description = "Premium noise-canceling headphones",
+            slug = "wireless-headphones-pro",
+            priceAmount = 199.99,
+            priceCurrency = "USD",
+            images = emptyList(),
+            status = ProductStatus.ACTIVE,
+            categoryId = "c1",
+            createdAt = "2024-01-15T10:30:00Z",
+            updatedAt = "2024-01-15T10:30:00Z"
+        )
+        val sampleItem = InventoryItem(
+            product = sampleProduct,
+            variants = listOf(
+                InventoryVariant(
+                    variant = com.nearai.admin.feature.catalog.domain.ProductVariant(
+                        id = "v1",
+                        productId = "p1",
+                        sku = "WH-PRO-001-BLK",
+                        attributes = mapOf("color" to "Black"),
+                        status = com.nearai.admin.feature.catalog.domain.VariantStatus.ACTIVE,
+                        availableQuantity = 45,
+                        createdAt = "2024-01-15T10:30:00Z",
+                        updatedAt = "2024-01-15T10:30:00Z"
+                    ),
+                    stock = com.nearai.admin.feature.catalog.domain.StockBalance(
+                        variantId = "v1",
+                        onHand = 50,
+                        reserved = 5,
+                        availableQuantity = 45
+                    )
+                )
+            )
+        )
+        val skuItem = sampleItem.toSkuItem()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(BackgroundLight)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("Products & Inventory", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Navy)
+            SkuProductCard(item = skuItem, onEdit = {}, onDelete = {})
+            val lowStockProduct = com.nearai.admin.feature.catalog.domain.Product(
+                id = "p2",
+                name = "USB-C Charging Cable",
+                description = "Durable charging cable",
+                slug = "usb-c-charging-cable",
+                priceAmount = 12.99,
+                priceCurrency = "USD",
+                images = emptyList(),
+                status = ProductStatus.ACTIVE,
+                categoryId = "c1",
+                createdAt = "2024-02-20T08:00:00Z",
+                updatedAt = "2024-02-20T08:00:00Z"
+            )
+            val lowStockItem = InventoryItem(
+                product = lowStockProduct,
+                variants = listOf(
+                    InventoryVariant(
+                        variant = com.nearai.admin.feature.catalog.domain.ProductVariant(
+                            id = "v2",
+                            productId = "p2",
+                            sku = "USB-C-002-WHT",
+                            attributes = mapOf("color" to "White"),
+                            status = com.nearai.admin.feature.catalog.domain.VariantStatus.ACTIVE,
+                            availableQuantity = 3,
+                            createdAt = "2024-02-20T08:00:00Z",
+                            updatedAt = "2024-02-20T08:00:00Z"
+                        ),
+                        stock = com.nearai.admin.feature.catalog.domain.StockBalance(
+                            variantId = "v2",
+                            onHand = 3,
+                            reserved = 0,
+                            availableQuantity = 3
+                        )
+                    )
+                )
+            )
+            SkuProductCard(
+                item = lowStockItem.toSkuItem(),
+                onEdit = {},
+                onDelete = {},
+                hasLowStock = true,
+                onReceiveStock = {},
+                onAdjustStock = {},
+                onViewMovements = {}
+            )
+        }
     }
 }
