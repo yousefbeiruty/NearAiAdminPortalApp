@@ -14,6 +14,7 @@ import com.nearai.admin.feature.dashboard.presentation.DashboardScreen
 import com.nearai.admin.feature.more.presentation.MoreScreen
 import com.nearai.admin.feature.aiusage.presentation.AiUsageScreen
 import com.nearai.admin.feature.auditlogs.presentation.AuditLogsScreen
+import com.nearai.admin.feature.auditlogs.presentation.AuditLogsViewModel
 import com.nearai.admin.feature.discovery.presentation.DiscoveryScreen
 import com.nearai.admin.feature.inventory.presentation.InventoryScreen
 import com.nearai.admin.feature.inventory.presentation.InventoryViewModel
@@ -180,7 +181,9 @@ fun AppNavHost(
         }
 
         composable<AuditLogsRoute> {
+            val viewModel: AuditLogsViewModel = hiltViewModel()
             AuditLogsScreen(
+                viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

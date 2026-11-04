@@ -2,19 +2,15 @@ package com.nearai.admin.feature.auditlogs.presentation
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
@@ -22,1302 +18,533 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nearai.admin.core.designsystem.components.EmptyState
+import com.nearai.admin.core.designsystem.components.ErrorState
+import com.nearai.admin.core.designsystem.components.LoadingScreen
 import com.nearai.admin.core.designsystem.theme.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
- * Audit Logs & Settings screen with chronological audit stream, security key management,
- * governance policy toggles, and cryptographic bundle export.
+ * Audit Logs screen connected to the real backend API.
  *
- * Uses development-only placeholder data until the backend API is connected.
+ * Displays chronological audit entries with expandable details,
+ * filtering by action/resource type, pagination, and proper loading/error states.
  */
 
 // =============================================================================
-// Color Tokens
+// Helpers
 // =============================================================================
 
+private val timestampFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
 
-// =============================================================================
-// UI Data Models
-// =============================================================================
-
-enum class AuditStatus(
-    val label: String,
-    val textColor: Color,
-    val backgroundColor: Color
-) {
-    SUCCESS("SUCCESS · +500", EmeraldDark, EmeraldBg),
-    CONFIG_COMMITTED("CONFIG_COMMITTED", PurpleDark, PurpleBg),
-    SUSPENDED("SUSPENDED · 403", RoseDark, RoseBg)
+/**
+ * Formats an ISO-8601 timestamp string into a human-readable display time.
+ */
+fun formatTimestamp(isoString: String): String {
+    return try {
+        val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+        df.timeZone = TimeZone.getTimeZone("UTC")
+        val date = df.parse(isoString) ?: df.parse(isoString.replace("Z", "")) ?: return isoString
+        timestampFormat.format(date)
+    } catch (_: Exception) {
+        // Fallback: try without Z suffix
+        try {
+            val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val date = df.parse(isoString) ?: return isoString
+            timestampFormat.format(date)
+        } catch (_: Exception) {
+            isoString
+        }
+    }
 }
 
-data class AuditLogEntry(
-    val id: String,
-    val title: String,
-    val actor: String,
-    val timeAgo: String,
-    val status: AuditStatus,
-    val icon: ImageVector,
-    val iconTint: Color,
-    val iconBg: Color,
-    val targetLabel: String,
-    val targetValue: String,
-    val description: String? = null,
-    val isAlertDescription: Boolean = false,
-    val diffFrom: String? = null,
-    val diffTo: String? = null,
-    val originIp: String? = null,
-    val actionText: String? = null,
-    val actionSecondaryText: String? = null
-)
+/**
+ * Returns a display label for an action string.
+ */
+fun actionDisplayLabel(action: String): String {
+    return action.replace(".", " ").replaceFirstChar { it.uppercase() }
+}
+
+/**
+ * Returns a color for a resource type badge.
+ */
+fun resourceTypeColor(resourceType: String): Color {
+    return when (resourceType.lowercase()) {
+        "product" -> EmeraldSuccess
+        "order" -> Indigo
+        "user" -> PurpleDark
+        "stock" -> AmberWarning
+        else -> Info
+    }
+}
+
+/**
+ * Returns an icon for an action.
+ */
+fun actionIcon(action: String) = when {
+    action.contains("create", ignoreCase = true) -> Icons.Filled.AddCircle
+    action.contains("update", ignoreCase = true) -> Icons.Filled.Edit
+    action.contains("suspend", ignoreCase = true) -> Icons.Filled.Block
+    action.contains("cancel", ignoreCase = true) -> Icons.Filled.Cancel
+    action.contains("receive", ignoreCase = true) -> Icons.Filled.Download
+    action.contains("adjust", ignoreCase = true) -> Icons.Filled.Tune
+    action.contains("revoke", ignoreCase = true) -> Icons.Filled.LockReset
+    action.contains("confirm", ignoreCase = true) -> Icons.Filled.CheckCircle
+    action.contains("deliver", ignoreCase = true) -> Icons.Filled.LocalShipping
+    else -> Icons.Filled.Assignment
+}
 
 // =============================================================================
-// Audit Logs & Settings Screen Composable
+// Audit Logs Screen Composable
 // =============================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuditLogsScreen(
-    onNavigateBack: () -> Unit = {},
-    onNotificationClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {},
-    onInspectJson: (String) -> Unit = {},
-    onDiffView: (String) -> Unit = {},
-    onUnbanIp: (String) -> Unit = {},
-    onCopyApiKey: () -> Unit = {},
-    onRotateApiKey: () -> Unit = {},
-    onExportAuditBundle: () -> Unit = {}
+    viewModel: AuditLogsViewModel = hiltViewModel(),
+    onNavigateBack: () -> Unit = {}
 ) {
-    var selectedFilterIndex by remember { mutableIntStateOf(0) }
-    val filterTabs = listOf("All Actions (842)", "Credit Grants", "Config", "Security")
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
 
-    // Policy Toggles
-    var mfaRequired by remember { mutableStateOf(true) }
-    var telemetryThreshold by remember { mutableStateOf("30s") }
-    var sessionTimeout by remember { mutableStateOf("15m") }
+    // Trigger loadMore when scrolling near the end
+    LaunchedEffect(uiState.hasMore, uiState.currentPage) {
+        if (!uiState.hasMore || uiState.isLoadingMore) return@LaunchedEffect
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+            .collect { lastVisibleIndex ->
+                val totalItems = uiState.logs.size
+                if (lastVisibleIndex >= totalItems - 2) {
+                    viewModel.loadMore()
+                }
+            }
+    }
+
+    // Snackbar for errors
+    var lastShownError by remember { mutableStateOf<String?>(null) }
+    if (uiState.error != null && uiState.error != lastShownError) {
+        lastShownError = uiState.error
+        viewModel.clearError()
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Navy,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.Shield,
-                                    contentDescription = "NearAI Brand Mark",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        Column {
-                            Text(
-                                text = "NearAI Admin",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Navy
-                                )
-                            )
-                            Text(
-                                text = "AUDIT LOGS",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondaryLight,
-                                    letterSpacing = 1.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            )
-                        }
-                    }
+                    Text(
+                        text = "Audit Logs",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Navy
+                            contentDescription = "Back"
                         )
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNotificationClick) {
-                        BadgedBox(
-                            badge = {
-                                Badge(
-                                    containerColor = RoseError,
-                                    contentColor = Color.White
-                                ) {
-                                    Text("2")
-                                }
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Notifications,
-                                contentDescription = "Alerts",
-                                tint = Navy
-                            )
+                    // Clear filters button when filters are active
+                    if (uiState.filterAction != null ||
+                        uiState.filterResourceType != null ||
+                        uiState.filterResourceId != null ||
+                        uiState.filterStartDate != null ||
+                        uiState.filterEndDate != null) {
+                        TextButton(onClick = { viewModel.clearFilters() }) {
+                            Text("Clear", color = MaterialTheme.colorScheme.primary)
                         }
                     }
-                    Box(
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Indigo.copy(alpha = 0.15f))
-                            .border(1.dp, Indigo.copy(alpha = 0.35f), CircleShape)
-                            .clickable { onProfileClick() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "AF",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Navy
-                            )
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
+                }
             )
-        },
-        containerColor = BackgroundLight
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // 1. Navigation Pill Tabs (Audit Logs vs System Settings)
-            item {
-                Spacer(modifier = Modifier.height(2.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Navy,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 10.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.History,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Audit Logs",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                        }
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = SurfaceLight,
-                        border = BorderStroke(1.dp, BorderSubtle),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 10.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Settings,
-                                contentDescription = null,
-                                tint = TextSecondaryLight,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "System Settings",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    color = TextSecondaryLight,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                        }
-                    }
-                }
+        }
+    ) { paddingValues ->
+        when {
+            uiState.isLoading && uiState.logs.isEmpty() -> {
+                LoadingScreen(message = "Loading audit logs...")
             }
-
-            // 2. Production Security Cluster Banner
-            item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-                    border = BorderStroke(1.dp, BorderSubtle),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = DarkClusterBg,
-                            modifier = Modifier.size(44.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.Shield,
-                                    contentDescription = null,
-                                    tint = EmeraldSuccess,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "Production (gcp-nearai-pr...",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Navy
-                                    ),
-                                    maxLines = 1
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .size(7.dp)
-                                        .clip(CircleShape)
-                                        .background(EmeraldSuccess)
-                                )
-                            }
-                            Text(
-                                text = "Zero-Trust Strict Policy Active ...",
-                                style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight),
-                                maxLines = 1
-                            )
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            IconButton(onClick = {}, modifier = Modifier.size(32.dp)) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Search,
-                                    contentDescription = "Search",
-                                    tint = TextSecondaryLight,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            IconButton(onClick = {}, modifier = Modifier.size(32.dp)) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Tune,
-                                    contentDescription = "Filter",
-                                    tint = TextSecondaryLight,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-                }
+            uiState.error != null && uiState.logs.isEmpty() -> {
+                ErrorState(
+                    message = uiState.error ?: "Failed to load audit logs",
+                    onRetry = { viewModel.onRefresh() }
+                )
             }
-
-            // 3. Filter Chips Row
-            item {
-                Row(
+            uiState.logs.isEmpty() -> {
+                EmptyState(
+                    title = "No Audit Logs",
+                    message = "No audit logs match the current filters.",
+                    actionText = if (uiState.filterAction != null || uiState.filterResourceType != null) "Clear Filters" else null,
+                    onActionClick = { viewModel.clearFilters() }
+                )
+            }
+            else -> {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .fillMaxSize()
+                        .padding(paddingValues)
                 ) {
-                    filterTabs.forEachIndexed { index, title ->
-                        val isSelected = selectedFilterIndex == index
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { selectedFilterIndex = index },
-                            leadingIcon = {
-                                if (isSelected) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Circle,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                }
-                            },
-                            label = {
-                                Text(
-                                    text = title,
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                    )
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Navy,
-                                selectedLabelColor = Color.White,
-                                selectedLeadingIconColor = Color.White,
-                                containerColor = SurfaceLight,
-                                labelColor = TextSecondaryLight,
-                                iconColor = TextSecondaryLight
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = isSelected,
-                                borderColor = if (isSelected) Navy else BorderSubtle
-                            )
-                        )
-                    }
-                }
-            }
+                    // Filter chips
+                    AuditLogsFilterBar(
+                        uiState = uiState,
+                        onFilterAction = { viewModel.setFilterAction(it) },
+                        onFilterResourceType = { viewModel.setFilterResourceType(it) },
+                        onClearFilters = { viewModel.clearFilters() }
+                    )
 
-            // 4. Audit Stream Ingest Invariant Tile
-            item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-                    border = BorderStroke(1.dp, BorderSubtle),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                    // Log count
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                text = "AUDIT STREAM INGEST",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondaryLight,
-                                    fontWeight = FontWeight.SemiBold,
-                                    letterSpacing = 0.5.sp
-                                )
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "100% Retained",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Navy
-                                )
-                            )
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(
-                                    text = "24.2 ev/min",
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        color = Indigo,
-                                        fontWeight = FontWeight.Bold,
-                                        fontFamily = FontFamily.Monospace
-                                    )
-                                )
-                                Text(
-                                    text = "Immutable Write Log",
-                                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight)
-                                )
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = BackgroundLight,
-                                border = BorderStroke(1.dp, BorderSubtle),
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.VerifiedUser,
-                                        contentDescription = null,
-                                        tint = Indigo,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 5. Section Header: Today · Chronological Stream
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarToday,
-                            contentDescription = null,
-                            tint = Indigo,
-                            modifier = Modifier.size(16.dp)
-                        )
                         Text(
-                            text = "Today · Chronological Stream",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Navy
-                            )
+                            text = "${uiState.totalItems} entries",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Text(
-                        text = "Sync: 4s ago",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = TextSecondaryLight,
-                            fontFamily = FontFamily.Monospace
-                        )
-                    )
-                }
-            }
 
-            // 6. Chronological Stream Entries
-            val auditEvents = listOf(
-                AuditLogEntry(
-                    id = "tr_audit_883a9e4...92c",
-                    title = "Granted 500 Bonus Cr...",
-                    actor = "alex.founder (Root)",
-                    timeAgo = "12 min ago",
-                    status = AuditStatus.SUCCESS,
-                    icon = Icons.Outlined.CreditCard,
-                    iconTint = EmeraldDark,
-                    iconBg = EmeraldBg,
-                    targetLabel = "Target User",
-                    targetValue = "maya.lin@domain.com",
-                    description = "Compensation for Places API elevated latency incident #8902",
-                    isAlertDescription = false,
-                    actionText = "Inspect JSON"
-                ),
-                AuditLogEntry(
-                    id = "tr_audit_192bb3c...aa4",
-                    title = "Circuit Breaker Arm...",
-                    actor = "alex.founder",
-                    timeAgo = "2 hours ago",
-                    status = AuditStatus.CONFIG_COMMITTED,
-                    icon = Icons.Outlined.Bolt,
-                    iconTint = Indigo,
-                    iconBg = PurpleBg,
-                    targetLabel = "Compute Target",
-                    targetValue = "AI Compute Pool Alpha",
-                    diffFrom = "$600.00",
-                    diffTo = "$650.00 / hr cap",
-                    actionText = "Diff View"
-                ),
-                AuditLogEntry(
-                    id = "tr_audit_004ee29...7f1",
-                    title = "Account Suspension",
-                    actor = "Automated Shield Policy",
-                    timeAgo = "3 hours ago",
-                    status = AuditStatus.SUSPENDED,
-                    icon = Icons.Outlined.Block,
-                    iconTint = RoseDark,
-                    iconBg = RoseBg,
-                    targetLabel = "Target Entity",
-                    targetValue = "bot_probe_22",
-                    originIp = "194.26.29.11 (ASN4982)",
-                    description = "Exceeded burst rate limit (320 req/min vs 25 max allowed)",
-                    isAlertDescription = true,
-                    actionText = "Details",
-                    actionSecondaryText = "Unban IP"
-                )
-            )
-
-            items(auditEvents) { event ->
-                AuditLogCard(
-                    event = event,
-                    onInspectJson = { onInspectJson(event.id) },
-                    onDiffView = { onDiffView(event.id) },
-                    onUnbanIp = { onUnbanIp(event.id) }
-                )
-            }
-
-            // Sync Footer Callout
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Sync,
-                        contentDescription = null,
-                        tint = TextSecondaryLight,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Encrypted stream synchronized with GCP Cloud Logging",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = TextSecondaryLight,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp
-                        )
-                    )
-                }
-            }
-
-            // 7. Security & Key Management Section Header
-            item {
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    // Log list
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Key,
-                            contentDescription = null,
-                            tint = Indigo,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "Security & Key Management",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Navy
+                        items(uiState.logs, key = { it.id }) { log ->
+                            AuditLogCard(
+                                log = log,
+                                isExpanded = uiState.expandedLogId == log.id,
+                                onToggleExpand = { viewModel.onToggleExpand(log.id) }
                             )
-                        )
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = Indigo.copy(alpha = 0.12f)
-                    ) {
-                        Text(
-                            text = "KMS Managed",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = Indigo,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace
-                            ),
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
-                    }
-                }
-            }
-
-            // 8. Key Management Cards
-            item {
-                // Google Places API Key Card
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-                    border = BorderStroke(1.dp, BorderSubtle),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = BackgroundLight,
-                                    modifier = Modifier.size(38.dp)
+                        }
+                        // Loading more indicator
+                        if (uiState.isLoadingMore) {
+                            items(1) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.VpnKey,
-                                            contentDescription = null,
-                                            tint = Navy,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                                Column {
-                                    Text(
-                                        text = "Google Places API Key",
-                                        style = MaterialTheme.typography.titleSmall.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = Navy
-                                        )
-                                    )
-                                    Text(
-                                        text = "Inference & GEO Enrichment",
-                                        style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight)
-                                    )
-                                }
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = EmeraldDark
-                            ) {
-                                Text(
-                                    text = "Active",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Masked API Key Display
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = BackgroundLight,
-                            border = BorderStroke(1.dp, BorderSubtle),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "AIzaSyD...••••••••77a",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontFamily = FontFamily.Monospace,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Navy
-                                    )
-                                )
-                                IconButton(onClick = onCopyApiKey, modifier = Modifier.size(24.dp)) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.ContentCopy,
-                                        contentDescription = "Copy API Key",
-                                        tint = Indigo,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Last rotated: 14 days ago",
-                                style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight)
-                            )
-                            Button(
-                                onClick = onRotateApiKey,
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = BackgroundLight,
-                                    contentColor = Navy
-                                ),
-                                border = BorderStroke(1.dp, BorderSubtle),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.RotateRight,
-                                    contentDescription = null,
-                                    tint = Navy,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Rotate Key", fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Cloud Run Service Account Tile
-            item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-                    border = BorderStroke(1.dp, BorderSubtle),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = BackgroundLight,
-                                    modifier = Modifier.size(38.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.CloudQueue,
-                                            contentDescription = null,
-                                            tint = Navy,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                                Text(
-                                    text = "Cloud Run Service Account",
-                                    style = MaterialTheme.typography.titleSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Navy
-                                    )
-                                )
-                            }
-                            Text(
-                                text = "OAuth 2.0",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondaryLight,
-                                    fontFamily = FontFamily.Monospace
-                                )
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = BackgroundLight,
-                            border = BorderStroke(1.dp, BorderSubtle),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "nearai-core@appspot.gserviceaccount.com",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontFamily = FontFamily.Monospace,
-                                        color = Navy
-                                    ),
-                                    maxLines = 1
-                                )
-                                Icon(
-                                    imageVector = Icons.Outlined.CheckCircle,
-                                    contentDescription = "Verified Service Account",
-                                    tint = EmeraldDark,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 9. Governance Policies Section Header
-            item {
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Gavel,
-                            contentDescription = null,
-                            tint = Indigo,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "Governance Policies",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Navy
-                            )
-                        )
-                    }
-                    Text(
-                        text = "v2.4 Enforced",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = TextSecondaryLight,
-                            fontFamily = FontFamily.Monospace
-                        )
-                    )
-                }
-            }
-
-            // 10. Governance Policies Toggles List
-            item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-                    border = BorderStroke(1.dp, BorderSubtle),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        // Policy 1: Require MFA for Grants > 1,000
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Require MFA for Grants > 1,000",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Navy
-                                    )
-                                )
-                                Text(
-                                    text = "Prompts hardware token for high-quota credits",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight)
-                                )
-                            }
-                            Switch(
-                                checked = mfaRequired,
-                                onCheckedChange = { mfaRequired = it },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = Indigo,
-                                    uncheckedThumbColor = Color.White,
-                                    uncheckedTrackColor = BorderSubtle
-                                )
-                            )
-                        }
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 14.dp),
-                            color = BorderSubtle
-                        )
-
-                        // Policy 2: Stale Telemetry Threshold
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Stale Telemetry Threshold",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Navy
-                                    )
-                                )
-                                Text(
-                                    text = "Heartbeat interval before node failsafe triggers",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight)
-                                )
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = BackgroundLight,
-                                border = BorderStroke(1.dp, BorderSubtle)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(
-                                        text = telemetryThreshold,
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace,
-                                            color = Navy
-                                        )
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Default.UnfoldMore,
-                                        contentDescription = null,
-                                        tint = TextSecondaryLight,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 14.dp),
-                            color = BorderSubtle
-                        )
-
-                        // Policy 3: Ephemeral Session Timeout
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Ephemeral Session Timeout",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Navy
-                                    )
-                                )
-                                Text(
-                                    text = "Strict idle logout for mobile console sessions",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight)
-                                )
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = BackgroundLight,
-                                border = BorderStroke(1.dp, BorderSubtle)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(
-                                        text = sessionTimeout,
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace,
-                                            color = Navy
-                                        )
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Default.UnfoldMore,
-                                        contentDescription = null,
-                                        tint = TextSecondaryLight,
-                                        modifier = Modifier.size(16.dp)
-                                    )
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
                                 }
                             }
                         }
                     }
                 }
-            }
-
-            // 11. Bottom Action CTA: Export Cryptographic Audit Bundle
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                Button(
-                    onClick = onExportAuditBundle,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Navy)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.FileDownload,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Export Cryptographic Audit Bundle (.gz)",
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Signed SHA-256 fingerprint verified by Root Authority",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = TextSecondaryLight,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
 }
 
 // =============================================================================
-// Helper Component: Audit Log Card
+// Filter Bar
 // =============================================================================
 
 @Composable
-fun AuditLogCard(
-    event: AuditLogEntry,
-    onInspectJson: () -> Unit,
-    onDiffView: () -> Unit,
-    onUnbanIp: () -> Unit
+private fun AuditLogsFilterBar(
+    uiState: AuditLogsUiState,
+    onFilterAction: (String?) -> Unit,
+    onFilterResourceType: (String?) -> Unit,
+    onClearFilters: () -> Unit
+) {
+    // Collect unique actions and resource types from the current logs for filter chips
+    val actions = remember(uiState.logs) {
+        uiState.logs.mapNotNull { it.action }.distinct().sorted()
+    }
+    val resourceTypes = remember(uiState.logs) {
+        uiState.logs.mapNotNull { it.resourceType }.distinct().sorted()
+    }
+
+    Column {
+        // Action filter chips
+        if (actions.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = uiState.filterAction == null,
+                    onClick = { onFilterAction(null) },
+                    label = { Text("All") }
+                )
+                actions.take(5).forEach { action ->
+                    FilterChip(
+                        selected = uiState.filterAction == action,
+                        onClick = { onFilterAction(action) },
+                        label = {
+                            Text(
+                                text = actionDisplayLabel(action),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    )
+                }
+            }
+        }
+
+        // Resource type filter chips
+        if (resourceTypes.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = uiState.filterResourceType == null,
+                    onClick = { onFilterResourceType(null) },
+                    label = { Text("All Types") }
+                )
+                resourceTypes.forEach { type ->
+                    FilterChip(
+                        selected = uiState.filterResourceType == type,
+                        onClick = { onFilterResourceType(type) },
+                        label = { Text(type) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// =============================================================================
+// Audit Log Card
+// =============================================================================
+
+@Composable
+private fun AuditLogCard(
+    log: com.nearai.admin.feature.auditlogs.domain.AuditLog,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-        border = BorderStroke(1.dp, BorderSubtle),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        onClick = onToggleExpand
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Header: Icon, Title & Actor, Status Pill
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Header row: icon, action, timestamp
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // Action icon
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = event.iconBg,
-                    modifier = Modifier.size(42.dp)
+                    modifier = Modifier.size(40.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    color = resourceTypeColor(log.resourceType).copy(alpha = 0.12f)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = event.icon,
+                            imageVector = actionIcon(log.action),
                             contentDescription = null,
-                            tint = event.iconTint,
+                            tint = resourceTypeColor(log.resourceType),
                             modifier = Modifier.size(20.dp)
                         )
                     }
                 }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = event.title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Navy
-                        ),
-                        maxLines = 1
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "${event.actor} · ${event.timeAgo}",
-                        style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight)
-                    )
-                }
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = event.status.backgroundColor
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(event.status.textColor)
-                        )
-                        Text(
-                            text = event.status.label,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = event.status.textColor,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(14.dp))
 
-            // Body Detail Container
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = BackgroundLight,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    // Target Key-Value
+                // Action and resource info
+                Column(modifier = Modifier.weight(1f, true)) {
+                    Text(
+                        text = actionDisplayLabel(log.action),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = event.targetLabel,
-                            style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight)
-                        )
-                        Text(
-                            text = event.targetValue,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace,
-                                color = if (event.status == AuditStatus.SUSPENDED) RoseDark else Navy
+                        // Resource type badge
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = resourceTypeColor(log.resourceType).copy(alpha = 0.15f),
+                            border = BorderStroke(
+                                1.dp,
+                                resourceTypeColor(log.resourceType).copy(alpha = 0.4f)
                             )
-                        )
-                    }
-
-                    // Origin IPv4 (if present)
-                    if (event.originIp != null) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Origin IPv4",
-                                style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight)
-                            )
-                            Text(
-                                text = event.originIp,
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontFamily = FontFamily.Monospace,
-                                    color = TextSecondaryLight
-                                )
+                                text = log.resourceType,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = resourceTypeColor(log.resourceType),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
-                    }
-
-                    // Diff Values (if present)
-                    if (event.diffFrom != null && event.diffTo != null) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        // Resource ID
+                        if (log.resourceId != null) {
                             Text(
-                                text = "Threshold Change",
-                                style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight)
-                            )
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(
-                                    text = event.diffFrom,
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontFamily = FontFamily.Monospace,
-                                        color = TextSecondaryLight,
-                                        textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough
-                                    )
-                                )
-                                Text(
-                                    text = "→ ${event.diffTo}",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontFamily = FontFamily.Monospace,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Indigo
-                                    )
-                                )
-                            }
-                        }
-                    }
-
-                    // Description / Incident Note
-                    if (event.description != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            verticalAlignment = Alignment.Top,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (event.isAlertDescription) Icons.Outlined.WarningAmber else Icons.Outlined.Info,
-                                contentDescription = null,
-                                tint = if (event.isAlertDescription) RoseDark else TextSecondaryLight,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Text(
-                                text = event.description,
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = if (event.isAlertDescription) RoseDark else TextSecondaryLight,
-                                    lineHeight = 16.sp
-                                )
+                                text = "#${log.resourceId.take(8)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
                 }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
 
-            // Footer: Monospace Hash ID & Action Buttons
+                // Expand/collapse icon
+                Icon(
+                    imageVector = if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Timestamp and actor
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "# ${event.id}",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = TextSecondaryLight,
-                        fontFamily = FontFamily.Monospace
-                    )
+                    text = formatTimestamp(log.createdAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (event.actionSecondaryText != null) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = BackgroundLight,
-                            border = BorderStroke(1.dp, BorderSubtle),
-                            modifier = Modifier.clickable { onUnbanIp() }
-                        ) {
-                            Text(
-                                text = event.actionSecondaryText,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = Navy,
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
+                if (log.actorId != null) {
+                    Text(
+                        text = "by ${log.actorId.take(8)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Expanded details
+            if (isExpanded) {
+                Divider(modifier = Modifier.padding(vertical = 12.dp))
+
+                // Actor details
+                AuditLogDetailRow(
+                    label = "Actor ID",
+                    value = log.actorId ?: "System"
+                )
+                AuditLogDetailRow(
+                    label = "Actor Role",
+                    value = log.actorRole
+                )
+                AuditLogDetailRow(
+                    label = "Action",
+                    value = log.action
+                )
+                AuditLogDetailRow(
+                    label = "Resource",
+                    value = "${log.resourceType}${if (log.resourceId != null) " / ${log.resourceId}" else ""}"
+                )
+                log.requestId?.let {
+                    AuditLogDetailRow(
+                        label = "Request ID",
+                        value = it
+                    )
+                }
+
+                // Changes JSON
+                log.changes?.let { changesJson ->
+                    if (changesJson.isNotBlank()) {
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                        Text(
+                            text = "Changes",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
+                        )
+                        JsonDisplay(jsonString = changesJson)
                     }
-                    if (event.actionText != null) {
-                        Row(
-                            modifier = Modifier.clickable {
-                                when (event.actionText) {
-                                    "Inspect JSON" -> onInspectJson()
-                                    "Diff View" -> onDiffView()
-                                    else -> onInspectJson()
-                                }
-                            },
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Text(
-                                text = event.actionText,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = Indigo,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                tint = Indigo,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
+                }
+
+                // Metadata JSON
+                log.metadata?.let { metadataJson ->
+                    if (metadataJson.isNotBlank()) {
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                        Text(
+                            text = "Metadata",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
+                        )
+                        JsonDisplay(jsonString = metadataJson)
                     }
                 }
             }
         }
+    }
+}
+
+// =============================================================================
+// Detail Row
+// =============================================================================
+
+@Composable
+private fun AuditLogDetailRow(label: String, value: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+// =============================================================================
+// Changes Display — renders key/value pairs from the changes map
+// =============================================================================
+
+@Composable
+private fun JsonDisplay(jsonString: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(
+            text = jsonString,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(12.dp),
+            maxLines = 6,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -1325,10 +552,86 @@ fun AuditLogCard(
 // Preview
 // =============================================================================
 
-@Preview(showBackground = true, widthDp = 390, heightDp = 1500)
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, widthDp = 390, heightDp = 700)
 @Composable
 fun AuditLogsScreenPreview() {
-    MaterialTheme {
-        AuditLogsScreen()
+    NearAiAdminTheme {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Top app bar
+            TopAppBar(
+                title = { Text("Audit Logs") },
+                navigationIcon = {
+                    IconButton(onClick = {}) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(
+                    listOf(
+                        com.nearai.admin.feature.auditlogs.domain.AuditLog(
+                            id = "log-1",
+                            actorId = "admin-uuid-1234",
+                            actorRole = "admin",
+                            action = "product.create",
+                            resourceType = "product",
+                            resourceId = "prod-uuid-5678",
+                            requestId = "req-123",
+                            changes = """{"name":"New Product","price":29.99,"status":"active"}""",
+                            metadata = """{"ip_address":"192.168.1.1"}""",
+                            createdAt = "2025-11-04T10:30:00Z"
+                        ),
+                        com.nearai.admin.feature.auditlogs.domain.AuditLog(
+                            id = "log-2",
+                            actorId = "admin-uuid-1234",
+                            actorRole = "admin",
+                            action = "stock.adjust",
+                            resourceType = "stock",
+                            resourceId = "variant-uuid-9012",
+                            requestId = "req-456",
+                            changes = """{"before":100,"after":85,"delta":-15,"reason":"Damaged goods"}""",
+                            metadata = null,
+                            createdAt = "2025-11-04T09:15:00Z"
+                        ),
+                        com.nearai.admin.feature.auditlogs.domain.AuditLog(
+                            id = "log-3",
+                            actorId = "admin-uuid-1234",
+                            actorRole = "admin",
+                            action = "user.suspend",
+                            resourceType = "user",
+                            resourceId = "user-uuid-3456",
+                            requestId = "req-789",
+                            changes = """{"is_active":false}""",
+                            metadata = """{"reason":"Policy violation"}""",
+                            createdAt = "2025-11-04T08:00:00Z"
+                        ),
+                        com.nearai.admin.feature.auditlogs.domain.AuditLog(
+                            id = "log-4",
+                            actorId = null,
+                            actorRole = "system",
+                            action = "order.cancel",
+                            resourceType = "order",
+                            resourceId = "order-uuid-7890",
+                            requestId = null,
+                            changes = """{"status":"cancelled","reason":"Expired reservation"}""",
+                            metadata = null,
+                            createdAt = "2025-11-03T23:45:00Z"
+                        )
+                    ),
+                    key = { it.id }
+                ) { log ->
+                    AuditLogCard(
+                        log = log,
+                        isExpanded = log.id == "log-1",
+                        onToggleExpand = {}
+                    )
+                }
+            }
+        }
     }
 }
