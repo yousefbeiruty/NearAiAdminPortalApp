@@ -42,21 +42,26 @@ fun UsersScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
 
-    // Trigger loadMore when user scrolls near the end
-    LaunchedEffect(uiState.hasMore) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Display update messages as snackbar — consumed once via key tracking
+    var lastShownMessage by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(uiState.updateMessage) {
+        uiState.updateMessage?.let { msg ->
+            if (msg != lastShownMessage) {
+                snackbarHostState.showSnackbar(msg)
+                lastShownMessage = msg
+            }
+        }
+    }
+
+    // Trigger loadMore when user scrolls near the end — keyed by currentPage
+    // to avoid re-firing on every recomposition
+    LaunchedEffect(uiState.hasMore, uiState.currentPage) {
         val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
         val totalItems = listState.layoutInfo.totalItemsCount
         if (lastVisibleItem != null && lastVisibleItem.index >= totalItems - 2 && uiState.hasMore) {
             viewModel.loadMore()
-        }
-    }
-
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    // Display update messages as snackbar
-    LaunchedEffect(uiState.updateMessage) {
-        uiState.updateMessage?.let { msg ->
-            snackbarHostState.showSnackbar(msg)
         }
     }
 

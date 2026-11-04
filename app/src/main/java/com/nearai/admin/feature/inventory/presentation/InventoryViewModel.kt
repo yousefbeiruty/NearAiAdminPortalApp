@@ -101,6 +101,13 @@ class InventoryViewModel @Inject constructor(
         const val LOW_STOCK_THRESHOLD = 10
     }
 
+    /**
+     * Monotonically increasing counter that tracks the latest inventory load request.
+     * Stale enrichment results (from earlier requests) are discarded when this counter
+     * has advanced, preventing race conditions between pagination and async enrichment.
+     */
+    private var loadGeneration = 0
+
     init {
         loadInventory()
     }
@@ -110,6 +117,10 @@ class InventoryViewModel @Inject constructor(
      */
     fun loadInventory() {
         viewModelScope.launch {
+            // Increment generation so any in-flight enrichment from a previous load is discarded
+            loadGeneration++
+            val currentGeneration = loadGeneration
+
             _uiState.update {
                 it.copy(
                     isLoading = _uiState.value.inventoryItems.isEmpty(),
@@ -129,11 +140,12 @@ class InventoryViewModel @Inject constructor(
                 search = state.searchQuery.ifBlank { null }
             )) {
                 is Result.Success -> {
+                    // Reject if a newer load started while we were fetching
+                    if (loadGeneration != currentGeneration) return@launch
+
                     val items = result.data.products.map { product ->
                         InventoryItem(product = product)
                     }
-                    // Load variants and stock for each product
-                    loadVariantsAndStock(items)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -147,10 +159,12 @@ class InventoryViewModel @Inject constructor(
                                 item.product.status == ProductStatus.ACTIVE
                             },
                             kpiTotalProducts = result.data.totalItems,
-                            kpiLowStockCount = 0, // Updated after stock loads
-                            kpiOutOfStockCount = 0 // Updated after stock loads
+                            kpiLowStockCount = 0,
+                            kpiOutOfStockCount = 0
                         )
                     }
+                    // Enrich in place — merges variants/stock into existing items without replacing the list
+                    enrichItemsInPlace(items.map { it.product.id }, currentGeneration)
                 }
                 is Result.Error -> {
                     _uiState.update {
@@ -169,12 +183,19 @@ class InventoryViewModel @Inject constructor(
     }
 
     /**
-     * Loads variants and stock data for each inventory item asynchronously.
+     * Enriches existing inventory items by product ID, loading variants and stock data.
+     * Uses [generation] to reject stale results: if a newer load started while enrichment
+     * was in progress, the results are silently discarded.
+     *
+     * This prevents the race condition where loadMore() appends page 2, then a delayed
+     * enrichment from page 1 overwrites the combined list.
      */
-    private fun loadVariantsAndStock(items: List<InventoryItem>) {
+    private fun enrichItemsInPlace(productIds: List<String>, generation: Int) {
         viewModelScope.launch {
-            val updatedItems = items.map { item ->
-                val variantsResult = catalogRepository.listVariants(item.product.id)
+            // Build enriched items for the given product IDs
+            val enrichedByProductId = mutableMapOf<String, InventoryItem>()
+            for (productId in productIds) {
+                val variantsResult = catalogRepository.listVariants(productId)
                 val variants = when (variantsResult) {
                     is Result.Success -> variantsResult.data.variants
                     else -> emptyList()
@@ -189,11 +210,24 @@ class InventoryViewModel @Inject constructor(
                     InventoryVariant(variant = variant, stock = stock)
                 }
 
-                InventoryItem(product = item.product, variants = inventoryVariants)
+                // Find the existing item in current state to preserve the product object
+                val existingItem = _uiState.value.inventoryItems.find { it.product.id == productId }
+                if (existingItem != null) {
+                    enrichedByProductId[productId] = existingItem.copy(variants = inventoryVariants)
+                }
             }
 
-            // Calculate low stock and out of stock counts
-            val allVariants = updatedItems.flatMap { it.variants }
+            // Reject stale enrichment
+            if (loadGeneration != generation) return@launch
+
+            // Merge enriched items into the current list, preserving list order
+            val currentItems = _uiState.value.inventoryItems
+            val mergedItems = currentItems.map { item ->
+                enrichedByProductId[item.product.id] ?: item
+            }
+
+            // Calculate KPIs from all merged items
+            val allVariants = mergedItems.flatMap { it.variants }
             val lowStockCount = allVariants.count { iv ->
                 val qty = iv.stock?.availableQuantity ?: 0
                 qty > 0 && qty < LOW_STOCK_THRESHOLD
@@ -204,18 +238,18 @@ class InventoryViewModel @Inject constructor(
 
             // Apply stock filter if active
             val filteredItems = when (_uiState.value.filterStock) {
-                StockFilter.LOW_STOCK -> updatedItems.filter { item ->
+                StockFilter.LOW_STOCK -> mergedItems.filter { item ->
                     item.variants.any { iv ->
                         val qty = iv.stock?.availableQuantity ?: 0
                         qty > 0 && qty < LOW_STOCK_THRESHOLD
                     }
                 }
-                StockFilter.OUT_OF_STOCK -> updatedItems.filter { item ->
+                StockFilter.OUT_OF_STOCK -> mergedItems.filter { item ->
                     item.variants.any { iv ->
                         iv.stock?.availableQuantity ?: 0 == 0
                     }
                 }
-                null -> updatedItems
+                null -> mergedItems
             }
 
             _uiState.update {
@@ -229,13 +263,26 @@ class InventoryViewModel @Inject constructor(
     }
 
     /**
+     * Flag to prevent duplicate loadMore requests from rapid scroll events.
+     */
+    private var isLoadMorePending = false
+
+    /**
      * Loads the next page of inventory (pagination).
+     * Appends new items to the existing list, then enriches them in place.
+     * Captures loadGeneration at start so stale pagination results are rejected
+     * if a newer load (search, filter, refresh) started while this was in flight.
      */
     fun loadMore() {
         val state = _uiState.value
-        if (state.isLoadingMore || !state.hasMore) return
+        if (isLoadMorePending || state.isLoadingMore || !state.hasMore) return
 
+        // Capture generation at entry so we can reject stale results
+        val generationAtStart = loadGeneration
+
+        isLoadMorePending = true
         viewModelScope.launch {
+            isLoadMorePending = false
             _uiState.update { it.copy(isLoadingMore = true) }
 
             val nextPage = state.currentPage + 1
@@ -246,26 +293,36 @@ class InventoryViewModel @Inject constructor(
                 search = state.searchQuery.ifBlank { null }
             )) {
                 is Result.Success -> {
-                    val items = result.data.products.map { product ->
+                    // Reject if a newer load started while we were fetching
+                    if (loadGeneration != generationAtStart) {
+                        _uiState.update { it.copy(isLoadingMore = false) }
+                        return@launch
+                    }
+
+                    val newItems = result.data.products.map { product ->
                         InventoryItem(product = product)
                     }
-                    loadVariantsAndStock(items)
+                    // Capture generation at append time so enrichment won't be rejected
+                    val generationAtAppend = loadGeneration
 
                     _uiState.update {
                         it.copy(
                             isLoadingMore = false,
-                            inventoryItems = it.inventoryItems + items,
+                            inventoryItems = it.inventoryItems + newItems,
                             currentPage = result.data.page,
                             totalPages = result.data.totalPages,
                             totalItems = result.data.totalItems,
                             hasMore = result.data.page < result.data.totalPages
                         )
                     }
+                    // Enrich only the new items in place
+                    enrichItemsInPlace(newItems.map { it.product.id }, generationAtAppend)
                 }
                 is Result.Error -> {
                     _uiState.update {
                         it.copy(
                             isLoadingMore = false,
+                            hasMore = false,
                             error = result.exception.message
                         )
                     }
@@ -275,6 +332,14 @@ class InventoryViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Retries loading the next page after a pagination error.
+     */
+    fun onRetryLoadMore() {
+        _uiState.update { it.copy(hasMore = true, error = null) }
+        loadMore()
     }
 
     /**
@@ -462,10 +527,13 @@ class InventoryViewModel @Inject constructor(
     }
 
     /**
-     * Refreshes inventory data without resetting state.
+     * Refreshes inventory data after a stock operation.
+     * Increments loadGeneration so any in-flight enrichment is discarded.
      */
     private fun refreshInventory() {
         viewModelScope.launch {
+            loadGeneration++
+            val currentGeneration = loadGeneration
             val state = _uiState.value
             when (val result = catalogRepository.listProducts(
                 page = 1,
@@ -474,10 +542,10 @@ class InventoryViewModel @Inject constructor(
                 search = state.searchQuery.ifBlank { null }
             )) {
                 is Result.Success -> {
+                    if (loadGeneration != currentGeneration) return@launch
                     val items = result.data.products.map { product ->
                         InventoryItem(product = product)
                     }
-                    loadVariantsAndStock(items)
                     _uiState.update {
                         it.copy(
                             inventoryItems = items,
@@ -488,9 +556,12 @@ class InventoryViewModel @Inject constructor(
                             kpiActiveSkus = items.count { item ->
                                 item.product.status == ProductStatus.ACTIVE
                             },
-                            kpiTotalProducts = result.data.totalItems
+                            kpiTotalProducts = result.data.totalItems,
+                            kpiLowStockCount = 0,
+                            kpiOutOfStockCount = 0
                         )
                     }
+                    enrichItemsInPlace(items.map { it.product.id }, currentGeneration)
                 }
                 else -> {
                     // Silently fail on refresh

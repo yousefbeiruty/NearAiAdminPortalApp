@@ -67,19 +67,24 @@ class UsersViewModel @Inject constructor(
     }
 
     init {
-        // Debounced search
+        // Debounced search — captures the query at debounce time to avoid stale responses
         viewModelScope.launch {
             _searchQuery
                 .debounce(SEARCH_DEBOUNCE_MS)
                 .collect { query ->
                     _uiState.update { it.copy(searchQuery = query) }
-                    loadUsers()
+                    loadUsers(query)
                 }
         }
-        loadUsers()
+        loadUsers(null)
     }
 
-    fun loadUsers() {
+    /**
+     * Loads the first page of users.
+     * @param searchQuery if null, uses the current searchQuery from UI state.
+     * If provided, uses the exact query to avoid stale API responses.
+     */
+    fun loadUsers(searchQuery: String? = null) {
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -94,10 +99,11 @@ class UsersViewModel @Inject constructor(
             }
 
             val state = _uiState.value
+            val query = if (searchQuery != null) searchQuery else state.searchQuery
             when (val result = usersRepository.listUsers(
                 page = 1,
                 size = PAGE_SIZE,
-                search = if (state.searchQuery.isBlank()) null else state.searchQuery,
+                search = if (query.isBlank()) null else query,
                 role = state.filterRole,
                 isActive = state.filterIsActive
             )) {
@@ -128,17 +134,26 @@ class UsersViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Loads the next page of users.
+     * Uses a flag to prevent duplicate requests from rapid scroll events.
+     */
+    private var isLoadMorePending = false
+
     fun loadMore() {
         val state = _uiState.value
-        if (state.isLoadingMore || !state.hasMore) return
+        if (isLoadMorePending || state.isLoadingMore || !state.hasMore) return
 
+        isLoadMorePending = true
         viewModelScope.launch {
+            isLoadMorePending = false
             _uiState.update { it.copy(isLoadingMore = true) }
             val nextPage = state.currentPage + 1
+            val query = state.searchQuery
             when (val result = usersRepository.listUsers(
                 page = nextPage,
                 size = PAGE_SIZE,
-                search = if (state.searchQuery.isBlank()) null else state.searchQuery,
+                search = if (query.isBlank()) null else query,
                 role = state.filterRole,
                 isActive = state.filterIsActive
             )) {
@@ -156,7 +171,7 @@ class UsersViewModel @Inject constructor(
                 }
                 is Result.Error -> {
                     _uiState.update {
-                        it.copy(isLoadingMore = false, error = result.exception.message)
+                        it.copy(isLoadingMore = false, hasMore = false, error = result.exception.message)
                     }
                 }
                 is Result.Loading -> {
@@ -185,10 +200,12 @@ class UsersViewModel @Inject constructor(
     }
 
     fun clearFilters() {
+        // Sync _searchQuery to prevent debounced flow from firing a stale search
+        _searchQuery.value = ""
         _uiState.update {
             it.copy(filterRole = null, filterIsActive = null, searchQuery = "")
         }
-        loadUsers()
+        loadUsers("")
     }
 
     fun onUserClicked(user: AdminUser) {
@@ -273,8 +290,19 @@ class UsersViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Retries loading after an initial error.
+     */
     fun onRetry() {
         loadUsers()
+    }
+
+    /**
+     * Retries loading the next page after a pagination error.
+     */
+    fun onRetryLoadMore() {
+        _uiState.update { it.copy(hasMore = true, error = null) }
+        loadMore()
     }
 
     fun onRefresh() {
