@@ -35,28 +35,32 @@
 - **Biometrics and FIDO2/NFC** hardware key integration (pending backend)
 - **Encrypted token storage** using AES256_GCM with Android Keystore
 - **Session management** with automatic expiry detection and redirect
-- **Development-only fake authentication** clearly marked for production replacement
+- **Automatic token refresh** — expired access tokens are silently refreshed via `TokenRefreshManager` with single-flight locking
+- **Real backend integration** via `AuthApiService` and `RealAuthRepository`
 
 ### 2. Overview Dashboard
-- **6-KPI metrics grid**: Total Users, DAU, AI Requests, AI Spend, Places Found, Est. Revenue
-- **14-day user velocity Bezier curve** with Canvas-rendered gradient fill
-- **24-hour AI inference load histogram** with retry spike highlighting
-- **Monthly compute envelope** progress gauge with budget thresholds
-- **Live activity stream** with real-time event cards
-- **Cluster fleet status banner** with navigation to System Health
-- **Fully ViewModel-driven** — no hardcoded data in production composables
+- **Real backend metrics** from `GET /api/v1/admin/dashboard` — no fabricated data
+- **6 metric cards**: Total Users, Total Products, Total Categories, Total Orders, Pending Orders, Completed Orders
+- **Revenue by currency** with currency-aware formatting
+- **Recent orders** section with order IDs, customer names, and status
+- **Recent registrations** section with user emails and dates
+- **Low stock alerts** showing variants below threshold
+- **Pull-to-refresh** support
+- **Fully ViewModel-driven** with loading, empty, and error states
 
 ### 3. User Management
 - **Search and filter** users by name, email, ID, subscription tier, and status
 - **User detail bottom sheet** with subscription info, AI credits balance gauge, and model invocation logs
 - **Administrative actions**: Grant Credits, Reset Quota, Suspend Account
 - **Flagged user indicators** and tier-based status pills
+- ⏳ UI implemented; real backend integration pending
 
 ### 4. AI Usage & Credits
 - **Budget envelope card** with 50%/75%/90% threshold markers
 - **Provider/model distribution** breakdown (OpenAI, Anthropic, Self-Hosted)
 - **Quota safeguards**: Free Tier, Burst Rate Limits, Circuit Breaker
 - **Live ingestion telemetry** with 429 rate limit status
+- ⏳ UI implemented; real backend integration pending
 
 ### 5. Places & Discovery
 - **Pipeline telemetry grid**: Discovery Volume, Places Spend, Avg Latency, Cache Hit Ratio
@@ -64,31 +68,45 @@
 - **Trace inspector** with semantic NLP intent extraction and pipeline latency waterfall
 - **Discovered places carousel** with image loading, ratings, and match scores
 - **Action buttons**: Replay Trace, Inspect Raw JSON
+- ⏳ UI implemented; real backend integration pending
 
 ### 6. Products & Inventory
-- **Product catalog** with SKU cards, status pills (Active, Reviewing, Deprecated)
+- **Product catalog listing** connected to real backend via `ProductsListViewModel`
+- **Product creation** via `ProductCreateViewModel` with real backend integration
+- **Product editing** via `ProductEditViewModel` with `PATCH /api/v1/products/{id}` endpoint
+- **Inventory management** via `InventoryViewModel` with real stock data (availability, receive, adjust, movements)
+- **Category management** via `CategoriesListViewModel`
 - **Category filter tabs**: All Items, Subscriptions, AI Credits, Add-ons
-- **Product creation/editing form** with billing classification, pricing, quota slider, and model routing
-- **Lifecycle operations**: Archive SKU, Delete SKU with confirmation
+- **SKU cards** with status pills (Active, Reviewing, Deprecated)
+- **Stock operations**: receive stock, adjust stock, view movement history
 - **Floating action button** for quick product creation
 
-### 7. System Health
+### 7. Orders Management
+- **Order listing** via `OrdersListViewModel` with real backend data, search, and status filtering
+- **Order details** showing customer info, items, pricing, shipping address, payment, and status timeline
+- **Order status updates** via backend API
+- **Proper navigation** with back-stack management and state preservation
+- **Real backend integration** via `OrderApiService` and `OrderRepositoryImpl`
+
+### 8. System Health
 - **Fleet SLA cards**: 30-day uptime percentage and last incident tracking
 - **5 infrastructure service cards**: FastAPI, PostgreSQL, AI Inference, Google Places API, Redis
 - **Deployment pipeline** information with commit hash and build version
 - **Incident journal** with 24-hour history
 - **System controls**: Clear Edge Cache, Download Telemetry Logs, Maintenance Mode
+- ⏳ UI implemented; real backend integration pending
 
-### 8. Audit Logs & Settings
+### 9. Audit Logs & Settings
 - **Chronological audit stream** with event cards (credit grants, config changes, suspensions)
 - **Security & key management**: masked API keys, copy/rotate actions, service account verification
 - **Governance policies**: MFA toggle, stale telemetry threshold, session timeout
 - **Cryptographic bundle export** with SHA-256 fingerprint verification
+- ⏳ UI implemented; real backend integration pending
 
-### 9. More Menu
-- **Hub screen** providing access to Products & Inventory, System Health, Audit Logs, and Settings
+### 10. More Menu
+- **Hub screen** providing access to Orders, Categories, Products, Inventory, System Health, Audit Logs, and Settings
 
-### 10. Settings
+### 11. Settings
 - **Account settings** and sign-out with confirmation dialog
 - **Session cleanup** on logout
 
@@ -145,15 +163,15 @@ Presentation (Compose + ViewModels) → Domain (Use cases + Repository interface
 ```
 com.nearai.admin/
 ├── NearAiAdminApplication.kt              # @HiltAndroidApp entry point
-├── MainActivity.kt                        # @AndroidEntryPoint, navigation host
+├── MainActivity.kt                        # @AndroidEntryPoint, BackHandler for system back
 ├── navigation/
-│   ├── AppDestination.kt                  # 11 @Serializable route objects
+│   ├── AppDestination.kt                  # 18 @Serializable route objects
 │   ├── AppNavHost.kt                      # NavGraph with session-gated destinations
-│   └── BottomNavigationItem.kt            # 5-tab bottom nav definition
+│   └── BottomNavigationItem.kt            # 5-tab bottom nav with state preservation
 ├── core/
 │   ├── common/
 │   │   ├── Result.kt                      # Sealed interface: Success/Error/Loading
-│   │   └── AppError.kt                    # Typed error categories
+│   │   └── AppError.kt                    # Typed error categories (UnauthorizedError, etc.)
 │   ├── designsystem/
 │   │   ├── theme/
 │   │   │   ├── Color.kt                   # 30+ named theme colors (all dynamic)
@@ -168,52 +186,87 @@ com.nearai.admin/
 │   │       ├── Dialogs.kt                 # ConfirmationDialog
 │   │       └── Sections.kt                # SectionHeader
 │   ├── network/
-│   │   └── NetworkModule.kt              # Hilt @Module: Retrofit + OkHttp + auth interceptor
+│   │   ├── NetworkModule.kt              # Hilt @Module: Retrofit + OkHttp + auth interceptor
+│   │   └── ApiErrorParser.kt             # HttpException → AppError mapping (401, 403, etc.)
 │   └── security/
 │       ├── TokenStorage.kt               # EncryptedSharedPreferences for tokens
+│       ├── TokenRefreshManager.kt        # Single-flight token refresh with retry
 │       └── SessionManager.kt             # Session lifecycle StateFlow
 └── feature/
-    ├── auth/
+    ├── auth/                              # ✅ Real backend integration
     │   ├── domain/
     │   │   └── AuthRepository.kt          # Repository interface + domain models
     │   ├── data/
-    │   │   ├── AuthApiService.kt          # Retrofit service interface
-    │   │   ├── FakeAuthRepository.kt      # ⚠️ Development-only fake
+    │   │   ├── AuthApiService.kt          # Retrofit service: sign-in, MFA, refresh
+    │   │   ├── RealAuthRepository.kt      # Real implementation with TokenRefreshManager
     │   │   └── AuthModule.kt              # Hilt @Binds module
     │   └── presentation/
     │       ├── AuthViewModel.kt           # @HiltViewModel, StateFlow<AuthUiState>
     │       └── AdminSignInScreen.kt       # Zero-trust auth screen
-    ├── dashboard/
+    ├── dashboard/                         # ✅ Real backend integration
     │   ├── domain/
     │   │   └── DashboardRepository.kt     # Repository interface + domain models
     │   ├── data/
-    │   │   ├── FakeDashboardRepository.kt # ⚠️ Development-only fake
+    │   │   ├── DashboardApiService.kt     # Retrofit service: GET /api/v1/admin/dashboard
+    │   │   ├── DashboardRepositoryImpl.kt # Real implementation with TokenRefreshManager
+    │   │   ├── DashboardMapper.kt         # DTO → domain mapping
     │   │   └── DashboardModule.kt         # Hilt @Binds module
     │   └── presentation/
     │       ├── DashboardViewModel.kt      # @HiltViewModel, StateFlow<DashboardUiState>
-    │       └── DashboardScreen.kt         # KPI grid, charts, activity stream
-    ├── users/
+    │       └── DashboardScreen.kt         # Real metrics, orders, registrations, stock alerts
+    ├── catalog/                           # ✅ Real backend integration
+    │   ├── domain/
+    │   │   ├── CatalogRepository.kt       # Repository interface (products, variants, stock)
+    │   │   └── CatalogStatus.kt           # Product status enum
+    │   ├── data/
+    │   │   ├── CatalogApiService.kt       # Retrofit service: product CRUD, variants, stock
+    │   │   ├── CatalogRepositoryImpl.kt   # Real implementation with TokenRefreshManager
+    │   │   ├── CatalogMapper.kt           # DTO → domain mapping
+    │   │   └── CatalogModule.kt           # Hilt @Binds module
+    │   └── presentation/
+    │       ├── ProductsListViewModel.kt   # Product listing with search and filters
+    │       ├── ProductCreateViewModel.kt  # Product creation with validation
+    │       ├── CategoriesListViewModel.kt # Category listing
+    │       └── ProductDetailsViewModel.kt # Product details
+    ├── inventory/                         # ✅ Real backend integration
+    │   └── presentation/
+    │       ├── InventoryViewModel.kt      # Product+variant+stock aggregation, stock operations
+    │       ├── InventoryScreen.kt         # Real inventory with search, filter, stock actions
+    │       ├── ProductEditViewModel.kt    # Product editing with validation and save
+    │       └── ProductEditScreen.kt       # Product form connected to real backend
+    ├── orders/                            # ✅ Real backend integration
+    │   ├── domain/
+    │   │   ├── OrderRepository.kt         # Repository interface + domain models
+    │   │   └── OrderStatus.kt             # Order and fulfillment status enums
+    │   ├── data/
+    │   │   ├── OrderApiService.kt         # Retrofit service: order listing, details, status
+    │   │   ├── OrderRepositoryImpl.kt     # Real implementation with TokenRefreshManager
+    │   │   ├── OrderMapper.kt             # DTO → domain mapping
+    │   │   └── OrderModule.kt             # Hilt @Binds module
+    │   └── presentation/
+    │       ├── OrdersListViewModel.kt     # Order listing with search and status filter
+    │       ├── OrdersListScreen.kt        # Order list with event-based navigation
+    │       ├── OrderDetailsViewModel.kt   # Order details loading and status updates
+    │       ├── OrderDetailsScreen.kt      # Full order details with timeline
+    │       └── OrderComponents.kt         # Reusable order UI components
+    ├── users/                             # ⏳ UI only, backend integration pending
     │   └── presentation/
     │       └── UsersScreen.kt             # Search, filter, user list, detail sheet
-    ├── aiusage/
+    ├── aiusage/                           # ⏳ UI only, backend integration pending
     │   └── presentation/
     │       └── AiUsageScreen.kt           # Budget envelope, provider distribution
-    ├── discovery/
+    ├── discovery/                         # ⏳ UI only, backend integration pending
     │   └── presentation/
     │       └── DiscoveryScreen.kt         # Pipeline telemetry, trace inspector
-    ├── inventory/
-    │   └── presentation/
-    │       ├── InventoryScreen.kt         # Product catalog, SKU cards
-    │       └── ProductEditScreen.kt       # Product form: billing, pricing, quota
-    ├── systemhealth/
+    ├── systemhealth/                      # ⏳ UI only, backend integration pending
     │   └── presentation/
     │       └── SystemHealthScreen.kt      # Fleet SLA, service cards, incidents
-    ├── auditlogs/
+    ├── auditlogs/                         # ⏳ UI only, backend integration pending
     │   └── presentation/
     │       └── AuditLogsScreen.kt         # Audit stream, key management, policies
     ├── more/
     │   └── presentation/
-    │       └── MoreScreen.kt              # Menu hub: Inventory, Health, Audit, Settings
+    │       └── MoreScreen.kt              # Menu hub: Orders, Catalog, Inventory, Health, Audit
     └── settings/
         └── presentation/
             └── SettingsScreen.kt          # Sign out with confirmation
@@ -223,7 +276,7 @@ com.nearai.admin/
 
 ## Navigation
 
-### 11 Routes
+### 18 Routes
 
 | Route | Screen | Access |
 |---|---|---|
@@ -233,11 +286,17 @@ com.nearai.admin/
 | `AiUsageRoute` | AiUsageScreen | Bottom nav tab 3 |
 | `DiscoveryRoute` | DiscoveryScreen | Bottom nav tab 4 |
 | `MoreRoute` | MoreScreen | Bottom nav tab 5 |
+| `OrdersRoute` | OrdersListScreen | From More menu |
+| `OrderDetailsRoute` | OrderDetailsScreen | From Orders list |
+| `CategoriesRoute` | CategoriesListScreen | From More menu |
+| `ProductsRoute` | ProductsListScreen | From More menu |
+| `ProductDetailsRoute` | ProductDetailsScreen | From Products list |
+| `ProductCreateRoute` | ProductCreateScreen | From Products list |
 | `InventoryRoute` | InventoryScreen | From More menu |
-| `SystemHealthRoute` | SystemHealthScreen | From Dashboard cluster banner |
-| `AuditLogsRoute` | AuditLogsScreen | From Dashboard receipt icon |
-| `SettingsRoute` | SettingsScreen | From More menu |
 | `ProductEditRoute` | ProductEditScreen | From Inventory (Add/Edit SKU) |
+| `SystemHealthRoute` | SystemHealthScreen | From Dashboard or More menu |
+| `AuditLogsRoute` | AuditLogsScreen | From Dashboard or More menu |
+| `SettingsRoute` | SettingsScreen | From More menu |
 
 ### 5 Bottom Navigation Tabs
 
@@ -262,19 +321,30 @@ Login → (authenticate) → Overview (Dashboard)
                                     ▼
                                   More
                                     │
-                    ┌───────────────┼───────────────┐
-                    ▼               ▼               ▼
-               Inventory      System Health    Audit Logs
-                    │               │               │
-                    ▼               ▼               ▼
-              Product Edit    (from Dashboard)  (from Dashboard)
+              ┌─────────────────────┼─────────────────────┐
+              ▼                     ▼                     ▼
+         Orders              Categories            Products
+              │                     │                     │
+              ▼                     ▼                     ▼
+       Order Details          (standalone)         Product Details
+                                                                       │
+              ┌─────────────────────┼─────────────────────┐
+              ▼                     ▼                     ▼
+         Inventory            System Health         Audit Logs
+              │
+              ▼
+       Product Edit
 ```
 
-### Session-Gated Access
-- Unauthenticated users are automatically redirected to Login
-- Session expiry triggers immediate redirect to Login
-- Bottom navigation is hidden on authentication screens
-- State preservation when switching between bottom nav tabs
+### Navigation Behavior
+- **Type-safe navigation** using `@Serializable` route objects with Navigation Compose 2.9
+- **State preservation** — bottom nav tabs use `saveState`/`restoreState` to preserve scroll position
+- **Back stack management** — `popUpTo<LoginRoute>` clears sub-screens when switching tabs
+- **System back button** — `BackHandler` in `MainActivity` pops the navigation back stack for sub-screens
+- **Single-top navigation** — `launchSingleTop = true` prevents duplicate destinations (e.g., Order Details)
+- **Event consumption** — navigation events use two-stage pattern to prevent duplicate navigation on recomposition
+- **Session-gated access** — unauthenticated users are redirected to Login; session expiry triggers immediate redirect
+- **Bottom nav hidden** on authentication screens
 
 ---
 
@@ -323,9 +393,18 @@ No hardcoded `Color(0xFF...)` values exist in feature screens or components — 
 - Access tokens and refresh tokens are never stored in plaintext
 - Tokens are cleared on logout
 
+### Automatic Token Refresh
+- **TokenRefreshManager** handles expired access tokens transparently
+- When an API call returns HTTP 401, the manager attempts to refresh the access token using the stored refresh token
+- **Single-flight refresh** — concurrent 401 responses share one refresh request via `Mutex`
+- **Single retry** — the original request is retried exactly once with the new access token
+- **Session cleanup** — if refresh fails (expired/revoked refresh token), the session is cleared and the user is redirected to login
+- **No refresh on 403** — authorization failures do not trigger token refresh
+- **No infinite loops** — each request retries at most once
+
 ### Session Management
 - **SessionManager** singleton manages session lifecycle via `StateFlow<SessionState>`
-- States: `Unauthenticated` → `Authenticating` → `Authenticated` / `SessionExpired`
+- States: `Unauthenticated` → `Authenticating` → `Authenticated` / `SessionExpired` / `NotAdmin`
 - Automatic session restoration on app startup
 - Automatic redirect to login on session expiry
 
@@ -335,8 +414,19 @@ No hardcoded `Color(0xFF...)` values exist in feature screens or components — 
 3. Verify MFA code through backend
 4. Store session credentials securely
 5. Restore and validate session on app start
-6. Handle refresh failure and session expiry
-7. Clear local session data on logout
+6. Automatic token refresh on 401 responses
+7. Clear local session data on logout or refresh failure
+
+### Error Handling
+- **ApiErrorParser** maps HTTP errors to typed `AppError` categories:
+  - HTTP 401 → `AppError.UnauthorizedError` (triggers token refresh)
+  - HTTP 403 → `AppError.ForbiddenError` (admin-only endpoints)
+  - HTTP 404 → `AppError.NotFoundError`
+  - HTTP 409 → `AppError.ConflictError`
+  - HTTP 422 → `AppError.ValidationError`
+  - HTTP 5xx → `AppError.ServerError`
+  - Network errors → `AppError.NetworkError`
+- All repository implementations use `ApiErrorParser.parse()` for consistent error mapping
 
 ### Security Rules
 - No passwords or tokens stored in ordinary preferences
@@ -409,36 +499,86 @@ Key dependencies are managed via Gradle Version Catalog (`gradle/libs.versions.t
 | Test File | Tests | Coverage |
 |---|---|---|
 | **AuthViewModelTest.kt** | 14 | Initial state, email/password validation, sign-in success/error, MFA flow, TOTP verification, session expiry, navigation events, dev sign-in |
-| **DashboardViewModelTest.kt** | 14 | Initial state, success loading, error handling, retry behavior, empty data, KPI mapping, activity event status types, auto-load on init, server errors, session expiry errors |
+| **DashboardViewModelTest.kt** | 17 | Loading, error handling, retry, refresh, currency formatting, empty data, all metric types |
+| **DashboardMapperTest.kt** | 7 | DTO-to-domain mapping for revenue, orders, registrations, stock alerts |
+| **DashboardRepositoryImplTest.kt** | 10 | API call, 401 → refresh + retry, 401 with failed refresh → session cleared, 403 → no refresh, 500 → no refresh, network error |
+| **OrdersListViewModelTest.kt** | 12 | Order listing, search, status filter, pagination, error handling, duplicate navigation regression |
+| **OrderDetailsViewModelTest.kt** | 10 | Order loading, error handling, status update, refresh |
+| **OrderMapperTest.kt** | 8 | DTO-to-domain mapping for orders, items, status history |
+| **CatalogMapperTest.kt** | 8 | Product, variant, stock balance, stock movement, pagination mapping |
+| **ProductDetailsViewModelTest.kt** | 6 | Product loading, error handling |
+| **TokenRefreshManagerTest.kt** | 8 | Single-flight refresh, retry logic, session cleanup, auth endpoint exclusion |
+| **ApiErrorParserTest.kt** | 6 | HTTP 401, 403, 404, 422, 500, network error mapping |
+| **ProductImageDtoSerializationTest.kt** | 6 | Image DTO serialization and deserialization |
 
-**Total: 28 unit tests, all passing.**
+**Total: 146 unit tests, all passing.**
 
 ### Testing Approach
-- ViewModel state transitions tested with Turbine
-- Repository behavior tested with MockK
-- Test dispatchers used for coroutine control
-- Fake repositories used for isolated ViewModel testing
+- **ViewModel tests**: MockK for repository mocking, `runTest` with `UnconfinedTestDispatcher`, Turbine for StateFlow verification
+- **Repository tests**: MockK for API service mocking, verify TokenRefreshManager integration and ApiErrorParser usage
+- **Mapper tests**: Pure function tests verifying DTO → domain mapping
+- **Test dispatchers** used for coroutine control
+- **Regression tests** for navigation bugs (duplicate Order Details, stale events)
 
 ---
 
 ## Backend Integration
 
-### Current Status
-The application uses **development-only fake repositories** for all features. When the backend API is ready, replace the fake implementations with real ones via Hilt `@Binds`.
+### Integration Status
 
-### Expected Backend Contracts
+| Module | Status | API Service | Repository | ViewModel |
+|---|---|---|---|---|
+| **Authentication** | ✅ Connected | `AuthApiService` | `RealAuthRepository` | `AuthViewModel` |
+| **Dashboard** | ✅ Connected | `DashboardApiService` | `DashboardRepositoryImpl` | `DashboardViewModel` |
+| **Catalog (Products)** | ✅ Connected | `CatalogApiService` | `CatalogRepositoryImpl` | `ProductsListViewModel`, `ProductCreateViewModel` |
+| **Inventory** | ✅ Connected | `CatalogApiService` | `CatalogRepositoryImpl` | `InventoryViewModel` |
+| **Product Editing** | ✅ Connected | `CatalogApiService` | `CatalogRepositoryImpl` | `ProductEditViewModel` |
+| **Orders** | ✅ Connected | `OrderApiService` | `OrderRepositoryImpl` | `OrdersListViewModel`, `OrderDetailsViewModel` |
+| **Users** | ⏳ UI only | — | — | — |
+| **AI Usage** | ⏳ UI only | — | — | — |
+| **Discovery** | ⏳ UI only | — | — | — |
+| **System Health** | ⏳ UI only | — | — | — |
+| **Audit Logs** | ⏳ UI only | — | — | — |
+
+### Implemented Backend Endpoints
 
 #### Authentication
-| Endpoint | Method | Description |
+| Endpoint | Method | Status |
 |---|---|---|
-| `/auth/sign-in` | POST | Submit email/password, returns tokens or MFA challenge |
-| `/auth/verify-mfa` | POST | Verify TOTP code, returns access/refresh tokens |
-| `/auth/refresh` | POST | Refresh access token using refresh token |
+| `/auth/sign-in` | POST | ✅ Connected |
+| `/auth/verify-mfa` | POST | ✅ Connected |
+| `/auth/refresh` | POST | ✅ Connected (via TokenRefreshManager) |
 
 #### Dashboard
-| Endpoint | Method | Description |
+| Endpoint | Method | Status |
 |---|---|---|
-| `/admin/dashboard` | GET | KPI metrics, activity events, system health summary |
+| `/admin/dashboard` | GET | ✅ Connected — returns metrics, revenue, orders, registrations, stock alerts |
+
+#### Catalog (Products, Variants, Stock)
+| Endpoint | Method | Status |
+|---|---|---|
+| `/admin/products` | GET | ✅ Connected — paginated listing with search and filters |
+| `/admin/products` | POST | ✅ Connected — create product |
+| `/admin/products/{id}` | GET | ✅ Connected — product details |
+| `/admin/products/{id}` | PATCH | ✅ Connected — update product |
+| `/admin/products/{id}` | DELETE | ⏳ Pending backend |
+| `/admin/products/{id}/variants` | GET | ✅ Connected — list variants |
+| `/admin/products/{id}/variants` | POST | ✅ Connected — create variant |
+| `/admin/variants/{id}/stock` | GET | ✅ Connected — stock availability |
+| `/admin/variants/{id}/stock/receive` | POST | ✅ Connected — receive stock |
+| `/admin/variants/{id}/stock/adjust` | POST | ✅ Connected — adjust stock |
+| `/admin/variants/{id}/movements` | GET | ✅ Connected — stock movement history |
+| `/admin/categories` | GET | ✅ Connected — category listing |
+| `/admin/categories` | POST | ✅ Connected — create category |
+
+#### Orders
+| Endpoint | Method | Status |
+|---|---|---|
+| `/admin/orders` | GET | ✅ Connected — paginated listing with search and status filter |
+| `/admin/orders/{id}` | GET | ✅ Connected — order details with items and status history |
+| `/admin/orders/{id}/status` | PATCH | ✅ Connected — update order status |
+
+### Pending Backend Endpoints
 
 #### Users
 | Endpoint | Method | Description |
@@ -460,14 +600,6 @@ The application uses **development-only fake repositories** for all features. Wh
 |---|---|---|
 | `/admin/discovery` | GET | Discovery request history with filters |
 | `/admin/discovery/trace/{id}` | GET | Trace details with pipeline breakdown |
-
-#### Inventory
-| Endpoint | Method | Description |
-|---|---|---|
-| `/admin/products` | GET | Product/SKU listing with filters |
-| `/admin/products` | POST | Create new product |
-| `/admin/products/{id}` | PUT | Update product |
-| `/admin/products/{id}` | DELETE | Delete product |
 
 #### System Health
 | Endpoint | Method | Description |
@@ -521,27 +653,34 @@ The application uses **development-only fake repositories** for all features. Wh
 ### Completed
 - ✅ Full Clean Architecture + MVVM foundation
 - ✅ Hilt DI with proper `@Module` and `@Binds` configuration
-- ✅ Type-safe navigation with 11 routes and 5 bottom nav tabs
-- ✅ 11 high-fidelity feature screens implemented
+- ✅ Type-safe navigation with 18 routes and 5 bottom nav tabs
+- ✅ All feature screens implemented with proper loading, empty, and error states
 - ✅ All colors dynamic — 30+ named theme colors, zero hardcoded values
 - ✅ Components reorganized into 7 focused files
-- ✅ Authentication vertical slice: repository, ViewModel, fake impl, 14 tests
-- ✅ Dashboard vertical slice: repository, ViewModel, fake impl, 14 tests, screen fully ViewModel-driven
-- ✅ Network layer with Hilt `@Module`, auth interceptor, per-build-type base URL
+- ✅ **Authentication**: Real backend integration with `AuthApiService`, `RealAuthRepository`, 14 tests
+- ✅ **Dashboard**: Real backend integration via `GET /api/v1/admin/dashboard` with metrics, revenue, orders, registrations, stock alerts; 34 tests
+- ✅ **Catalog (Products)**: Real backend integration with product CRUD, variants, categories; `CatalogApiService`, `CatalogRepositoryImpl`, `CatalogMapper`
+- ✅ **Inventory**: Real stock data via `InventoryViewModel` with search, filtering, receive/adjust stock, movement history
+- ✅ **Product Editing**: Real backend integration via `PATCH /api/v1/products/{id}` with `ProductEditViewModel`
+- ✅ **Orders**: Full module with listing, details, status updates; `OrderApiService`, `OrderRepositoryImpl`, `OrderMapper`, 30 tests
+- ✅ **Automatic token refresh** via `TokenRefreshManager` with single-flight locking and retry
+- ✅ **Error handling** via `ApiErrorParser` mapping HTTP errors to typed `AppError` categories
+- ✅ **Navigation fixes**: Proper back-stack management, state preservation, duplicate navigation prevention
 - ✅ Secure token storage with AES256_GCM encryption
 - ✅ Session management with auto-redirect on expiry
 - ✅ Material 3 design system with NearAI branding
-- ✅ Build compiles, all 28 tests pass
+- ✅ Build compiles, all 146 tests pass
 
 ### Pending (requires backend API contracts)
-- ⏳ Wire remaining feature screens to their ViewModels
-- ⏳ Real API endpoint integration for all features
-- ⏳ Data layer repository implementations replacing fakes
+- ⏳ **Users Management**: Real backend integration (API service, repository, ViewModel)
+- ⏳ **AI Usage**: Real backend integration (API service, repository, ViewModel)
+- ⏳ **Discovery**: Real backend integration (API service, repository, ViewModel)
+- ⏳ **System Health**: Real backend integration (API service, repository, ViewModel)
+- ⏳ **Audit Logs**: Real backend integration (API service, repository, ViewModel)
+- ⏳ Product delete endpoint on backend
 - ⏳ BiometricPrompt integration for local re-authentication
 - ⏳ FIDO2/NFC hardware key integration
 - ⏳ Comprehensive unit tests for remaining ViewModels
-- ⏳ Feature-specific business logic (credit grants, product CRUD, user management)
-- ⏳ Backend confirmation of all API endpoints
 
 ---
 
