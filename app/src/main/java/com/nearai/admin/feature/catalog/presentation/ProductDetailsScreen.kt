@@ -62,7 +62,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import coil.compose.AsyncImage
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.text.KeyboardOptions
@@ -571,7 +573,7 @@ fun ProductDetailsScreen(
                     // Product info card
                     uiState.product?.let { product ->
                         item {
-                            ProductInfoCard(product = product)
+                            ProductInfoCard(product = product, images = uiState.images)
                         }
                     }
 
@@ -738,13 +740,27 @@ fun ProductDetailsScreen(
  * Product info card with name, description, price, status, and category.
  */
 @Composable
-fun ProductInfoCard(product: Product, modifier: Modifier = Modifier) {
+fun ProductInfoCard(product: Product, images: List<ProductImage> = emptyList(), modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = SurfaceLight),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // Primary image hero
+            val primaryImage = images.find { it.isPrimary } ?: images.firstOrNull()
+            if (primaryImage != null && primaryImage.url.isNotBlank()) {
+                AsyncImage(
+                    model = primaryImage.url,
+                    contentDescription = "${product.name} primary image",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -832,12 +848,31 @@ fun ImageCarousel(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            Icons.Default.Image,
-                            contentDescription = image.fileName,
-                            tint = TextSecondaryLight,
-                            modifier = Modifier.size(32.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(80.dp)
+                        ) {
+                            if (image.url.isNotBlank()) {
+                                AsyncImage(
+                                    model = image.url,
+                                    contentDescription = image.fileName,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(8.dp))
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.Image,
+                                    contentDescription = image.fileName,
+                                    tint = TextSecondaryLight,
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .align(Alignment.Center)
+                                )
+                            }
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = image.fileName,

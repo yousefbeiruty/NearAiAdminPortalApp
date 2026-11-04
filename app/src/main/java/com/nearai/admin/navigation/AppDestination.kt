@@ -44,3 +44,15 @@ object OrdersRoute
 
 @Serializable
 data class OrderDetailsRoute(val orderId: String)
+
+@Serializable
+object CategoriesRoute
+
+@Serializable
+object ProductsRoute
+
+@Serializable
+data class ProductDetailsRoute(val productId: String)
+
+@Serializable
+object ProductCreateRoute
