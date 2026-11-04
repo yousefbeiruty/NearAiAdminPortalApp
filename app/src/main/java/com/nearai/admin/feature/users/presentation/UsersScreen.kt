@@ -3,7 +3,9 @@ package com.nearai.admin.feature.users.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,13 +40,23 @@ fun UsersScreen(
     viewModel: UsersViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val listState = rememberLazyListState()
 
-    var searchQuery by remember { mutableStateOf(uiState.searchQuery) }
-    var showSearchDialog by remember { mutableStateOf(false) }
+    // Trigger loadMore when user scrolls near the end
+    LaunchedEffect(uiState.hasMore) {
+        val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+        val totalItems = listState.layoutInfo.totalItemsCount
+        if (lastVisibleItem != null && lastVisibleItem.index >= totalItems - 2 && uiState.hasMore) {
+            viewModel.loadMore()
+        }
+    }
 
-    LaunchedEffect(uiState.searchQuery) {
-        if (uiState.searchQuery != searchQuery) {
-            searchQuery = uiState.searchQuery
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Display update messages as snackbar
+    LaunchedEffect(uiState.updateMessage) {
+        uiState.updateMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
         }
     }
 
@@ -52,20 +64,13 @@ fun UsersScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "User Management",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        StatusPill(
-                            label = "${uiState.totalItems} total",
-                            dotColor = EmeraldSuccess
-                        )
-                    }
+                    Text(
+                        text = "User Management",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 },
                 actions = {
                     if (uiState.users.isNotEmpty()) {
@@ -78,7 +83,8 @@ fun UsersScreen(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         when {
             uiState.isLoading && uiState.users.isEmpty() -> {
@@ -122,46 +128,57 @@ fun UsersScreen(
                 }
             }
             else -> {
-                LazyColumn(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(padding)
                 ) {
-                    item {
-                        SearchBar(
-                            query = searchQuery,
-                            onQueryChanged = { searchQuery = it },
-                            placeholder = "Search by email...",
-                            onClear = { searchQuery = "" }
-                        )
-                        LaunchedEffect(searchQuery) {
-                            // Debounce handled by ViewModel
-                        }
-                    }
-                    item {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Search bar
+                    SearchBar(
+                        query = uiState.searchQuery,
+                        onQueryChanged = { viewModel.setSearchQuery(it) },
+                        placeholder = "Search by email...",
+                        onClear = { viewModel.setSearchQuery("") }
+                    )
+
+                    // Filter chips in a scrollable row
+                    LazyRow(
+                        modifier = Modifier.height(48.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        // "All" clears all filters
+                        item {
                             FilterChip(
-                                selected = uiState.filterRole == null,
-                                onClick = { viewModel.setFilterRole(null) },
+                                selected = uiState.filterRole == null && uiState.filterIsActive == null,
+                                onClick = { viewModel.clearFilters() },
                                 label = { Text("All") }
                             )
+                        }
+                        // Role group — mutually exclusive
+                        item {
                             FilterChip(
                                 selected = uiState.filterRole == "admin",
                                 onClick = { viewModel.setFilterRole("admin") },
                                 label = { Text("Admin") }
                             )
+                        }
+                        item {
                             FilterChip(
                                 selected = uiState.filterRole == "customer",
                                 onClick = { viewModel.setFilterRole("customer") },
                                 label = { Text("Customer") }
                             )
+                        }
+                        // Status group — mutually exclusive
+                        item {
                             FilterChip(
                                 selected = uiState.filterIsActive == true,
                                 onClick = { viewModel.setFilterIsActive(true) },
                                 label = { Text("Active") }
                             )
+                        }
+                        item {
                             FilterChip(
                                 selected = uiState.filterIsActive == false,
                                 onClick = { viewModel.setFilterIsActive(false) },
@@ -169,31 +186,46 @@ fun UsersScreen(
                             )
                         }
                     }
-                    items(uiState.users) { user ->
-                        UserListItem(
-                            user = user,
-                            onClick = { viewModel.onUserClicked(user) }
+
+                    // User count pill
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        StatusPill(
+                            label = "${uiState.totalItems} users",
+                            dotColor = EmeraldSuccess
                         )
                     }
-                    if (uiState.isLoadingMore) {
-                        item {
-                            Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+
+                    // User list
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(uiState.users) { user ->
+                            UserListItem(
+                                user = user,
+                                onClick = { viewModel.onUserClicked(user) }
+                            )
+                        }
+                        if (uiState.isLoadingMore) {
+                            item {
+                                Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                }
                             }
                         }
+                        item { Spacer(modifier = Modifier.height(76.dp)) }
                     }
-                    item { Spacer(modifier = Modifier.height(76.dp)) }
                 }
             }
         }
     }
 
-    // Update message snackbar
-    uiState.updateMessage?.let { message ->
-        LaunchedEffect(message) {
-            // Message auto-clears when updateMessage changes
-        }
-    }
 
     // User detail bottom sheet
     uiState.selectedUser?.let { user ->
@@ -252,7 +284,7 @@ fun UserListItem(
                     modifier = Modifier.size(24.dp)
                 )
             }
-            // User info
+            // User info — email on its own line to avoid overflow with role pill
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -264,7 +296,8 @@ fun UserListItem(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, true)
                     )
                     StatusPill(
                         label = user.role,
@@ -272,7 +305,7 @@ fun UserListItem(
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     StatusPill(
                         label = if (user.isActive) "Active" else "Inactive",
                         dotColor = if (user.isActive) EmeraldSuccess else RoseError
@@ -446,15 +479,23 @@ fun UserDetailBottomSheet(
 
 @Composable
 fun UserDetailRow(label: String, value: String, modifier: Modifier = Modifier) {
-    Row(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
+            .padding(vertical = 4.dp)
     ) {
-        Text(text = label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(text = value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, true))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -468,7 +509,8 @@ fun UsersScreenPreview() {
         val sampleUsers = listOf(
             AdminUser("u1", "admin@nearai.com", "admin", true, true, "2024-01-15T10:30:00Z", "2024-01-15T10:30:00Z"),
             AdminUser("u2", "customer@example.com", "customer", true, true, "2024-02-20T08:00:00Z", "2024-02-20T08:00:00Z"),
-            AdminUser("u3", "suspended@example.com", "customer", false, false, "2024-03-10T12:00:00Z", "2024-03-10T12:00:00Z")
+            AdminUser("u3", "suspended@example.com", "customer", false, false, "2024-03-10T12:00:00Z", "2024-03-10T12:00:00Z"),
+            AdminUser("u4", "a.very.long.email.address.that.should.not.overflow.the.card@verylongdomain.com", "customer", true, false, "2024-04-01T00:00:00Z", "2024-04-01T00:00:00Z")
         )
         Column(
             modifier = Modifier

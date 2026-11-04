@@ -286,18 +286,18 @@ class InventoryViewModel @Inject constructor(
     }
 
     /**
-     * Updates the status filter and reloads inventory.
+     * Sets the status filter, clears stock filter, and reloads inventory.
      */
     fun setFilterStatus(status: ProductStatus?) {
-        _uiState.update { it.copy(filterStatus = status) }
+        _uiState.update { it.copy(filterStatus = status, filterStock = null) }
         loadInventory()
     }
 
     /**
-     * Sets the stock level filter and reloads inventory.
+     * Sets the stock level filter, clears status filter, and reloads inventory.
      */
     fun setFilterStock(filter: StockFilter?) {
-        _uiState.update { it.copy(filterStock = filter) }
+        _uiState.update { it.copy(filterStock = filter, filterStatus = null) }
         loadInventory()
     }
 

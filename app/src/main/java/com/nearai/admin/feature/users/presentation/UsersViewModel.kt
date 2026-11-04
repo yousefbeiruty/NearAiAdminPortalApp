@@ -6,9 +6,11 @@ import com.nearai.admin.core.common.Result
 import com.nearai.admin.feature.users.domain.AdminUser
 import com.nearai.admin.feature.users.domain.UsersRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -45,6 +47,7 @@ sealed interface UsersEvent {
  * ViewModel for the Users Management screen.
  * Manages user listing, search, filtering, pagination, and admin actions.
  */
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class UsersViewModel @Inject constructor(
     private val usersRepository: UsersRepository
@@ -56,11 +59,23 @@ class UsersViewModel @Inject constructor(
     private val _event = MutableStateFlow<UsersEvent?>(null)
     val event: StateFlow<UsersEvent?> = _event.asStateFlow()
 
+    private val _searchQuery = MutableStateFlow("")
+
     private companion object {
         const val PAGE_SIZE = 20
+        const val SEARCH_DEBOUNCE_MS = 400L
     }
 
     init {
+        // Debounced search
+        viewModelScope.launch {
+            _searchQuery
+                .debounce(SEARCH_DEBOUNCE_MS)
+                .collect { query ->
+                    _uiState.update { it.copy(searchQuery = query) }
+                    loadUsers()
+                }
+        }
         loadUsers()
     }
 
@@ -152,17 +167,20 @@ class UsersViewModel @Inject constructor(
     }
 
     fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+        // Update UI state immediately for responsive search bar, but loadUsers is debounced
         _uiState.update { it.copy(searchQuery = query) }
-        loadUsers()
     }
 
     fun setFilterRole(role: String?) {
-        _uiState.update { it.copy(filterRole = role) }
+        // Selecting a role clears the active/inactive filter to keep "All" logic simple
+        _uiState.update { it.copy(filterRole = role, filterIsActive = null) }
         loadUsers()
     }
 
     fun setFilterIsActive(isActive: Boolean?) {
-        _uiState.update { it.copy(filterIsActive = isActive) }
+        // Selecting a status clears the role filter to keep "All" logic simple
+        _uiState.update { it.copy(filterIsActive = isActive, filterRole = null) }
         loadUsers()
     }
 

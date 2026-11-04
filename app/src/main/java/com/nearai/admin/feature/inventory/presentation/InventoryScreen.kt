@@ -487,18 +487,9 @@ fun InventoryScreen(
                                 selectedTab = index
                                 when (index) {
                                     0 -> viewModel.clearFilters()
-                                    1 -> {
-                                        viewModel.clearFilters()
-                                        viewModel.setFilterStatus(ProductStatus.ACTIVE)
-                                    }
-                                    2 -> {
-                                        viewModel.clearFilters()
-                                        viewModel.setFilterStock(StockFilter.LOW_STOCK)
-                                    }
-                                    3 -> {
-                                        viewModel.clearFilters()
-                                        viewModel.setFilterStock(StockFilter.OUT_OF_STOCK)
-                                    }
+                                    1 -> viewModel.setFilterStatus(ProductStatus.ACTIVE)
+                                    2 -> viewModel.setFilterStock(StockFilter.LOW_STOCK)
+                                    3 -> viewModel.setFilterStock(StockFilter.OUT_OF_STOCK)
                                 }
                             }
                         ) {
