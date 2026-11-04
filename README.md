@@ -684,6 +684,55 @@ Key dependencies are managed via Gradle Version Catalog (`gradle/libs.versions.t
 
 ---
 
+## Customer Android — Discovery Event Tracking
+
+The companion Customer Android application (`NearAiDescovery`) includes a **Discovery Event Tracking** module that records customer behavioral events and uploads them to the FastAPI backend.
+
+### Event Types Instrumented
+
+| Event | Trigger | Metadata |
+|---|---|---|
+| `search_performed` | Customer submits a search query | query, category_id?, min_price?, max_price? |
+| `search_results_returned` | Search results loaded successfully | query, result_count, latency_ms, has_products |
+| `product_viewed` | Product detail screen opened (deduplicated) | product_id, variant_id?, referrer? |
+| `category_viewed` | Category browsing screen opened (deduplicated) | category_id, filters_applied? |
+| `product_added_to_cart` | Cart item added successfully via API | product_id, variant_id, quantity, price_amount, price_currency |
+| `product_removed_from_cart` | Cart item removed successfully via API | product_id, variant_id, quantity |
+| `checkout_started` | Customer initiates order placement | cart_total, item_count, currency |
+
+`purchase_completed` is **not** client-submitted; it is derived from verified order and payment lifecycle changes on the backend.
+
+### Architecture
+
+The `feature-discovery` module follows the existing Clean Architecture + MVVM patterns:
+
+- **Domain**: `DiscoveryTracker` (central entry point), `DiscoveryEventRepository` interface, `DiscoverySessionManager` interface, typed event DTOs
+- **Data**: Room database for local event queue, Retrofit API service for `POST /api/v1/events/` and `POST /api/v1/events/batch`, WorkManager worker for periodic batch upload
+- **DI**: Hilt module providing all dependencies and WorkManager scheduler
+- **ViewModel Integration**: Search, Product Detail, Catalog, Cart, and Checkout ViewModels inject `DiscoveryTracker`
+
+### Session Management
+
+- UUID session ID created once via DataStore, persists across app restarts
+- Same session reused when user authenticates; backend handles guest→auth transition via JWT
+- No customer identity is supplied or overridden by the client
+
+### Retry & Batching Strategy
+
+- Batch upload via WorkManager every 5 minutes, max 50 events per batch
+- Bounded exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s (max), 5 max retries
+- Events removed only after backend confirms acceptance
+- Network failures retry; 4xx validation errors drop events; 5xx server errors retry
+- Analytics failures never block customer-facing actions
+
+### Privacy & Security
+
+- No PII (emails, phone numbers, addresses, JWTs) in any event metadata
+- All event metadata validated against backend schemas
+- Analytics failures never prevent customers from searching, browsing, or checking out
+
+---
+
 ## License
 
 Private — NearAI Admin Portal is proprietary software for internal administrative use only.
