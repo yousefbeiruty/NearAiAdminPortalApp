@@ -68,3 +68,18 @@ Updated AppNavHost to use BusinessAnalyticsScreen, renamed bottom nav from "Disc
 
 ### ✓ Step 17: Run compilation and tests
 Compilation passes clean. All 259 unit tests pass (0 failures, 0 skipped) in 4.7s.
+
+# Final Review — Business Analytics Test Coverage and Cleanup
+
+### ✓ Step 18: Add dedicated tests
+Created 4 test files with 47 new tests:
+- BusinessAnalyticsDtoSerializationTest (9 tests): JSON deserialization, multi-currency, null period comparison, empty arrays
+- BusinessAnalyticsMapperTest (10 tests): All 12 DTO types, currency separation, period comparison, null handling
+- BusinessAnalyticsRepositoryImplTest (11 tests): API success, 401 refresh, 403, 500, network errors, query params
+- BusinessAnalyticsViewModelTest (17 tests): Loading, data, error/retry, date filters, empty data, currency formatting
+
+### ✓ Step 19: Clean up old Discovery files
+Deleted 7 unused files: DiscoveryApiService, DiscoveryRepository, DiscoveryRepositoryImpl, DiscoveryMapper, DiscoveryModule, DiscoveryScreen, DiscoveryViewModel.
+
+### ✓ Step 20: Final verification
+Compilation passes clean. All 306 unit tests pass (0 failures, 0 skipped) in 7.9s. Full rebuild with --rerun-tasks: 33 tasks executed, BUILD SUCCESSFUL in 1m 43s.
