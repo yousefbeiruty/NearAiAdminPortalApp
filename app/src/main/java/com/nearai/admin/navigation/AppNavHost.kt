@@ -143,14 +143,16 @@ fun AppNavHost(
             OrdersListScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToOrder = { orderId ->
-                    navController.navigate(OrderDetailsRoute(orderId))
+                    navController.navigate(OrderDetailsRoute(orderId)) {
+                        // Prevent duplicate Order Details destinations when tapping the same order
+                        launchSingleTop = true
+                    }
                 }
             )
         }
 
         // Order Details
-        composable<OrderDetailsRoute> { backStackEntry ->
-            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+        composable<OrderDetailsRoute> {
             OrderDetailsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )

@@ -34,7 +34,7 @@ fun OrderSummaryCard(
             .clickable { onClick() }
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // Header: order ID and status pills
+            // Header: order ID on top, status pills below
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -45,17 +45,21 @@ fun OrderSummaryCard(
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
-                    )
+                    ),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    StatusBadge(
-                        label = order.status.displayLabel,
-                        tint = order.status.badgeTint
-                    )
-                    StatusBadge(
-                        label = order.fulfillmentStatus.displayLabel,
-                        tint = order.fulfillmentStatus.badgeTint
-                    )
+                Column(horizontalAlignment = Alignment.End) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        StatusBadge(
+                            label = order.status.displayLabel,
+                            tint = order.status.badgeTint
+                        )
+                        StatusBadge(
+                            label = order.fulfillmentStatus.displayLabel,
+                            tint = order.fulfillmentStatus.badgeTint
+                        )
+                    }
                 }
             }
 

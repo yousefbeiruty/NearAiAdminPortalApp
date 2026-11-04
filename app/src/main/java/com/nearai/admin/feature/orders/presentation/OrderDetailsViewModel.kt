@@ -32,13 +32,6 @@ data class OrderDetailsUiState(
 )
 
 /**
- * One-time events emitted from the ViewModel to the UI.
- */
-sealed interface OrderDetailsEvent {
-    object NavigateBack : OrderDetailsEvent
-}
-
-/**
  * ViewModel for the Order Details screen.
  * Manages order details loading, status history, and lifecycle actions.
  */
@@ -52,9 +45,6 @@ class OrderDetailsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(OrderDetailsUiState())
     val uiState: StateFlow<OrderDetailsUiState> = _uiState.asStateFlow()
-
-    private val _event = MutableStateFlow<OrderDetailsEvent?>(null)
-    val event: StateFlow<OrderDetailsEvent?> = _event.asStateFlow()
 
     init {
         loadOrder()
@@ -273,16 +263,16 @@ class OrderDetailsViewModel @Inject constructor(
     }
 
     /**
+     * Refreshes order details (used for pull-to-refresh).
+     */
+    fun onRefresh() {
+        loadOrder()
+    }
+
+    /**
      * Clears the action error.
      */
     fun clearActionError() {
         _uiState.update { it.copy(actionError = null) }
-    }
-
-    /**
-     * Navigates back.
-     */
-    fun onNavigateBack() {
-        _event.value = OrderDetailsEvent.NavigateBack
     }
 }

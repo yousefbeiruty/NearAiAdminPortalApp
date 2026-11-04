@@ -498,7 +498,43 @@ Implement Users management with real backend integration following the establish
 - Admin actions (grant credits, reset quota, suspend) execute via ViewModel and refresh
 - Follows OrdersListViewModel pattern for pagination
 
-###   Step 4: Phase 4b — AI Usage, Discovery, System Health, Audit Logs
+### ✓ Step 6: Order Details Navigation and UI Fixes
+Fixed Order Details back navigation and UI overlap issues.
+
+**Modified files**:
+- `MainActivity.kt` — Fixed BackHandler to use exact fully qualified route matching for bottom-nav tabs
+- `BottomNavigationItem.kt` — Changed `popUpTo<OverviewRoute>` to `popUpTo<LoginRoute>` so sub-screens are properly cleared when switching tabs
+- `OrderDetailsScreen.kt` — Fixed OrderInfoCard layout (vertical Column instead of SpaceBetween Row), removed InfoRow maxLines truncation, fixed status badge overlap, updated preview
+- `OrderComponents.kt` — Added maxLines=1 to order ID text in OrderSummaryCard
+
+**Root causes**:
+- Navigation: `popUpTo<OverviewRoute>` destroyed the Orders destination when switching bottom-nav tabs
+- UI: `Row(SpaceBetween)` with long UUID order IDs caused overlap; `InfoRow` with `maxLines=2` truncated long addresses
+
+### ✓ Step 7: Order Details Duplicate Navigation Fix
+Fixed the remaining Order Details back-navigation bug where pressing Back showed the same Order Details screen again instead of returning to the Orders list.
+
+**Modified files**:
+- `OrdersListScreen.kt` — Replaced `LaunchedEffect(event)` with a two-stage event consumption pattern using `pendingEvent` that is cleared after navigation, preventing duplicate navigation on recomposition
+- `AppNavHost.kt` — Added `launchSingleTop = true` to the Order Details navigate call as defense-in-depth
+
+**New tests**:
+- `OrdersListViewModelTest.kt` — Added 2 regression tests: same order tapped twice, different orders navigated sequentially
+
+**Root cause**:
+- `OrdersListViewModel._event` is a `MutableStateFlow<OrdersListEvent?>` that was never cleared after emission. When returning from Order Details, `OrdersListScreen` recomposed, `collectAsStateWithLifecycle` re-emitted the stale `NavigateToOrder` event, and `LaunchedEffect(event)` navigated again — creating a duplicate `OrderDetailsRoute` on the back stack.
+
+**Navigation stack before fix**:
+1. LoginRoute → 2. OverviewRoute → 3. MoreRoute → 4. OrdersRoute → 5. OrderDetailsRoute(orderA)
+- Press Back: pops OrderDetailsRoute → OrdersRoute recomposes → stale event fires → 6. OrderDetailsRoute(orderA) created again
+- Press Back: pops to OrderDetailsRoute(orderA) again instead of OrdersRoute
+
+**Navigation stack after fix**:
+1. LoginRoute → 2. OverviewRoute → 3. MoreRoute → 4. OrdersRoute → 5. OrderDetailsRoute(orderA)
+- Press Back: pops OrderDetailsRoute → OrdersRoute recomposes → event already consumed, no duplicate navigation
+- OrdersRoute displayed correctly
+
+###   Step 5: Phase 4b — AI Usage, Discovery, System Health, Audit Logs
 Implement remaining four administration modules with real backend integration.
 
 **New files (AI Usage)**:

@@ -1,7 +1,6 @@
 package com.nearai.admin.feature.orders.presentation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,7 +54,7 @@ fun OrderDetailsScreen(
         AlertDialog(
             onDismissRequest = { viewModel.dismissConfirmDialog() },
             title = { Text("Confirm $actionLabel") },
-            text = { Text("Are you sure you want to $actionLabel.lowercase() this order?") },
+            text = { Text("Are you sure you want to ${actionLabel.lowercase()} this order?") },
             confirmButton = {
                 Button(
                     onClick = { viewModel.executeConfirmedAction() },
@@ -76,14 +76,19 @@ fun OrderDetailsScreen(
         )
     }
 
+    // Dynamic title from order ID
+    val title = uiState.order?.id?.let { "#${it.take(8)}" } ?: "Order Details"
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "Order Details",
+                        title,
                         fontWeight = FontWeight.Bold,
-                        color = Navy
+                        color = Navy,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 },
                 navigationIcon = {
@@ -99,7 +104,7 @@ fun OrderDetailsScreen(
         }
     ) { padding ->
         when {
-            uiState.isLoading -> {
+            uiState.isLoading && uiState.order == null -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -109,7 +114,7 @@ fun OrderDetailsScreen(
                     CircularProgressIndicator(color = Indigo)
                 }
             }
-            uiState.error != null -> {
+            uiState.error != null && uiState.order == null -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -203,6 +208,7 @@ fun OrderDetailsScreen(
     }
 }
 
+
 /**
  * Order info card with ID, date, and status pills.
  */
@@ -212,19 +218,22 @@ private fun OrderInfoCard(order: OrderDetails) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Order Information", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text("Order ID", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
-                    Text("#${order.id}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace, color = Navy))
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text("Created", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
-                    Text(order.createdAt.take(16), style = MaterialTheme.typography.bodyMedium.copy(color = Navy))
-                }
+            // Order ID — always on its own row to avoid overlap with Created date
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("Order ID", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
+                Text("#${order.id}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace, color = Navy), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            // Created date on its own row
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("Created", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
+                Text(order.createdAt.take(16), style = MaterialTheme.typography.bodyMedium.copy(color = Navy))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Status badges — each on its own row to avoid overlap
+            Column {
                 StatusBadge(label = "Order: ${order.status.displayLabel}", tint = order.status.badgeTint)
+                Spacer(modifier = Modifier.height(4.dp))
                 StatusBadge(label = "Fulfillment: ${order.fulfillmentStatus.displayLabel}", tint = order.fulfillmentStatus.badgeTint)
             }
         }
@@ -258,6 +267,7 @@ private fun CustomerDeliveryCard(order: OrderDetails) {
             if (!order.deliveryInstructions.isNullOrBlank()) {
                 InfoRow(label = "Instructions", value = order.deliveryInstructions)
             }
+            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }
@@ -272,12 +282,12 @@ private fun OrderItemsCard(order: OrderDetails) {
             Text("Order Items (${order.items.size})", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
             order.items.forEachIndexed { index, item ->
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(item.productName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, color = Navy))
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text(item.productName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, color = Navy), maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Text("Qty: ${item.quantity} × ${order.currency} ${"%.2f".format(item.unitPriceAmount)}", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
                     }
-                    Text("${order.currency} ${"%.2f".format(item.subtotalAmount ?: (item.unitPriceAmount * item.quantity))}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
+                    Text("${order.currency} ${"%.2f".format(item.subtotalAmount ?: (item.unitPriceAmount * item.quantity))}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Navy), modifier = Modifier.align(Alignment.Top))
                 }
                 if (index < order.items.size - 1) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
@@ -300,7 +310,7 @@ private fun PaymentSummaryCard(order: OrderDetails) {
                 InfoRow(label = "Subtotal", value = "${order.currency} ${"%.2f".format(it)}")
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Total", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
                 Text("${order.currency} ${"%.2f".format(order.totalAmount)}", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Navy))
             }
@@ -334,15 +344,18 @@ private fun StatusHistoryCard(entries: List<StatusHistoryEntry>) {
 private fun StatusTimelineItem(entry: StatusHistoryEntry) {
     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         // Timeline dot
-        Box(modifier = Modifier
-            .padding(top = 4.dp)
-            .size(10.dp)
-            .clip(CircleShape)
-            .background(if (entry.statusType == "order") Indigo else EmeraldSuccess))
+        Box(
+            modifier = Modifier
+                .padding(top = 4.dp)
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(if (entry.statusType == "order") Indigo else EmeraldSuccess)
+        )
         Column(modifier = Modifier.weight(1f)) {
-            Row(horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(entry.newStatus, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, color = Navy))
-                Text(entry.timestamp.take(16), style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight, fontFamily = FontFamily.Monospace))
+            Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                Text(entry.newStatus, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, color = Navy), modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(entry.timestamp.take(16), style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight, fontFamily = FontFamily.Monospace), modifier = Modifier.align(Alignment.CenterVertically))
             }
             if (!entry.previousStatus.isNullOrBlank()) {
                 Text("from: ${entry.previousStatus}", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
@@ -352,7 +365,7 @@ private fun StatusTimelineItem(entry: StatusHistoryEntry) {
                 Text("by: ${entry.actorRole}", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
             }
             if (!entry.reason.isNullOrBlank()) {
-                Text("Reason: ${entry.reason}", style = MaterialTheme.typography.bodySmall.copy(color = RoseDark))
+                Text("Reason: ${entry.reason}", style = MaterialTheme.typography.bodySmall.copy(color = RoseDark), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -488,19 +501,116 @@ private fun RejectDialog(
 
 /**
  * Simple info row with label and value.
+ * Label appears above the value so long text (addresses, instructions) wraps naturally.
  */
 @Composable
 private fun InfoRow(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
-        Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium, color = Navy), maxLines = 1)
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(label, style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight, fontWeight = FontWeight.SemiBold))
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium, color = Navy))
     }
+    Spacer(modifier = Modifier.height(8.dp))
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 fun OrderDetailsScreenPreview() {
     NearAiAdminTheme {
-        OrderDetailsScreen(onNavigateBack = { })
+        val sampleOrder = com.nearai.admin.feature.orders.domain.OrderDetails(
+            id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            createdAt = "2024-06-15T14:30:00Z",
+            status = com.nearai.admin.feature.orders.domain.OrderStatus.PENDING,
+            fulfillmentStatus = com.nearai.admin.feature.orders.domain.FulfillmentStatus.AWAITING_CONFIRMATION,
+            items = listOf(
+                com.nearai.admin.feature.orders.domain.OrderItem(
+                    variantId = "v1",
+                    productName = "NearAI Premium Subscription — Annual Plan with Extended Features and All Benefits",
+                    sku = "SKU-001",
+                    quantity = 1,
+                    unitPriceAmount = 29.99,
+                    unitPriceCurrency = "USD",
+                    subtotalAmount = 29.99
+                ),
+                com.nearai.admin.feature.orders.domain.OrderItem(
+                    variantId = "v2",
+                    productName = "Delivery Fee",
+                    sku = null,
+                    quantity = 1,
+                    unitPriceAmount = 5.50,
+                    unitPriceCurrency = "USD",
+                    subtotalAmount = 5.50
+                )
+            ),
+            subtotalAmount = 29.99,
+            totalAmount = 35.49,
+            currency = "USD",
+            deliveryRecipientName = "John Alexander Doe",
+            deliveryPhone = "+1 (555) 123-4567",
+            deliveryCity = "New York",
+            deliveryArea = "Manhattan",
+            deliveryStreet = "Broadway",
+            deliveryBuildingNumber = "123",
+            deliveryApartment = "Apt 4B",
+            deliveryInstructions = "Ring doorbell twice, leave at front door if no answer. Building has a security code."
+        )
+        val sampleHistory = listOf(
+            com.nearai.admin.feature.orders.domain.StatusHistoryEntry(
+                previousStatus = null,
+                newStatus = "Pending",
+                statusType = "order",
+                actorRole = "customer",
+                reason = null,
+                timestamp = "2024-06-15T14:30:00Z"
+            ),
+            com.nearai.admin.feature.orders.domain.StatusHistoryEntry(
+                previousStatus = "Pending",
+                newStatus = "Awaiting Confirmation",
+                statusType = "fulfillment",
+                actorRole = "system",
+                reason = null,
+                timestamp = "2024-06-15T14:30:05Z"
+            )
+        )
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text("#a1b2c3d4", fontWeight = FontWeight.Bold, color = Navy, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = {}, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Navy)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                )
+            }
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item { OrderInfoCard(sampleOrder) }
+                item { CustomerDeliveryCard(sampleOrder) }
+                item { OrderItemsCard(sampleOrder) }
+                item { PaymentSummaryCard(sampleOrder) }
+                item { StatusHistoryCard(sampleHistory) }
+                item {
+                    OrderActionButtons(
+                        order = sampleOrder,
+                        isActionLoading = false,
+                        onConfirm = {},
+                        onReject = {},
+                        onProcess = {},
+                        onDispatch = {},
+                        onDeliver = {}
+                    )
+                }
+                item { Spacer(modifier = Modifier.height(16.dp)) }
+            }
+        }
     }
 }

@@ -35,12 +35,19 @@ fun OrdersListScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val event by viewModel.event.collectAsStateWithLifecycle()
 
-    // Handle navigation events
+    // Handle navigation events — clear the event after consumption to prevent
+    // duplicate navigation when returning from Order Details.
+    var pendingEvent by remember { mutableStateOf<OrdersListEvent?>(null) }
     LaunchedEffect(event) {
-        event?.let {
+        pendingEvent = event
+    }
+    LaunchedEffect(pendingEvent) {
+        pendingEvent?.let {
             if (it is OrdersListEvent.NavigateToOrder) {
                 onNavigateToOrder(it.orderId)
             }
+            // Clear the event so it doesn't fire again on recomposition
+            pendingEvent = null
         }
     }
 

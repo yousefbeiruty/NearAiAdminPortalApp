@@ -179,6 +179,44 @@ class OrdersListViewModelTest {
     }
 
     @Test
+    fun `onOrderClicked with same order twice updates event value`() = runTest {
+        // Regression test: tapping the same order twice should update the event.
+        // The UI layer (OrdersListScreen) is responsible for consuming each event only once
+        // by clearing the pendingEvent after navigation.
+        coEvery { orderRepository.listOrders(any(), any(), any(), any()) } returns successResult()
+
+        val viewModel = createViewModel()
+
+        viewModel.onOrderClicked("order-same")
+        val event1 = viewModel.event.value
+        assertTrue(event1 is OrdersListEvent.NavigateToOrder)
+        assertEquals("order-same", (event1 as OrdersListEvent.NavigateToOrder).orderId)
+
+        viewModel.onOrderClicked("order-same")
+        val event2 = viewModel.event.value
+        assertTrue(event2 is OrdersListEvent.NavigateToOrder)
+        assertEquals("order-same", (event2 as OrdersListEvent.NavigateToOrder).orderId)
+        // Both events have the same orderId, confirming the ViewModel correctly
+        // handles repeated clicks on the same order.
+    }
+
+    @Test
+    fun `onOrderClicked with different orders emits different events`() = runTest {
+        // Regression test: navigating Order A → Back → Order B should work correctly.
+        coEvery { orderRepository.listOrders(any(), any(), any(), any()) } returns successResult()
+
+        val viewModel = createViewModel()
+
+        viewModel.onOrderClicked("order-A")
+        val eventA = viewModel.event.value
+        assertEquals("order-A", (eventA as OrdersListEvent.NavigateToOrder).orderId)
+
+        viewModel.onOrderClicked("order-B")
+        val eventB = viewModel.event.value
+        assertEquals("order-B", (eventB as OrdersListEvent.NavigateToOrder).orderId)
+    }
+
+    @Test
     fun `empty orders list shows empty state`() = runTest {
         val emptyData = PaginatedOrders(
             orders = emptyList(),

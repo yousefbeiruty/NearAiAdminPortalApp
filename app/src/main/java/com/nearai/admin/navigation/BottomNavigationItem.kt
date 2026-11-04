@@ -131,9 +131,10 @@ fun NearAiBottomNavBar(
                 onClick = {
                     if (!isSelected) {
                         navController.navigate(screen.route) {
-                            // Pop up to Overview (first main tab) to avoid accumulating screens,
-                            // without popping back to LoginRoute which is the graph start destination
-                            popUpTo<OverviewRoute> {
+                            // Pop up to the root (LoginRoute) so sub-screens (Orders, Order Details, etc.)
+                            // are removed from the back stack when switching bottom-nav tabs.
+                            // This preserves the selected tab's state via saveState/restoreState.
+                            popUpTo<LoginRoute> {
                                 saveState = true
                             }
                             // Avoid multiple copies of same destination

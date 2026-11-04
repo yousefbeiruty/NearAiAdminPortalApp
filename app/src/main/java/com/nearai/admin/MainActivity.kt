@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -11,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
 import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
@@ -60,6 +62,28 @@ class MainActivity : ComponentActivity() {
 
                 val sessionState by sessionManager.sessionState.collectAsStateWithLifecycle()
                 val isAuthScreen = sessionState !is SessionState.Authenticated
+
+                // Check if current destination is a bottom-nav tab
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+                // @Serializable routes use fully qualified class names.
+                // Bottom-nav tabs are object routes (no arguments), so their route string
+                // is exactly the class name. Sub-screens like OrderDetailsRoute include
+                // serialized arguments in JSON format, so they won't match.
+                val bottomNavRoutes = setOf(
+                    "com.nearai.admin.navigation.OverviewRoute",
+                    "com.nearai.admin.navigation.UsersRoute",
+                    "com.nearai.admin.navigation.AiUsageRoute",
+                    "com.nearai.admin.navigation.DiscoveryRoute",
+                    "com.nearai.admin.navigation.MoreRoute"
+                )
+                val isBottomNavTab = currentRoute in bottomNavRoutes
+
+                // Handle system back button — pop navigation back stack instead of exiting the app
+                // Only pop when not on a bottom-nav tab (sub-screens like Orders, Order Details, etc.)
+                BackHandler(enabled = !isAuthScreen && !isBottomNavTab) {
+                    navController.popBackStack()
+                }
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
