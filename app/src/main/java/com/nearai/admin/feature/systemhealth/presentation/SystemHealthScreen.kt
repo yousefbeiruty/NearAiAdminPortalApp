@@ -3,15 +3,15 @@ package com.nearai.admin.feature.systemhealth.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,22 +19,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nearai.admin.core.designsystem.components.*
 import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.feature.systemhealth.domain.ApplicationHealth
+import com.nearai.admin.feature.systemhealth.domain.ComponentHealth
+import com.nearai.admin.feature.systemhealth.domain.SystemHealthData
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 /**
- * System Health & Infrastructure screen with fleet status banner,
- * service health cards, deployment info, incident journal,
- * and quick administrative actions.
+ * System Health screen connected to the real backend API.
  *
- * Uses development-only placeholder data until the backend API is connected.
+ * Displays overall system status, application info, and component health
+ * for database, storage, scheduler, and email.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SystemHealthScreen(
+    viewModel: SystemHealthViewModel,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -55,7 +63,7 @@ fun SystemHealthScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO: refresh */ }) {
+                    IconButton(onClick = { viewModel.onRefresh() }) {
                         Icon(
                             Icons.Outlined.Refresh,
                             contentDescription = "Refresh",
@@ -69,71 +77,103 @@ fun SystemHealthScreen(
             )
         }
     ) { padding ->
-        LazyColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Fleet Status Banner
-            item {
-                FleetStatusBanner()
+        when {
+            uiState.isLoading && uiState.healthData == null -> {
+                LoadingScreen(modifier = modifier.fillMaxSize().padding(padding))
             }
-
-            // Service Health Cards
-            item {
-                SectionHeader(
-                    title = "Service Health",
-                    modifier = Modifier.padding(vertical = 4.dp)
+            uiState.error != null && uiState.healthData == null -> {
+                ErrorState(
+                    message = uiState.error.orEmpty(),
+                    modifier = modifier.fillMaxSize().padding(padding),
+                    onRetry = { viewModel.clearError(); viewModel.onRefresh() }
                 )
             }
-            item {
-                ServiceHealthSection()
-            }
+            else -> {
+                LazyColumn(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Error banner when health data exists but there was an error
+                    if (uiState.error != null) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = RoseBg
+                                )
+                            ) {
+                                Text(
+                                    text = uiState.error.orEmpty(),
+                                    modifier = Modifier.padding(12.dp),
+                                    color = RoseDark,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
 
-            // Deployment Info
-            item {
-                SectionHeader(
-                    title = "Deployment Info",
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
-            item {
-                DeploymentInfoSection()
-            }
+                    // Overall Status Banner
+                    if (uiState.healthData != null) {
+                        item {
+                            OverallStatusBanner(
+                                status = uiState.overallStatus,
+                                checkedAt = uiState.checkedAt,
+                                healthyCount = uiState.healthyCount,
+                                totalComponents = uiState.components.size
+                            )
+                        }
 
-            // Incident Journal
-            item {
-                SectionHeader(
-                    title = "Incident Journal",
-                    actionText = "View All",
-                    onActionClick = { /* TODO */ }
-                )
-            }
-            item {
-                IncidentJournalSection()
-            }
+                        // Application Info
+                        item {
+                            SectionHeader(
+                                title = "Application",
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+                        item {
+                            ApplicationInfoCard(
+                                environment = uiState.environment,
+                                uptimeSeconds = uiState.uptimeSeconds
+                            )
+                        }
 
-            // Quick Administrative Actions
-            item {
-                SectionHeader(
-                    title = "Quick Actions",
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
-            item {
-                QuickActionsSection()
+                        // Component Health
+                        item {
+                            SectionHeader(
+                                title = "Components",
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+                        items(uiState.components) { component ->
+                            ComponentHealthCard(component = component)
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 /**
- * Fleet status banner showing 30-day uptime and incident counter.
+ * Overall system status banner showing health status and component counts.
  */
 @Composable
-fun FleetStatusBanner() {
+fun OverallStatusBanner(
+    status: String,
+    checkedAt: String,
+    healthyCount: Int,
+    totalComponents: Int
+) {
+    val (statusColor, statusLabel) = when (status) {
+        "healthy" -> EmeraldSuccess to "All Systems Operational"
+        "degraded" -> AmberWarning to "System Degraded"
+        "unhealthy" -> RoseError to "System Unhealthy"
+        else -> Color.Gray to "Status Unknown"
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -155,128 +195,77 @@ fun FleetStatusBanner() {
                         modifier = Modifier
                             .size(12.dp)
                             .clip(CircleShape)
-                            .background(EmeraldSuccess)
+                            .background(statusColor)
                     )
                     Column {
                         Text(
-                            text = "Fleet Operational",
+                            text = statusLabel,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = EmeraldSuccess
+                            color = statusColor
                         )
                         Text(
-                            text = "All systems running normally",
+                            text = formatCheckedAt(checkedAt),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
                 StatusPill(
-                    label = "0 incidents",
-                    dotColor = EmeraldSuccess
+                    label = "$healthyCount/$totalComponents healthy",
+                    dotColor = statusColor
                 )
-            }
-            Spacer(modifier = Modifier.height(14.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "99.98%",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "30-day fleet uptime",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "5/5",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = EmeraldSuccess
-                    )
-                    Text(
-                        text = "services healthy",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
         }
     }
 }
 
 /**
- * Service health cards for each infrastructure component.
+ * Application info card showing environment and uptime.
  */
 @Composable
-fun ServiceHealthSection() {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        ServiceHealthCard(
-            name = "FastAPI Backend",
-            platform = "Cloud Run",
-            status = ServiceStatus.Healthy,
-            p95Latency = "45ms",
-            errorRate = "0.02%",
-            uptime = "99.99%"
-        )
-        ServiceHealthCard(
-            name = "PostgreSQL",
-            platform = "Cloud SQL",
-            status = ServiceStatus.Healthy,
-            p95Latency = "12ms",
-            errorRate = "0.00%",
-            uptime = "100.00%"
-        )
-        ServiceHealthCard(
-            name = "AI Inference Pipeline",
-            platform = "Cloud Run",
-            status = ServiceStatus.Healthy,
-            p95Latency = "320ms",
-            errorRate = "0.15%",
-            uptime = "99.95%"
-        )
-        ServiceHealthCard(
-            name = "Google Places API",
-            platform = "External",
-            status = ServiceStatus.Degraded,
-            p95Latency = "240ms",
-            errorRate = "0.85%",
-            uptime = "99.80%"
-        )
-        ServiceHealthCard(
-            name = "Redis Edge Cache",
-            platform = "Memorystore",
-            status = ServiceStatus.Healthy,
-            p95Latency = "3ms",
-            errorRate = "0.00%",
-            uptime = "100.00%"
-        )
+fun ApplicationInfoCard(
+    environment: String,
+    uptimeSeconds: Long
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            HealthInfoRow(
+                label = "Environment",
+                value = environment.ifBlank { "Unknown" }
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            HealthInfoRow(
+                label = "Uptime",
+                value = formatUptime(uptimeSeconds)
+            )
+        }
     }
 }
 
 /**
- * Individual service health card.
+ * Component health card for a single infrastructure component.
  */
 @Composable
-fun ServiceHealthCard(
-    name: String,
-    platform: String,
-    status: ServiceStatus,
-    p95Latency: String,
-    errorRate: String,
-    uptime: String,
-    modifier: Modifier = Modifier
+fun ComponentHealthCard(
+    component: ComponentHealth
 ) {
+    val (statusColor, statusLabel) = when (component.status) {
+        "healthy" -> EmeraldSuccess to "Healthy"
+        "degraded" -> AmberWarning to "Degraded"
+        "unhealthy" -> RoseError to "Unhealthy"
+        "not_configured" -> Color.Gray to "Not Configured"
+        else -> Color.Gray to component.status.replace("_", " ").replaceFirstChar { it.uppercase(Locale.US) }
+    }
+
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -296,146 +285,96 @@ fun ServiceHealthCard(
                         modifier = Modifier
                             .size(10.dp)
                             .clip(CircleShape)
-                            .background(status.color)
+                            .background(statusColor)
                     )
-                    Column {
-                        Text(
-                            text = name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold
+                    Text(
+                        text = formatComponentName(component.name),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                StatusPill(
+                    label = statusLabel,
+                    dotColor = statusColor
+                )
+            }
+
+            // Display component-specific details
+            component.details?.forEach { (key, value) ->
+                Spacer(modifier = Modifier.height(6.dp))
+                when (key) {
+                    "latency_ms" -> {
+                        HealthInfoRow(
+                            label = "Latency",
+                            value = "${value}ms"
                         )
+                    }
+                    "backend" -> {
+                        HealthInfoRow(
+                            label = "Backend",
+                            value = value
+                        )
+                    }
+                    "provider" -> {
+                        HealthInfoRow(
+                            label = "Provider",
+                            value = value
+                        )
+                    }
+                    "running" -> {
+                        HealthInfoRow(
+                            label = "Running",
+                            value = value
+                        )
+                    }
+                    "error" -> {
                         Text(
-                            text = platform,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = value,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = RoseError,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                    "note" -> {
+                        Text(
+                            text = value,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                    else -> {
+                        HealthInfoRow(
+                            label = key.replace("_", " ").replaceFirstChar { it.uppercase(Locale.US) },
+                            value = value
                         )
                     }
                 }
-                StatusPill(
-                    label = status.label,
-                    dotColor = status.color
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                ServiceMetric(label = "p95 Latency", value = p95Latency)
-                ServiceMetric(label = "Error Rate", value = errorRate, warning = status == ServiceStatus.Degraded)
-                ServiceMetric(label = "Uptime", value = uptime)
             }
         }
     }
 }
 
 /**
- * Service metric display.
+ * Simple info row for health cards.
  */
 @Composable
-fun ServiceMetric(
+fun HealthInfoRow(
     label: String,
-    value: String,
-    warning: Boolean = false,
-    modifier: Modifier = Modifier
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = if (warning) AmberWarning else MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-enum class ServiceStatus(
-    val label: String,
-    val color: Color
-) {
-    Healthy("Healthy", EmeraldSuccess),
-    Degraded("Degraded", AmberWarning),
-    Down("Down", RoseError)
-}
-
-/**
- * Deployment info section with release hash and CI/CD build info.
- */
-@Composable
-fun DeploymentInfoSection() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            DeploymentInfoRow(
-                label = "Active Release",
-                value = "#8f31c0a",
-                icon = Icons.Default.Tag
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            DeploymentInfoRow(
-                label = "CI/CD Build",
-                value = "Build 8902-prod · Oct 27, 2026",
-                icon = Icons.Default.Build
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            DeploymentInfoRow(
-                label = "Environment",
-                value = "gcp-nearai-prod · us-central1",
-                icon = Icons.Default.Cloud
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            DeploymentInfoRow(
-                label = "TLS",
-                value = "1.3 · Verified",
-                icon = Icons.Default.Lock
-            )
-        }
-    }
-}
-
-/**
- * Deployment info row.
- */
-@Composable
-fun DeploymentInfoRow(
-    label: String,
-    value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    modifier: Modifier = Modifier
+    value: String
 ) {
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp),
+            .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(16.dp)
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall,
@@ -445,197 +384,84 @@ fun DeploymentInfoRow(
     }
 }
 
-/**
- * Incident journal with recent automated recovery logs.
- */
-@Composable
-fun IncidentJournalSection() {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        IncidentItem(
-            title = "Auto-scaled AI Inference",
-            description = "Cloud Run scaled from 3 to 8 instances to handle traffic spike",
-            timeAgo = "2h ago",
-            status = ActivityStatus.Info
-        )
-        IncidentItem(
-            title = "Redis Cache Eviction",
-            description = "Memory threshold reached, LRU eviction cleared 12% of cache entries",
-            timeAgo = "5h ago",
-            status = ActivityStatus.Warning
-        )
-        IncidentItem(
-            title = "PostgreSQL Connection Pool Reset",
-            description = "Idle connections reclaimed, pool size normalized from 95 to 40",
-            timeAgo = "1d ago",
-            status = ActivityStatus.Success
-        )
+// ─── Formatting helpers ──────────────────────────────────────────────────────
+
+private fun formatComponentName(name: String): String {
+    return name.replace("_", " ").split(" ").joinToString(" ") {
+        it.replaceFirstChar { char -> char.uppercase(Locale.US) }
     }
 }
 
-/**
- * Individual incident journal item.
- */
-@Composable
-fun IncidentItem(
-    title: String,
-    description: String,
-    timeAgo: String,
-    status: ActivityStatus,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .align(Alignment.CenterVertically)
-                    .clip(CircleShape)
-                    .background(status.color)
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = timeAgo,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+private fun formatUptime(seconds: Long): String {
+    return if (seconds <= 0) {
+        "Just started"
+    } else {
+        val days = seconds / 86400
+        val hours = (seconds % 86400) / 3600
+        val minutes = (seconds % 3600) / 60
+        buildString {
+            if (days > 0) append("${days}d ")
+            if (hours > 0 || days > 0) append("$hours h ")
+            append("$minutes min")
+        }.trim()
+    }
+}
+
+private fun formatCheckedAt(checkedAt: String): String {
+    return if (checkedAt.isBlank()) {
+        "Unknown"
+    } else {
+        try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US)
+            val outputFormat = SimpleDateFormat("MMM d, h:mm a", Locale.US)
+            val date = inputFormat.parse(checkedAt)
+            date?.let { "Checked ${outputFormat.format(it)}" } ?: "Checked $checkedAt"
+        } catch (_: Exception) {
+            "Checked $checkedAt"
         }
     }
 }
 
 /**
- * Quick administrative actions section.
- */
-@Composable
-fun QuickActionsSection() {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        QuickActionButton(
-            title = "Purge Edge Cache",
-            description = "Clear all Redis edge cache entries for fresh data",
-            icon = Icons.Default.Cached,
-            onClick = { /* TODO: Purge cache */ }
-        )
-        QuickActionButton(
-            title = "Export Telemetry",
-            description = "Download 30-day telemetry data as CSV",
-            icon = Icons.Default.Download,
-            onClick = { /* TODO: Export telemetry */ }
-        )
-        QuickActionButton(
-            title = "Maintenance Mode",
-            description = "Enable maintenance mode to pause non-critical operations",
-            icon = Icons.Default.DoNotDisturb,
-            onClick = { /* TODO: Toggle maintenance mode */ },
-            isDestructive = true
-        )
-    }
-}
-
-/**
- * Quick action button card.
- */
-@Composable
-fun QuickActionButton(
-    title: String,
-    description: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit,
-    isDestructive: Boolean = false,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        onClick = onClick
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        if (isDestructive) RoseError.copy(alpha = 0.1f)
-                        else Indigo.copy(alpha = 0.1f)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = if (isDestructive) RoseError else Indigo,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isDestructive) RoseError
-                            else MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Navigate",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
-}
-
-/**
- * Preview for the System Health screen.
+ * Preview for the System Health screen using sample data.
  */
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 fun SystemHealthScreenPreview() {
-    NearAiAdminTheme {
-        SystemHealthScreen(
-            onNavigateBack = { /* No-op for preview */ }
+    val sampleData = SystemHealthData(
+        overallStatus = "healthy",
+        checkedAt = "2026-11-04T18:30:00Z",
+        application = ApplicationHealth("healthy", "dev", 3600),
+        components = listOf(
+            ComponentHealth("database", "healthy", mapOf("latency_ms" to "12")),
+            ComponentHealth("storage", "healthy", mapOf("backend" to "local")),
+            ComponentHealth("scheduler", "healthy", mapOf("running" to "true")),
+            ComponentHealth("email", "healthy", mapOf("provider" to "mock"))
         )
+    )
+
+    NearAiAdminTheme {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                OverallStatusBanner(
+                    status = sampleData.overallStatus,
+                    checkedAt = sampleData.checkedAt,
+                    healthyCount = sampleData.components.count { it.status == "healthy" },
+                    totalComponents = sampleData.components.size
+                )
+            }
+            item {
+                ApplicationInfoCard(
+                    environment = sampleData.application.environment,
+                    uptimeSeconds = sampleData.application.uptimeSeconds
+                )
+            }
+            items(sampleData.components) { component ->
+                ComponentHealthCard(component = component)
+            }
+        }
     }
 }

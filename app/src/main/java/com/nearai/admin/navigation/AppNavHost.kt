@@ -24,6 +24,7 @@ import com.nearai.admin.feature.orders.presentation.OrderDetailsScreen
 import com.nearai.admin.feature.orders.presentation.OrdersListScreen
 import com.nearai.admin.feature.settings.presentation.SettingsScreen
 import com.nearai.admin.feature.systemhealth.presentation.SystemHealthScreen
+import com.nearai.admin.feature.systemhealth.presentation.SystemHealthViewModel
 import com.nearai.admin.feature.users.presentation.UsersScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -175,7 +176,9 @@ fun AppNavHost(
         }
 
         composable<SystemHealthRoute> {
+            val viewModel: SystemHealthViewModel = hiltViewModel()
             SystemHealthScreen(
+                viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
