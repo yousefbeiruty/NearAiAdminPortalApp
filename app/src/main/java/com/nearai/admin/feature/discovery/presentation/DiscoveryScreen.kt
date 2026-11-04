@@ -1,20 +1,12 @@
 package com.nearai.admin.feature.discovery.presentation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
@@ -22,63 +14,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nearai.admin.core.designsystem.components.KpiCard
+import com.nearai.admin.core.designsystem.components.KpiTrend
 import com.nearai.admin.core.designsystem.theme.*
 
 /**
- * Places & Discovery Monitoring screen with pipeline telemetry,
- * real-time search feed, and trace inspector deep-dive.
+ * Discovery Analytics screen that displays real-time customer behavior metrics.
  *
- * Uses development-only placeholder data until the backend API is connected.
+ * Shows overview KPIs, search analytics, popular products, popular categories,
+ * and the conversion funnel — all sourced from the backend analytics API.
  */
-
-// =============================================================================
-// UI Models
-// =============================================================================
-
-data class DiscoveryKpi(
-    val title: String,
-    val value: String,
-    val subtitle: String,
-    val icon: ImageVector,
-    val iconTint: Color = Indigo,
-    val subtitleColor: Color = TextSecondaryLight
-)
-
-data class IngestionItem(
-    val id: String,
-    val query: String,
-    val location: String,
-    val userTag: String,
-    val placeCount: Int,
-    val latencyMs: Int,
-    val statusLabel: String,
-    val isDegraded: Boolean = false,
-    val icon: ImageVector = Icons.Outlined.NearMe
-)
-
-data class DiscoveredPlace(
-    val id: String,
-    val name: String,
-    val tags: String,
-    val distance: String,
-    val rating: String,
-    val score: String,
-    val isOpen: Boolean,
-    val imageUrl: String
-)
-
-// =============================================================================
-// Color Tokens
-// =============================================================================
-
 
 // =============================================================================
 // Discovery Screen Composable
@@ -87,531 +36,423 @@ data class DiscoveredPlace(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiscoveryScreen(
-    onNotificationClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {},
-    onReplayTrace: () -> Unit = {},
-    onInspectJson: () -> Unit = {},
-    onSelectTrace: (String) -> Unit = {}
+    viewModel: DiscoveryViewModel = hiltViewModel()
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedFilterIndex by remember { mutableIntStateOf(0) }
-    val filterTabs = listOf("All (48.9k)", "Cache Hit", "Cache Miss", "Places API Live")
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val daysOptions = listOf(1 to "1D", 7 to "7D", 30 to "30D")
+    var selectedDaysIndex by remember { mutableIntStateOf(1) }
+
+    LaunchedEffect(Unit) {
+        viewModel.event.collect { event ->
+            if (event is DiscoveryEvent.Retry) {
+                viewModel.retry()
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Navy,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.Explore,
-                                    contentDescription = "NearAI Brand Mark",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        Column {
-                            Text(
-                                text = "NearAI Admin",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Navy
-                                )
-                            )
-                            Text(
-                                text = "DISCOVERY",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondaryLight,
-                                    letterSpacing = 1.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            )
-                        }
-                    }
+                    Text(
+                        text = "Discovery Analytics",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
                 },
                 actions = {
-                    IconButton(onClick = onNotificationClick) {
-                        BadgedBox(
-                            badge = {
-                                Badge(
-                                    containerColor = RoseError,
-                                    contentColor = Color.White
-                                ) {
-                                    Text("2")
-                                }
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Notifications,
-                                contentDescription = "Alerts",
-                                tint = Navy
-                            )
+                    daysOptions.forEachIndexed { index, (days, label) ->
+                        FilterChip(
+                            selected = index == selectedDaysIndex,
+                            onClick = {
+                                selectedDaysIndex = index
+                                viewModel.setSelectedDays(days)
+                            },
+                            label = { Text(label) }
+                        )
+                        if (index < daysOptions.size - 1) {
+                            Spacer(modifier = Modifier.width(4.dp))
                         }
                     }
-                    Box(
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Indigo.copy(alpha = 0.15f))
-                            .border(1.dp, Indigo.copy(alpha = 0.35f), CircleShape)
-                            .clickable { onProfileClick() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "AF",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Navy
-                            )
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
+                }
             )
-        },
-        containerColor = BackgroundLight
-    ) { innerPadding ->
+        }
+    ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
+                .padding(paddingValues),
+            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. Cluster Status Pill Bar
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
+
+            // Loading / Error states
+            if (uiState.isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            } else if (uiState.error != null && uiState.popularProducts.isEmpty()) {
+                item {
+                    ErrorState(message = uiState.error!!, onRetry = { viewModel.retry() })
+                }
+            } else {
+
+                // Overview KPIs section
+                item {
+                    SectionHeader(title = "Overview", subtitle = uiState.periodStart.takeIf { it.isNotBlank() }
+                        ?.let { "Period: $it — ${uiState.periodEnd}" })
+                }
+                item {
+                    KpiGrid(uiState = uiState)
+                }
+
+                // Search Analytics section
+                item {
+                    SectionHeader(title = "Search Analytics")
+                }
+                item {
+                    SearchAnalyticsCard(uiState = uiState)
+                }
+
+                // Popular search terms
+                if (uiState.searchPopularTerms.isNotEmpty()) {
+                    item {
+                        SectionHeader(title = "Popular Search Terms")
+                    }
+                    item {
+                        SearchTermsList(terms = uiState.searchPopularTerms)
+                    }
+                }
+
+                // Zero-result search terms
+                if (uiState.searchZeroResultTerms.isNotEmpty()) {
+                    item {
+                        SectionHeader(title = "Zero-Result Searches")
+                    }
+                    item {
+                        SearchTermsList(terms = uiState.searchZeroResultTerms, isWarning = true)
+                    }
+                }
+
+                // Popular Products section
+                if (uiState.popularProducts.isNotEmpty()) {
+                    item {
+                        SectionHeader(title = "Popular Products", subtitle = "By ${uiState.popularProductsMetric}")
+                    }
+                    item {
+                        ProductsList(products = uiState.popularProducts)
+                    }
+                }
+
+                // Popular Categories section
+                if (uiState.popularCategories.isNotEmpty()) {
+                    item {
+                        SectionHeader(title = "Popular Categories")
+                    }
+                    item {
+                        CategoriesList(categories = uiState.popularCategories)
+                    }
+                }
+
+                // Conversion Funnel section
+                if (uiState.funnelSteps.isNotEmpty()) {
+                    item {
+                        SectionHeader(
+                            title = "Conversion Funnel",
+                            subtitle = "Overall: ${String.format("%.1f%%", uiState.funnelOverallConversionPct)}"
+                        )
+                    }
+                    item {
+                        ConversionFunnelCard(steps = uiState.funnelSteps)
+                    }
+                }
+
+                // Refreshing indicator
+                if (uiState.isRefreshing) {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// =============================================================================
+// Section Header
+// =============================================================================
+
+@Composable
+private fun SectionHeader(title: String, subtitle: String? = null) {
+    Column {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        subtitle?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// =============================================================================
+// KPI Grid
+// =============================================================================
+
+@Composable
+private fun KpiGrid(uiState: DiscoveryUiState) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            KpiCard(
+                label = "Daily Active Users",
+                value = uiState.dailyActiveUsers.formattedCurrent,
+                trend = uiState.dailyActiveUsers.toKpiTrend("vs prev"),
+                modifier = Modifier.weight(1f),
+                icon = {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Indigo,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            )
+            KpiCard(
+                label = "Weekly Active Users",
+                value = uiState.weeklyActiveUsers.formattedCurrent,
+                trend = uiState.weeklyActiveUsers.toKpiTrend("vs prev"),
+                modifier = Modifier.weight(1f),
+                icon = {
+                    Icon(
+                        Icons.Default.People,
+                        contentDescription = null,
+                        tint = Indigo,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            KpiCard(
+                label = "Searches",
+                value = uiState.totalSearches.formattedCurrent,
+                trend = uiState.totalSearches.toKpiTrend("vs prev"),
+                modifier = Modifier.weight(1f),
+                icon = {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = null,
+                        tint = Info,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            )
+            KpiCard(
+                label = "Product Views",
+                value = uiState.totalProductViews.formattedCurrent,
+                trend = uiState.totalProductViews.toKpiTrend("vs prev"),
+                modifier = Modifier.weight(1f),
+                icon = {
+                    Icon(
+                        Icons.Default.Visibility,
+                        contentDescription = null,
+                        tint = Info,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            KpiCard(
+                label = "Cart Adds",
+                value = uiState.totalCartAdds.formattedCurrent,
+                trend = uiState.totalCartAdds.toKpiTrend("vs prev"),
+                modifier = Modifier.weight(1f),
+                icon = {
+                    Icon(
+                        Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        tint = EmeraldSuccess,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            )
+            KpiCard(
+                label = "Purchases",
+                value = uiState.totalPurchases.formattedCurrent,
+                trend = uiState.totalPurchases.toKpiTrend("vs prev"),
+                modifier = Modifier.weight(1f),
+                icon = {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = EmeraldSuccess,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            )
+        }
+        KpiCard(
+            label = "Conversion Rate",
+            value = "${uiState.conversionRate.formattedCurrent}%",
+            trend = uiState.conversionRate.toKpiTrend("vs prev"),
+            icon = {
+                Icon(
+                    Icons.AutoMirrored.Filled.TrendingUp,
+                    contentDescription = null,
+                    tint = Indigo,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        )
+    }
+}
+
+private fun MetricUi.toKpiTrend(period: String): KpiTrend? {
+    if (changePct == 0.0 && previous == 0.0) return null
+    val pct = changePct.toInt().coerceAtLeast(0)
+    return if (changePct >= 0) {
+        KpiTrend.Up(pct, period)
+    } else {
+        KpiTrend.Down(pct, period)
+    }
+}
+
+// =============================================================================
+// Search Analytics Card
+// =============================================================================
+
+@Composable
+private fun SearchAnalyticsCard(uiState: DiscoveryUiState) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            MetricRow(label = "Total Searches", value = uiState.searchTotalSearches.toString())
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            MetricRow(
+                label = "Zero-Result Searches",
+                value = "${uiState.searchZeroResultSearches} (${String.format("%.1f%%", uiState.searchZeroResultRatePct)})",
+                valueColor = if (uiState.searchZeroResultRatePct > 10) RoseError else MaterialTheme.colorScheme.onSurface
+            )
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            MetricRow(
+                label = "Avg Results / Search",
+                value = String.format("%.1f", uiState.searchAvgResultsPerSearch)
+            )
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            MetricRow(
+                label = "Avg Latency",
+                value = "${String.format("%.0fms", uiState.searchAvgLatencyMs)}"
+            )
+        }
+    }
+}
+
+@Composable
+private fun MetricRow(
+    label: String,
+    value: String,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = valueColor
+        )
+    }
+}
+
+// =============================================================================
+// Search Terms List
+// =============================================================================
+
+@Composable
+private fun SearchTermsList(terms: List<SearchTermUi>, isWarning: Boolean = false) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isWarning) AmberBg else MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            terms.forEachIndexed { index, term ->
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = DarkClusterBg
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(EmeraldSuccess)
-                            )
-                            Text(
-                                text = "CLUSTER: AP-NORTHEAST-1",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = EmeraldSuccess,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.5.sp
-                                )
-                            )
-                        }
-                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "GEO-PIPELINE v2.4",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = TextSecondaryLight,
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            maxLines = 1
+                            text = "${index + 1}.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = SurfaceLight,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(3.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(EmeraldSuccess)
-                                )
-                                Text(
-                                    text = "Live",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        color = Navy,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp
-                                    )
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 2. Discovery KPI 2x2 Grid
-            item {
-                val discoveryKpis = listOf(
-                    DiscoveryKpi(
-                        title = "DISCOVERY VOL",
-                        value = "48,910",
-                        subtitle = "↗ +22.4% vs w-1",
-                        icon = Icons.Outlined.Explore,
-                        subtitleColor = EmeraldDark
-                    ),
-                    DiscoveryKpi(
-                        title = "PLACES SPEND",
-                        value = "$312.40",
-                        subtitle = "GCP Billing Pool A",
-                        icon = Icons.Outlined.AccountBalanceWallet,
-                        subtitleColor = TextSecondaryLight
-                    ),
-                    DiscoveryKpi(
-                        title = "AVG LATENCY",
-                        value = "240ms",
-                        subtitle = "FastAPI + Places",
-                        icon = Icons.Outlined.Speed,
-                        subtitleColor = TextSecondaryLight
-                    ),
-                    DiscoveryKpi(
-                        title = "CACHE HIT",
-                        value = "68.4%",
-                        subtitle = "⚡ Redis Geo Cluster",
-                        icon = Icons.Outlined.Memory,
-                        subtitleColor = EmeraldDark
-                    )
-                )
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    for (i in discoveryKpis.indices step 2) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            DiscoveryKpiCard(kpi = discoveryKpis[i], modifier = Modifier.weight(1f))
-                            if (i + 1 < discoveryKpis.size) {
-                                DiscoveryKpiCard(kpi = discoveryKpis[i + 1], modifier = Modifier.weight(1f))
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 3. Search Filter Input
-            item {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = {
                         Text(
-                            text = "Filter searches by query, city, or status...",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight)
+                            text = term.query,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = if (isWarning) AmberDark else MaterialTheme.colorScheme.onSurface
                         )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Search,
-                            contentDescription = null,
-                            tint = TextSecondaryLight
-                        )
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Clear search",
-                                    tint = TextSecondaryLight
-                                )
-                            }
-                        }
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = SurfaceLight,
-                        unfocusedContainerColor = SurfaceLight,
-                        focusedBorderColor = Navy,
-                        unfocusedBorderColor = BorderSubtle
-                    ),
-                    singleLine = true
-                )
-            }
-
-            // 4. Ingestion Filter Pills
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    filterTabs.forEachIndexed { index, title ->
-                        val isSelected = selectedFilterIndex == index
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { selectedFilterIndex = index },
-                            label = {
-                                Text(
-                                    text = title,
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                    )
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Navy,
-                                selectedLabelColor = Color.White,
-                                containerColor = SurfaceLight,
-                                labelColor = TextSecondaryLight
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = isSelected,
-                                borderColor = if (isSelected) Navy else BorderSubtle
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        term.avgResults?.let {
+                            Text(
+                                text = "${it.toInt()} results",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                        Text(
+                            text = term.formattedCount,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isWarning) AmberDark else MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
-            }
-
-            // 5. Real-Time Ingestion Feed Section Header
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "REAL-TIME INGESTION FEED",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Navy,
-                            letterSpacing = 0.5.sp
-                        )
-                    )
-                    Text(
-                        text = "Tap row to inspect",
-                        style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight)
-                    )
-                }
-            }
-
-            // Ingestion items
-            val ingestionItems = listOf(
-                IngestionItem(
-                    id = "trc-9942a",
-                    query = "\"Quiet cafes with power outlets near...\"",
-                    location = "Tokyo, JP",
-                    userTag = "user_8492",
-                    placeCount = 12,
-                    latencyMs = 210,
-                    statusLabel = "200 OK",
-                    icon = Icons.Outlined.NearMe
-                ),
-                IngestionItem(
-                    id = "trc-9942b",
-                    query = "\"Authentic sourdough bakeries\"",
-                    location = "San Francisco, CA",
-                    userTag = "maya.lin",
-                    placeCount = 8,
-                    latencyMs = 185,
-                    statusLabel = "200 OK",
-                    icon = Icons.Outlined.Storefront
-                ),
-                IngestionItem(
-                    id = "trc-9942c",
-                    query = "\"Late night pharmacy open now\"",
-                    location = "Austin, TX",
-                    userTag = "user_1904",
-                    placeCount = 3,
-                    latencyMs = 890,
-                    statusLabel = "Degraded",
-                    isDegraded = true,
-                    icon = Icons.Outlined.WarningAmber
-                )
-            )
-            items(ingestionItems) { item ->
-                IngestionRowCard(
-                    item = item,
-                    onClick = { onSelectTrace(item.id) }
-                )
-            }
-
-            // 6. Trace Inspector & Semantic NLP Extraction Card
-            item {
-                TraceInspectorSection(
-                    traceId = "#trc-9942a",
-                    promptPayload = "\"Cozy bookstores with craft coffee\"",
-                    clientContext = "Client: iOS Native 4.12.0\nLoc: 37.7749° N, 122.4194° W",
-                    onReplayTrace = onReplayTrace,
-                    onInspectJson = onInspectJson
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(76.dp))
-            }
-        }
-    }
-}
-
-// =============================================================================
-// Discovery KPI Card
-// =============================================================================
-
-@Composable
-fun DiscoveryKpiCard(
-    kpi: DiscoveryKpi,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-        modifier = modifier
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = kpi.title,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = TextSecondaryLight,
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.5.sp
-                    )
-                )
-                Icon(
-                    imageVector = kpi.icon,
-                    contentDescription = null,
-                    tint = kpi.iconTint,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = kpi.value,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = Navy
-                )
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = kpi.subtitle,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = kpi.subtitleColor,
-                    fontWeight = FontWeight.Medium
-                )
-            )
-        }
-    }
-}
-
-// =============================================================================
-// Real-Time Ingestion Row Item
-// =============================================================================
-
-@Composable
-fun IngestionRowCard(
-    item: IngestionItem,
-    onClick: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = null,
-                        tint = if (item.isDegraded) AmberWarning else Indigo,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = item.query,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Navy
-                        ),
-                        maxLines = 1
-                    )
-                }
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = if (item.isDegraded) RoseBg else EmeraldBg
-                ) {
-                    Text(
-                        text = item.statusLabel,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = if (item.isDegraded) RoseError else EmeraldDark,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        ),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "${item.location} • ${item.userTag}",
-                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight)
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(
-                        text = "${item.placeCount} places",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = Navy,
-                            fontWeight = FontWeight.Medium
-                        )
-                    )
-                    Text(
-                        text = "${item.latencyMs}ms",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = if (item.latencyMs > 500) RoseError else TextSecondaryLight,
-                            fontWeight = FontWeight.SemiBold,
-                            fontFamily = FontFamily.Monospace
-                        )
-                    )
+                if (index < terms.size - 1) {
+                    Divider(modifier = Modifier.padding(vertical = 4.dp))
                 }
             }
         }
@@ -619,451 +460,131 @@ fun IngestionRowCard(
 }
 
 // =============================================================================
-// Trace Inspector & Pipeline Waterfall Section
+// Products List
 // =============================================================================
 
 @Composable
-fun TraceInspectorSection(
-    traceId: String,
-    promptPayload: String,
-    clientContext: String,
-    onReplayTrace: () -> Unit,
-    onInspectJson: () -> Unit
-) {
+private fun ProductsList(products: List<ProductUi>) {
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            products.forEachIndexed { index, product ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Radar,
-                        contentDescription = null,
-                        tint = Indigo,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "TRACE INSPECTOR",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Navy,
-                            letterSpacing = 0.5.sp
-                        )
-                    )
-                }
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = Indigo.copy(alpha = 0.12f)
-                ) {
-                    Text(
-                        text = "Trace ID: $traceId",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = Indigo,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        ),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Prompt Payload Banner
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = BackgroundLight,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "PROMPT PAYLOAD",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = TextSecondaryLight,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.5.sp
-                            )
-                        )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Lock,
-                                contentDescription = null,
-                                tint = TextSecondaryLight,
-                                modifier = Modifier.size(12.dp)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = product.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Privacy Masked [PII Cleared]",
-                                style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight)
+                                text = product.categoryName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = product.formattedCount,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "${product.uniqueViewers} unique",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = promptPayload,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Navy
-                        )
+                        text = "Cart add rate: ${String.format("%.1f%%", product.cartAddRatePct)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = EmeraldSuccess
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = clientContext,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = TextSecondaryLight,
-                            fontFamily = FontFamily.Monospace
-                        )
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Semantic Intent Extraction Pills
-            Text(
-                text = "SEMANTIC INTENT EXTRACTION",
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = TextSecondaryLight,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                IntentTag(icon = Icons.Outlined.MenuBook, label = "Bookstore", isPrimary = true)
-                IntentTag(icon = Icons.Outlined.LocalCafe, label = "Coffee", isPrimary = true)
-                IntentTag(label = "Ambience: Quiet", isPrimary = false)
-                IntentTag(label = "Vibe: Cozy", isPrimary = false)
-                IntentTag(label = "Radius: 3.5km", isPrimary = false)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Pipeline Latency Waterfall
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "PIPELINE LATENCY WATERFALL (265MS TOTAL)",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = TextSecondaryLight,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
-                    )
-                )
-                Text(
-                    text = "PASS",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = EmeraldSuccess,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Multi-segment horizontal progress bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-            ) {
-                Box(
-                    modifier = Modifier
-                        .weight(120f)
-                        .fillMaxHeight()
-                        .background(Indigo)
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(85f)
-                        .fillMaxHeight()
-                        .background(Indigo.copy(alpha = 0.55f))
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(60f)
-                        .fillMaxHeight()
-                        .background(EmeraldSuccess)
-                )
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(horizontalAlignment = Alignment.Start) {
-                    Text("Nearby Search", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
-                    Text("120ms", style = MaterialTheme.typography.labelSmall.copy(color = Indigo, fontWeight = FontWeight.Bold))
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Details Batch", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
-                    Text("85ms", style = MaterialTheme.typography.labelSmall.copy(color = Indigo.copy(alpha = 0.75f), fontWeight = FontWeight.Bold))
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text("AI Ranker", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
-                    Text("60ms", style = MaterialTheme.typography.labelSmall.copy(color = EmeraldDark, fontWeight = FontWeight.Bold))
-                }
-            }
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Discovered Places Carousel
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "DISCOVERED PLACES (6 RESULTS)",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = TextSecondaryLight,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
-                    )
-                )
-                Text(
-                    text = "Top Relevance",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = Indigo,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-
-            val places = listOf(
-                DiscoveredPlace(
-                    id = "pl-1",
-                    name = "The Reader's Archive",
-                    tags = "Single-origin drip · Silent attic",
-                    distance = "0.4 mi",
-                    rating = "4.9",
-                    score = "98%",
-                    isOpen = true,
-                    imageUrl = "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=600&q=80"
-                ),
-                DiscoveredPlace(
-                    id = "pl-2",
-                    name = "Black Oak Books & Roastery",
-                    tags = "Artisan roasts · Rare prints",
-                    distance = "0.8 mi",
-                    rating = "4.8",
-                    score = "94%",
-                    isOpen = true,
-                    imageUrl = "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80"
-                )
-            )
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(places) { place ->
-                    DiscoveredPlaceCard(place = place)
-                }
-            }
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Action Triggers
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onReplayTrace,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Navy),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.RestartAlt,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Replay",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp
-                    )
-                }
-                Button(
-                    onClick = onInspectJson,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Navy),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.DataObject,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "JSON",
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp
-                    )
-                }
-            }
-        }
-    }
-}
-
-// =============================================================================
-// Helper Chip for Semantic NLP Tags
-// =============================================================================
-
-@Composable
-fun IntentTag(
-    label: String,
-    icon: ImageVector? = null,
-    isPrimary: Boolean = false
-) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = if (isPrimary) Indigo.copy(alpha = 0.12f) else BackgroundLight,
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            if (isPrimary) Indigo.copy(alpha = 0.3f) else BorderSubtle
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = if (isPrimary) Indigo else TextSecondaryLight,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = if (isPrimary) Indigo else Navy,
-                    fontWeight = FontWeight.SemiBold
-                )
-            )
-        }
-    }
-}
-
-// =============================================================================
-// Discovered Place Carousel Card
-// =============================================================================
-
-@Composable
-fun DiscoveredPlaceCard(place: DiscoveredPlace) {
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = BackgroundLight),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-        modifier = Modifier.width(220.dp)
-    ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(110.dp)
-            ) {
-                AsyncImage(
-                    model = place.imageUrl,
-                    contentDescription = place.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-                // Rating pill overlay
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = Navy.copy(alpha = 0.85f),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        Text(
-                            text = place.rating,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = AmberWarning,
-                            modifier = Modifier.size(12.dp)
-                        )
+                    if (index < products.size - 1) {
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
                     }
                 }
             }
-            Column(modifier = Modifier.padding(10.dp)) {
-                Text(
-                    text = place.name,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Navy
-                    ),
-                    maxLines = 1
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = place.tags,
-                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight),
-                    maxLines = 1
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+        }
+    }
+}
+
+// =============================================================================
+// Categories List
+// =============================================================================
+
+@Composable
+private fun CategoriesList(categories: List<CategoryUi>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            categories.forEachIndexed { index, category ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
                 ) {
-                    Text(
-                        text = "${place.distance} • Open now",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = EmeraldDark,
-                            fontWeight = FontWeight.Medium
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = category.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                    )
-                    Text(
-                        text = "Score ${place.score}",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = Indigo,
-                            fontWeight = FontWeight.Bold
+                        Text(
+                            text = category.formattedViews,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                    )
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "${category.productViews} views",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${category.cartAdds} carts",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = EmeraldSuccess
+                        )
+                        Text(
+                            text = "${category.purchases} sales",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Indigo
+                        )
+                    }
+                    if (index < categories.size - 1) {
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
                 }
             }
         }
@@ -1071,13 +592,110 @@ fun DiscoveredPlaceCard(place: DiscoveredPlace) {
 }
 
 // =============================================================================
-// Preview
+// Conversion Funnel Card
 // =============================================================================
 
-@Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
-fun DiscoveryScreenPreview() {
-    MaterialTheme {
-        DiscoveryScreen()
+private fun ConversionFunnelCard(steps: List<FunnelStepUi>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            val maxCount = steps.maxOfOrNull { it.count } ?: 1
+
+            steps.forEachIndexed { index, step ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = step.step.replace("_", " ").replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (index > 0) {
+                                Text(
+                                    text = "${String.format("%.1f%%", step.rate)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (step.rate >= 50) EmeraldSuccess else AmberWarning
+                                )
+                            }
+                            Text(
+                                text = step.formattedCount,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                    // Funnel bar
+                    val widthPct = (step.count.toFloat() / maxCount).coerceIn(0.1f, 1f)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(widthPct)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(
+                                if (index == 0) Indigo
+                                else if (step.rate >= 50) EmeraldSuccess
+                                else AmberWarning
+                            )
+                    )
+                }
+                if (index < steps.size - 1) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+        }
+    }
+}
+
+// =============================================================================
+// Error State
+// =============================================================================
+
+@Composable
+private fun ErrorState(message: String, onRetry: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Icon(
+                Icons.Default.Error,
+                contentDescription = null,
+                tint = RoseError,
+                modifier = Modifier.size(48.dp)
+            )
+            Text(
+                text = "Failed to load analytics",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Button(onClick = onRetry) {
+                Text("Retry")
+            }
+        }
     }
 }

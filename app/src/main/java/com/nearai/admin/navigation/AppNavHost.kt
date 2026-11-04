@@ -15,7 +15,7 @@ import com.nearai.admin.feature.more.presentation.MoreScreen
 import com.nearai.admin.feature.aiusage.presentation.AiUsageScreen
 import com.nearai.admin.feature.auditlogs.presentation.AuditLogsScreen
 import com.nearai.admin.feature.auditlogs.presentation.AuditLogsViewModel
-import com.nearai.admin.feature.discovery.presentation.DiscoveryScreen
+import com.nearai.admin.feature.discovery.presentation.BusinessAnalyticsScreen
 import com.nearai.admin.feature.inventory.presentation.InventoryScreen
 import com.nearai.admin.feature.inventory.presentation.InventoryViewModel
 import com.nearai.admin.feature.inventory.presentation.ProductEditScreen
@@ -111,7 +111,7 @@ fun AppNavHost(
         }
 
         composable<DiscoveryRoute> {
-            DiscoveryScreen()
+            BusinessAnalyticsScreen()
         }
 
         composable<MoreRoute> {

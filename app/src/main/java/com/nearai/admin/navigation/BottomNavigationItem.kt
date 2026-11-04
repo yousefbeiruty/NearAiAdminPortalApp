@@ -74,9 +74,9 @@ sealed class AdminBottomDestination(
         hasAlertDot = true // Shows soft-cap warning indicator (71% budget consumed)
     )
 
-    object Places : AdminBottomDestination(
+    object Analytics : AdminBottomDestination(
         route = DiscoveryRoute,
-        label = "Discovery",
+        label = "Analytics",
         selectedIcon = Icons.Filled.Explore,
         unselectedIcon = Icons.Outlined.Explore
     )
@@ -93,7 +93,7 @@ sealed class AdminBottomDestination(
             Overview,
             Users,
             AIUsage,
-            Places,
+            Analytics,
             More
         )
     }
