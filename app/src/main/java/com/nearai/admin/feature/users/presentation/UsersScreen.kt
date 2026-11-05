@@ -208,7 +208,7 @@ fun UsersScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         StatusPill(
-                            label = "${uiState.totalItems} users",
+                            label = stringResource(R.string.users_count, uiState.totalItems),
                             dotColor = EmeraldSuccess
                         )
                     }
@@ -325,7 +325,7 @@ fun UserListItem(
                         dotColor = if (user.isActive) EmeraldSuccess else RoseError
                     )
                     if (user.emailVerified) {
-                        StatusPill(label = "Verified", dotColor = Info)
+                        StatusPill(label = stringResource(R.string.users_verified), dotColor = Info)
                     }
                 }
             }
@@ -428,9 +428,9 @@ fun UserDetailBottomSheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    UserDetailRow(label = "Email Verified", value = if (user.emailVerified) "Yes" else "No")
-                    UserDetailRow(label = "Created", value = user.createdAt)
-                    UserDetailRow(label = "Updated", value = user.updatedAt)
+                    UserDetailRow(label = stringResource(R.string.user_detail_email_verified), value = if (user.emailVerified) stringResource(R.string.user_detail_yes) else stringResource(R.string.user_detail_no))
+                    UserDetailRow(label = stringResource(R.string.user_detail_created), value = user.createdAt)
+                    UserDetailRow(label = stringResource(R.string.user_detail_updated), value = user.updatedAt)
                 }
             }
 

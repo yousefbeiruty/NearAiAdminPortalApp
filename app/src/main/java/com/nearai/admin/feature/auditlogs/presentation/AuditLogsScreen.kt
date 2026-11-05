@@ -444,24 +444,24 @@ private fun AuditLogCard(
 
                 // Actor details
                 AuditLogDetailRow(
-                    label = "Actor ID",
-                    value = log.actorId ?: "System"
+                    label = stringResource(R.string.audit_logs_actor_id),
+                    value = log.actorId ?: stringResource(R.string.audit_logs_system)
                 )
                 AuditLogDetailRow(
-                    label = "Actor Role",
+                    label = stringResource(R.string.audit_logs_actor_role),
                     value = log.actorRole
                 )
                 AuditLogDetailRow(
-                    label = "Action",
+                    label = stringResource(R.string.audit_logs_action),
                     value = log.action
                 )
                 AuditLogDetailRow(
-                    label = "Resource",
+                    label = stringResource(R.string.audit_logs_resource),
                     value = "${log.resourceType}${if (log.resourceId != null) " / ${log.resourceId}" else ""}"
                 )
                 log.requestId?.let {
                     AuditLogDetailRow(
-                        label = "Request ID",
+                        label = stringResource(R.string.audit_logs_request_id),
                         value = it
                     )
                 }

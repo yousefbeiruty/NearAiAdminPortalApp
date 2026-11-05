@@ -1164,18 +1164,18 @@ fun StockOperationDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(text = subtitle, style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
-                Text(text = "Current stock: $currentStock", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
+                Text(text = stringResource(R.string.inventory_current_stock, currentStock), style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
                 OutlinedTextField(
                     value = quantity,
                     onValueChange = { quantity = it },
-                    label = { Text("Quantity to receive") },
+                    label = { Text(stringResource(R.string.inventory_quantity_to_receive)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
                 OutlinedTextField(
                     value = reason,
                     onValueChange = { reason = it },
-                    label = { Text("Reason (optional)") },
+                    label = { Text(stringResource(R.string.inventory_reason_optional)) },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 2
                 )
@@ -1192,12 +1192,12 @@ fun StockOperationDialog(
                 enabled = quantity.toIntOrNull() != null && quantity.toIntOrNull()!! > 0,
                 colors = ButtonDefaults.buttonColors(containerColor = Navy)
             ) {
-                Text("Confirm", color = Color.White)
+                Text(stringResource(R.string.inventory_confirm), color = Color.White)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = TextSecondaryLight)
+                Text(stringResource(R.string.inventory_cancel), color = TextSecondaryLight)
             }
         }
     )
@@ -1226,19 +1226,19 @@ fun StockAdjustDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(text = subtitle, style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
-                Text(text = "Current stock: $currentStock", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
-                Text(text = "Use negative values to decrease stock.", style = MaterialTheme.typography.bodySmall.copy(color = RoseDark))
+                Text(text = stringResource(R.string.inventory_current_stock, currentStock), style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
+                Text(text = stringResource(R.string.inventory_use_negative_values), style = MaterialTheme.typography.bodySmall.copy(color = RoseDark))
                 OutlinedTextField(
                     value = delta,
                     onValueChange = { delta = it },
-                    label = { Text("Quantity delta (e.g. +5 or -3)") },
+                    label = { Text(stringResource(R.string.inventory_quantity_delta)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
                 OutlinedTextField(
                     value = reason,
                     onValueChange = { reason = it },
-                    label = { Text("Reason (required)") },
+                    label = { Text(stringResource(R.string.inventory_reason_required)) },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 2,
                     isError = reason.isNotBlank() && reason.length < 3
@@ -1256,12 +1256,12 @@ fun StockAdjustDialog(
                 enabled = delta.toIntOrNull() != null && delta.toIntOrNull()!! != 0 && reason.isNotBlank() && reason.length >= 3,
                 colors = ButtonDefaults.buttonColors(containerColor = Navy)
             ) {
-                Text("Confirm", color = Color.White)
+                Text(stringResource(R.string.inventory_confirm), color = Color.White)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = TextSecondaryLight)
+                Text(stringResource(R.string.inventory_cancel), color = TextSecondaryLight)
             }
         }
     )
@@ -1300,14 +1300,14 @@ fun StockMovementsBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Stock Movement History",
+                    text = stringResource(R.string.inventory_movement_history),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy)
                 )
                 IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Navy, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.inventory_cancel), tint = Navy, modifier = Modifier.size(20.dp))
                 }
             }
-            Text(text = "SKU: $variantSku", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight, fontFamily = FontFamily.Monospace))
+            Text(text = stringResource(R.string.inventory_variant_sku, variantSku), style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight, fontFamily = FontFamily.Monospace))
             Spacer(modifier = Modifier.height(12.dp))
 
             if (isLoading && movements.isEmpty()) {
@@ -1319,7 +1319,7 @@ fun StockMovementsBottomSheet(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Outlined.History, contentDescription = null, tint = TextSecondaryLight, modifier = Modifier.size(40.dp))
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("No movement history", style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
+                        Text(stringResource(R.string.inventory_no_movement_history), style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
                     }
                 }
             } else {
@@ -1337,7 +1337,7 @@ fun StockMovementsBottomSheet(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(containerColor = Navy)
                             ) {
-                                Text("Load More", color = Color.White)
+                                Text(stringResource(R.string.inventory_load_more), color = Color.White)
                             }
                         }
                     }

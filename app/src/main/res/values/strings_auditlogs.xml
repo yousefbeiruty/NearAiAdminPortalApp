@@ -7,4 +7,15 @@
     <string name="audit_logs_by_actor">by %1$s</string>
     <string name="audit_logs_changes">Changes</string>
     <string name="audit_logs_metadata">Metadata</string>
+    <string name="audit_logs_actor_id">Actor ID</string>
+    <string name="audit_logs_actor_role">Actor Role</string>
+    <string name="audit_logs_action">Action</string>
+    <string name="audit_logs_resource">Resource</string>
+    <string name="audit_logs_request_id">Request ID</string>
+    <string name="audit_logs_system">System</string>
+    <string name="audit_logs_timestamp">Timestamp</string>
+    <string name="audit_logs_loading">Loading audit logs…</string>
+    <string name="audit_logs_empty">No audit logs found</string>
+    <string name="audit_logs_error">Failed to load audit logs</string>
+    <string name="audit_logs_close">Close</string>
 </resources>

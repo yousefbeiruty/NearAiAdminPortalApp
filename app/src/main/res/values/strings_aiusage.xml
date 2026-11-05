@@ -2,6 +2,10 @@
 <resources>
     <!-- AI Usage Screen -->
     <string name="ai_usage_title">AI Usage &amp; Credits</string>
+    <string name="ai_usage_loading">Loading AI usage data…</string>
+    <string name="ai_usage_no_data">No AI usage data available.</string>
+    <string name="ai_usage_unavailable">AI usage data is not yet available. This feature is coming soon.</string>
+    <string name="ai_usage_retry">Retry</string>
     <string name="ai_usage_live_telemetry">Live Ingestion Telemetry</string>
     <string name="ai_usage_monthly_budget">Monthly Budget Envelope</string>
     <string name="ai_usage_webhook_enabled">Webhook dispatch notifications enabled</string>

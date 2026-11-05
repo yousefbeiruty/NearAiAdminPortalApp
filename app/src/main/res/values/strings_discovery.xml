@@ -9,4 +9,13 @@
     <string name="discovery_units_sold">%1$s units</string>
     <string name="discovery_revenue">%1$s %2$s</string>
     <string name="discovery_load_error">Failed to load analytics</string>
+    <string name="discovery_total_orders">Total Orders</string>
+    <string name="discovery_completed">Completed</string>
+    <string name="discovery_pending">Pending</string>
+    <string name="discovery_cancelled">Cancelled</string>
+    <string name="discovery_new_registrations">New Registrations</string>
+    <string name="discovery_active_customers">Active Customers</string>
+    <string name="discovery_repeat_customers">Repeat Customers</string>
+    <string name="discovery_loading">Loading analytics…</string>
+    <string name="discovery_no_data">No analytics data available</string>
 </resources>

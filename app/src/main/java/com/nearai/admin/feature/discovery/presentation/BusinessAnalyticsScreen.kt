@@ -260,7 +260,7 @@ private fun OrderKpiGrid(uiState: BusinessAnalyticsUiState) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             KpiCard(
-                label = "Total Orders",
+                label = stringResource(R.string.discovery_total_orders),
                 value = uiState.totalOrdersFormatted,
                 trend = uiState.totalOrdersPercentageChange?.toKpiTrend(),
                 modifier = Modifier.weight(1f),
@@ -274,7 +274,7 @@ private fun OrderKpiGrid(uiState: BusinessAnalyticsUiState) {
                 }
             )
             KpiCard(
-                label = "Completed",
+                label = stringResource(R.string.discovery_completed),
                 value = uiState.completedOrdersFormatted,
                 trend = uiState.completedOrdersPercentageChange?.toKpiTrend(),
                 modifier = Modifier.weight(1f),
@@ -290,7 +290,7 @@ private fun OrderKpiGrid(uiState: BusinessAnalyticsUiState) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             KpiCard(
-                label = "Pending",
+                label = stringResource(R.string.discovery_pending),
                 value = uiState.pendingOrdersFormatted,
                 modifier = Modifier.weight(1f),
                 icon = {
@@ -303,7 +303,7 @@ private fun OrderKpiGrid(uiState: BusinessAnalyticsUiState) {
                 }
             )
             KpiCard(
-                label = "Cancelled",
+                label = stringResource(R.string.discovery_cancelled),
                 value = uiState.cancelledOrdersFormatted,
                 modifier = Modifier.weight(1f),
                 icon = {
@@ -640,7 +640,7 @@ private fun CustomerAnalyticsGrid(uiState: BusinessAnalyticsUiState) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             KpiCard(
-                label = "New Registrations",
+                label = stringResource(R.string.discovery_new_registrations),
                 value = uiState.newRegistrationsFormatted,
                 trend = uiState.newRegistrationsPercentageChange?.toKpiTrend(),
                 modifier = Modifier.weight(1f),
@@ -654,7 +654,7 @@ private fun CustomerAnalyticsGrid(uiState: BusinessAnalyticsUiState) {
                 }
             )
             KpiCard(
-                label = "Active Customers",
+                label = stringResource(R.string.discovery_active_customers),
                 value = uiState.activeCustomersFormatted,
                 trend = uiState.activeCustomersPercentageChange?.toKpiTrend(),
                 modifier = Modifier.weight(1f),
@@ -669,7 +669,7 @@ private fun CustomerAnalyticsGrid(uiState: BusinessAnalyticsUiState) {
             )
         }
         KpiCard(
-            label = "Repeat Customers",
+            label = stringResource(R.string.discovery_repeat_customers),
             value = uiState.repeatCustomersFormatted,
             modifier = Modifier.fillMaxWidth(),
             icon = {

@@ -27,4 +27,9 @@
     <string name="user_detail_updated">Updated</string>
     <string name="user_detail_yes">Yes</string>
     <string name="user_detail_no">No</string>
+    <string name="users_count">%1$d users</string>
+    <string name="users_verified">Verified</string>
+    <string name="users_loading">Loading users…</string>
+    <string name="users_empty">No users found</string>
+    <string name="users_error">Failed to load users</string>
 </resources>

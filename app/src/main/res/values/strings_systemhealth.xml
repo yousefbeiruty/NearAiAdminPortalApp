@@ -2,4 +2,17 @@
 <resources>
     <!-- System Health -->
     <string name="system_health_title">System Health</string>
+    <string name="system_health_healthy_count">%1$d/%2$d healthy</string>
+    <string name="system_health_environment">Environment</string>
+    <string name="system_health_unknown">Unknown</string>
+    <string name="system_health_uptime">Uptime</string>
+    <string name="system_health_latency">Latency</string>
+    <string name="system_health_latency_value">%1$sms</string>
+    <string name="system_health_backend">Backend</string>
+    <string name="system_health_provider">Provider</string>
+    <string name="system_health_running">Running</string>
+    <string name="system_health_loading">Loading system health…</string>
+    <string name="system_health_error">Failed to load system health</string>
+    <string name="system_health_no_data">No system health data available</string>
+    <string name="system_health_refresh">Refresh</string>
 </resources>

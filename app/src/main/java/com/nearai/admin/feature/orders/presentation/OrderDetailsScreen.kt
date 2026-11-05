@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nearai.admin.R
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.orders.domain.*
 
@@ -232,9 +234,9 @@ private fun OrderInfoCard(order: OrderDetails) {
             Spacer(modifier = Modifier.height(12.dp))
             // Status badges — each on its own row to avoid overlap
             Column {
-                StatusBadge(label = "Order: ${order.status.displayLabel}", tint = order.status.badgeTint)
+                StatusBadge(label = stringResource(R.string.order_label_order_status, order.status.displayLabel), tint = order.status.badgeTint)
                 Spacer(modifier = Modifier.height(4.dp))
-                StatusBadge(label = "Fulfillment: ${order.fulfillmentStatus.displayLabel}", tint = order.fulfillmentStatus.badgeTint)
+                StatusBadge(label = stringResource(R.string.order_label_fulfillment_status, order.fulfillmentStatus.displayLabel), tint = order.fulfillmentStatus.badgeTint)
             }
         }
     }

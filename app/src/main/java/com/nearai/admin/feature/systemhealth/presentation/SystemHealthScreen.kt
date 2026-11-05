@@ -214,7 +214,7 @@ fun OverallStatusBanner(
                     }
                 }
                 StatusPill(
-                    label = "$healthyCount/$totalComponents healthy",
+                    label = stringResource(R.string.system_health_healthy_count, healthyCount, totalComponents),
                     dotColor = statusColor
                 )
             }
@@ -239,12 +239,12 @@ fun ApplicationInfoCard(
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             HealthInfoRow(
-                label = "Environment",
-                value = environment.ifBlank { "Unknown" }
+                label = stringResource(R.string.system_health_environment),
+                value = environment.ifBlank { stringResource(R.string.system_health_unknown) }
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             HealthInfoRow(
-                label = "Uptime",
+                label = stringResource(R.string.system_health_uptime),
                 value = formatUptime(uptimeSeconds)
             )
         }
@@ -307,25 +307,25 @@ fun ComponentHealthCard(
                 when (key) {
                     "latency_ms" -> {
                         HealthInfoRow(
-                            label = "Latency",
-                            value = "${value}ms"
+                            label = stringResource(R.string.system_health_latency),
+                            value = stringResource(R.string.system_health_latency_value, value)
                         )
                     }
                     "backend" -> {
                         HealthInfoRow(
-                            label = "Backend",
+                            label = stringResource(R.string.system_health_backend),
                             value = value
                         )
                     }
                     "provider" -> {
                         HealthInfoRow(
-                            label = "Provider",
+                            label = stringResource(R.string.system_health_provider),
                             value = value
                         )
                     }
                     "running" -> {
                         HealthInfoRow(
-                            label = "Running",
+                            label = stringResource(R.string.system_health_running),
                             value = value
                         )
                     }

@@ -63,6 +63,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import coil.compose.AsyncImage
 import androidx.compose.ui.text.input.KeyboardType
@@ -84,6 +85,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody
 import java.io.File
 import javax.inject.Inject
+import com.nearai.admin.R
 import com.nearai.admin.core.designsystem.components.StatusPill
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.catalog.domain.*
@@ -882,7 +884,7 @@ fun ImageCarousel(
                         )
                         if (image.isPrimary) {
                             Spacer(modifier = Modifier.height(2.dp))
-                            StatusPill(label = "Primary", dotColor = Indigo)
+                            StatusPill(label = stringResource(R.string.product_image_primary), dotColor = Indigo)
                         }
                     }
                 }

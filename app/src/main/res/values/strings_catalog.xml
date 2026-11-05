@@ -23,4 +23,11 @@
 
     <!-- Product Currency Format -->
     <string name="product_currency_format">%1$s %2$.2f</string>
+
+    <!-- Product Details -->
+    <string name="product_image_primary">Primary</string>
+    <string name="catalog_loading">Loading…</string>
+    <string name="catalog_empty">No data found</string>
+    <string name="catalog_error">Failed to load data</string>
+    <string name="catalog_close">Close</string>
 </resources>

@@ -39,4 +39,28 @@
     <!-- Product Status -->
     <string name="product_status_active">Active</string>
     <string name="product_status_inactive">Inactive</string>
+
+    <!-- Stock Dialogs -->
+    <string name="inventory_current_stock">Current stock: %1$d</string>
+    <string name="inventory_quantity_to_receive">Quantity to receive</string>
+    <string name="inventory_reason_optional">Reason (optional)</string>
+    <string name="inventory_reason_required">Reason (required)</string>
+    <string name="inventory_quantity_delta">Quantity delta (e.g. +5 or -3)</string>
+    <string name="inventory_use_negative_values">Use negative values to decrease stock.</string>
+    <string name="inventory_confirm">Confirm</string>
+    <string name="inventory_cancel">Cancel</string>
+    <string name="inventory_receive_stock">Receive Stock</string>
+    <string name="inventory_adjust_stock">Adjust Stock</string>
+    <string name="inventory_receiving">Receiving…</string>
+    <string name="inventory_adjusting">Adjusting…</string>
+    <string name="inventory_stock_received">Stock received successfully</string>
+    <string name="inventory_stock_adjusted">Stock adjusted successfully</string>
+    <string name="inventory_failed_to_receive">Failed to receive stock</string>
+    <string name="inventory_failed_to_adjust">Failed to adjust stock</string>
+    <string name="inventory_variant_sku">SKU: %1$s</string>
+
+    <!-- Stock Movements -->
+    <string name="inventory_movement_history">Stock Movement History</string>
+    <string name="inventory_no_movement_history">No movement history</string>
+    <string name="inventory_load_more">Load More</string>
 </resources>
