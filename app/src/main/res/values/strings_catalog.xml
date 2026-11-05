@@ -10,6 +10,14 @@
     <string name="categories_error_loading">Error loading categories</string>
     <string name="categories_empty">No categories yet</string>
     <string name="categories_empty_message">Create your first category to get started</string>
+    <string name="categories_new_category">New Category</string>
+    <string name="categories_name_label">Category Name</string>
+    <string name="categories_description_label">Description (optional)</string>
+    <string name="categories_create">Create</string>
+    <string name="categories_cancel">Cancel</string>
+    <string name="categories_retry">Retry</string>
+    <string name="categories_back">Back</string>
+    <string name="categories_view_products">View products in this category</string>
 
     <!-- Product Create -->
     <string name="product_create_title">Create Product</string>

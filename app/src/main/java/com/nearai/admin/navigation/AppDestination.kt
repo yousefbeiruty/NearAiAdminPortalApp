@@ -49,7 +49,7 @@ data class OrderDetailsRoute(val orderId: String)
 object CategoriesRoute
 
 @Serializable
-object ProductsRoute
+data class ProductsRoute(val categoryId: String? = null)
 
 @Serializable
 data class ProductDetailsRoute(val productId: String)

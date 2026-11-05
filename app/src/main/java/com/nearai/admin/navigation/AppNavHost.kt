@@ -123,7 +123,7 @@ fun AppNavHost(
                     navController.navigate(CategoriesRoute)
                 },
                 onNavigateToProducts = {
-                    navController.navigate(ProductsRoute)
+                    navController.navigate(ProductsRoute())
                 },
                 onNavigateToInventory = {
                     navController.navigate(InventoryRoute)
@@ -219,13 +219,18 @@ fun AppNavHost(
             val viewModel: CategoriesListViewModel = hiltViewModel()
             CategoriesListScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToProducts = { categoryId ->
+                    navController.navigate(ProductsRoute(categoryId))
+                }
             )
         }
 
         // Products
-        composable<ProductsRoute> {
+        composable<ProductsRoute> { backStackEntry ->
             val viewModel: ProductsListViewModel = hiltViewModel()
+            val categoryId = backStackEntry.arguments?.getString("categoryId")
+            categoryId?.let { viewModel.onCategoryFilterChanged(it) }
             ProductsListScreen(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() },

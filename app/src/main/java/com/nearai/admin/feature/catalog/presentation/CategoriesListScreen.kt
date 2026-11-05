@@ -1,21 +1,27 @@
 package com.nearai.admin.feature.catalog.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,9 +29,12 @@ import androidx.compose.ui.res.stringResource
 import com.nearai.admin.R
 import com.nearai.admin.core.common.AppError
 import com.nearai.admin.core.common.Result
+import com.nearai.admin.core.designsystem.components.StatusPill
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.catalog.domain.Category
 import kotlinx.coroutines.flow.flowOf
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 /**
  * Categories list screen with pagination, pull-to-refresh, and create category dialog.
@@ -35,6 +44,7 @@ import kotlinx.coroutines.flow.flowOf
 fun CategoriesListScreen(
     viewModel: CategoriesListViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToProducts: (categoryId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -91,7 +101,7 @@ fun CategoriesListScreen(
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.categories_back),
                             tint = Navy
                         )
                     }
@@ -105,7 +115,7 @@ fun CategoriesListScreen(
             ExtendedFloatingActionButton(
                 onClick = viewModel::onShowCreateDialog,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("New Category", fontWeight = FontWeight.Bold) },
+                text = { Text(stringResource(R.string.categories_new_category), fontWeight = FontWeight.Bold) },
                 containerColor = Navy,
                 contentColor = Color.White
             )
@@ -141,7 +151,7 @@ fun CategoriesListScreen(
                         onClick = viewModel::onRetry,
                         colors = ButtonDefaults.buttonColors(containerColor = Navy)
                     ) {
-                        Text("Retry", color = Color.White)
+                        Text(stringResource(R.string.categories_retry), color = Color.White)
                     }
                 }
             }
@@ -180,7 +190,10 @@ fun CategoriesListScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     itemsIndexed(uiState.categories) { index, category ->
-                        CategoryCard(category = category)
+                        CategoryCard(
+                            category = category,
+                            onClick = { onNavigateToProducts(category.id) }
+                        )
                         if (index == uiState.categories.lastIndex && uiState.hasMore) {
                             if (uiState.isLoadingMore) {
                                 Box(
@@ -228,10 +241,13 @@ fun CategoriesListScreen(
 @Composable
 fun CategoryCard(
     category: Category,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = SurfaceLight),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -241,12 +257,21 @@ fun CategoryCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Default.Category,
-                contentDescription = null,
-                tint = Indigo,
-                modifier = Modifier.size(24.dp)
-            )
+            // Icon with colored background
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Indigo.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Category,
+                    contentDescription = null,
+                    tint = Indigo,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -254,7 +279,9 @@ fun CategoryCard(
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.SemiBold,
                         color = Navy
-                    )
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 if (category.description.isNotEmpty()) {
                     Text(
@@ -263,17 +290,52 @@ fun CategoryCard(
                             color = TextSecondaryLight,
                             fontSize = 13.sp
                         ),
-                        maxLines = 2
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-                Text(
-                    text = category.slug,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = TextSecondaryLight
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    StatusPill(
+                        label = category.slug,
+                        dotColor = Indigo,
+                        backgroundColor = Indigo.copy(alpha = 0.1f),
+                        contentColor = Indigo
                     )
-                )
+                    Text(
+                        text = formatCategoryDate(category.createdAt),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = TextSecondaryLight
+                        )
+                    )
+                }
             }
+            // Navigation arrow
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = stringResource(R.string.categories_view_products),
+                tint = TextSecondaryLight,
+                modifier = Modifier.size(20.dp)
+            )
         }
+    }
+}
+
+/**
+ * Format the category creation date for display.
+ */
+private fun formatCategoryDate(createdAt: String): String {
+    return try {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US)
+        val outputFormat = SimpleDateFormat("MMM dd, yyyy", Locale.US)
+        val date = inputFormat.parse(createdAt)
+        date?.let { outputFormat.format(it) } ?: createdAt
+    } catch (e: Exception) {
+        // Fallback: show a shortened version of the raw date string
+        if (createdAt.length > 10) createdAt.substring(0, 10) else createdAt
     }
 }
 
@@ -294,13 +356,13 @@ fun CreateCategoryDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New Category", fontWeight = FontWeight.Bold, color = Navy) },
+        title = { Text(stringResource(R.string.categories_new_category), fontWeight = FontWeight.Bold, color = Navy) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = categoryName,
                     onValueChange = onNameChange,
-                    label = { Text("Category Name") },
+                    label = { Text(stringResource(R.string.categories_name_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     supportingText = {
@@ -312,7 +374,7 @@ fun CreateCategoryDialog(
                 OutlinedTextField(
                     value = categoryDescription,
                     onValueChange = onDescriptionChange,
-                    label = { Text("Description (optional)") },
+                    label = { Text(stringResource(R.string.categories_description_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 3
                 )
@@ -331,13 +393,13 @@ fun CreateCategoryDialog(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Create", color = Color.White)
+                    Text(stringResource(R.string.categories_create), color = Color.White)
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isLoading) {
-                Text("Cancel")
+                Text(stringResource(R.string.categories_cancel))
             }
         }
     )
@@ -385,17 +447,17 @@ fun CategoriesListScreenPreview() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Categories", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Navy)
+                Text(stringResource(R.string.categories_title), fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Navy)
                 IconButton(onClick = {}) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = "Add Category",
+                        contentDescription = stringResource(R.string.categories_new_category),
                         tint = Navy
                     )
                 }
             }
             sampleCategories.forEach { category ->
-                CategoryCard(category = category)
+                CategoryCard(category = category, onClick = {})
             }
         }
     }
@@ -413,7 +475,8 @@ fun CategoryCardPreview() {
                 description = "Electronic devices and accessories",
                 parentId = null,
                 createdAt = "2024-01-15T10:30:00+00:00"
-            )
+            ),
+            onClick = {}
         )
     }
 }

@@ -29,6 +29,7 @@ data class ProductsListUiState(
     val isLoadingMore: Boolean = false,
     val searchQuery: String = "",
     val selectedStatus: ProductStatus? = null,
+    val selectedCategoryId: String? = null,
     val selectedSortBy: ProductSortBy = ProductSortBy.NEWEST,
     val isCreating: Boolean = false,
     val createError: String? = null
@@ -75,6 +76,7 @@ class ProductsListViewModel @Inject constructor(
             when (val result = catalogRepository.listProducts(
                 page = 1,
                 size = PAGE_SIZE,
+                categoryId = state.selectedCategoryId,
                 status = state.selectedStatus,
                 search = if (state.searchQuery.isNotBlank()) state.searchQuery else null,
                 sortBy = state.selectedSortBy
@@ -115,6 +117,7 @@ class ProductsListViewModel @Inject constructor(
             when (val result = catalogRepository.listProducts(
                 page = nextPage,
                 size = PAGE_SIZE,
+                categoryId = state.selectedCategoryId,
                 status = state.selectedStatus,
                 search = if (state.searchQuery.isNotBlank()) state.searchQuery else null,
                 sortBy = state.selectedSortBy
@@ -153,6 +156,11 @@ class ProductsListViewModel @Inject constructor(
 
     fun onStatusFilterChanged(status: ProductStatus?) {
         _uiState.update { it.copy(selectedStatus = status) }
+        loadProducts()
+    }
+
+    fun onCategoryFilterChanged(categoryId: String?) {
+        _uiState.update { it.copy(selectedCategoryId = categoryId) }
         loadProducts()
     }
 

@@ -141,7 +141,7 @@ class CategoriesListViewModel @Inject constructor(
 
     fun onCreateCategory(name: String, description: String, parentId: String?) {
         if (name.isBlank()) {
-            _uiState.update { it.copy(createError = "Category name is required") }
+            _uiState.update { it.copy(createError = "Category name cannot be empty") }
             return
         }
 
