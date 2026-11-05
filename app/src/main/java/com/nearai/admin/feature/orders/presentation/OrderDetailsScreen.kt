@@ -55,8 +55,8 @@ fun OrderDetailsScreen(
     uiState.showConfirmDialog?.let { actionLabel ->
         AlertDialog(
             onDismissRequest = { viewModel.dismissConfirmDialog() },
-            title = { Text("Confirm $actionLabel") },
-            text = { Text("Are you sure you want to ${actionLabel.lowercase()} this order?") },
+            title = { Text(stringResource(R.string.order_details_confirm_title, actionLabel)) },
+            text = { Text(stringResource(R.string.order_details_confirm_message, actionLabel.lowercase())) },
             confirmButton = {
                 Button(
                     onClick = { viewModel.executeConfirmedAction() },
@@ -66,20 +66,26 @@ fun OrderDetailsScreen(
                     if (uiState.isActionLoading) {
                         CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
                     } else {
-                        Text("Yes, $actionLabel", color = Color.White)
+                        Text(stringResource(R.string.order_details_confirm_yes, actionLabel), color = Color.White)
                     }
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissConfirmDialog() }) {
-                    Text("Cancel", color = TextSecondaryLight)
+                    Text(stringResource(R.string.order_details_cancel), color = TextSecondaryLight)
                 }
             }
         )
     }
 
     // Dynamic title from order ID
-    val title = uiState.order?.id?.let { "#${it.take(8)}" } ?: "Order Details"
+    val title = uiState.order?.id?.let { "#${it.take(8)}" } ?: stringResource(R.string.order_details_title)
+
+    // Resolve action labels for ViewModel callbacks
+    val confirmLabel = stringResource(R.string.order_action_confirm)
+    val processLabel = stringResource(R.string.order_action_process)
+    val dispatchLabel = stringResource(R.string.order_action_dispatch)
+    val deliverLabel = stringResource(R.string.order_action_deliver)
 
     Scaffold(
         topBar = {
@@ -98,7 +104,7 @@ fun OrderDetailsScreen(
                         onClick = onNavigateBack,
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Navy)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.order_details_back), tint = Navy)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -125,12 +131,12 @@ fun OrderDetailsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text("Error loading order", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
+                    Text(stringResource(R.string.order_details_error), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(uiState.error.orEmpty(), style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = { viewModel.onRetry() }, colors = ButtonDefaults.buttonColors(containerColor = Navy)) {
-                        Text("Retry", color = Color.White)
+                        Text(stringResource(R.string.order_details_retry), color = Color.White)
                     }
                 }
             }
@@ -173,11 +179,11 @@ fun OrderDetailsScreen(
                         OrderActionButtons(
                             order = order,
                             isActionLoading = uiState.isActionLoading,
-                            onConfirm = { viewModel.showConfirmDialog("Confirm") },
+                            onConfirm = { viewModel.showConfirmDialog(confirmLabel) },
                             onReject = { viewModel.showRejectDialog() },
-                            onProcess = { viewModel.showConfirmDialog("Process") },
-                            onDispatch = { viewModel.showConfirmDialog("Dispatch") },
-                            onDeliver = { viewModel.showConfirmDialog("Deliver") }
+                            onProcess = { viewModel.showConfirmDialog(processLabel) },
+                            onDispatch = { viewModel.showConfirmDialog(dispatchLabel) },
+                            onDeliver = { viewModel.showConfirmDialog(deliverLabel) }
                         )
                     }
 
@@ -196,7 +202,7 @@ fun OrderDetailsScreen(
                                     Icon(Icons.Outlined.WarningAmber, contentDescription = null, tint = RoseError, modifier = Modifier.size(20.dp))
                                     Text(uiState.actionError.orEmpty(), style = MaterialTheme.typography.bodySmall.copy(color = RoseDark), modifier = Modifier.weight(1f))
                                     TextButton(onClick = { viewModel.clearActionError() }) {
-                                        Text("Dismiss", color = RoseDark, fontSize = 12.sp)
+                                        Text(stringResource(R.string.order_details_dismiss), color = RoseDark, fontSize = 12.sp)
                                     }
                                 }
                             }
@@ -218,17 +224,17 @@ fun OrderDetailsScreen(
 private fun OrderInfoCard(order: OrderDetails) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Order Information", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
+            Text(stringResource(R.string.order_details_order_info), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
             // Order ID — always on its own row to avoid overlap with Created date
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text("Order ID", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
+                Text(stringResource(R.string.order_details_order_id), style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
                 Text("#${order.id}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace, color = Navy), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             Spacer(modifier = Modifier.height(8.dp))
             // Created date on its own row
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text("Created", style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
+                Text(stringResource(R.string.order_details_created), style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight))
                 Text(order.createdAt.take(16), style = MaterialTheme.typography.bodyMedium.copy(color = Navy))
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -249,25 +255,25 @@ private fun OrderInfoCard(order: OrderDetails) {
 private fun CustomerDeliveryCard(order: OrderDetails) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Customer & Delivery", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
+            Text(stringResource(R.string.order_details_customer_delivery), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
-            InfoRow(label = "Recipient", value = order.deliveryRecipientName ?: "—")
-            InfoRow(label = "Phone", value = order.deliveryPhone ?: "—")
+            InfoRow(label = stringResource(R.string.order_label_recipient), value = order.deliveryRecipientName ?: "—")
+            InfoRow(label = stringResource(R.string.order_label_phone), value = order.deliveryPhone ?: "—")
             if (!order.deliveryCity.isNullOrBlank()) {
-                InfoRow(label = "City", value = order.deliveryCity)
+                InfoRow(label = stringResource(R.string.order_label_city), value = order.deliveryCity)
             }
             if (!order.deliveryArea.isNullOrBlank()) {
-                InfoRow(label = "Area", value = order.deliveryArea)
+                InfoRow(label = stringResource(R.string.order_label_area), value = order.deliveryArea)
             }
             if (!order.deliveryStreet.isNullOrBlank()) {
-                InfoRow(label = "Street", value = order.deliveryStreet)
+                InfoRow(label = stringResource(R.string.order_label_street), value = order.deliveryStreet)
             }
             if (!order.deliveryBuildingNumber.isNullOrBlank() || !order.deliveryApartment.isNullOrBlank()) {
                 val building = listOf(order.deliveryBuildingNumber, order.deliveryApartment).filterNotNull().joinToString(", ")
-                InfoRow(label = "Building", value = building)
+                InfoRow(label = stringResource(R.string.order_label_building), value = building)
             }
             if (!order.deliveryInstructions.isNullOrBlank()) {
-                InfoRow(label = "Instructions", value = order.deliveryInstructions)
+                InfoRow(label = stringResource(R.string.order_label_instructions), value = order.deliveryInstructions)
             }
             Spacer(modifier = Modifier.height(4.dp))
         }
@@ -281,15 +287,15 @@ private fun CustomerDeliveryCard(order: OrderDetails) {
 private fun OrderItemsCard(order: OrderDetails) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Order Items (${order.items.size})", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
+            Text(stringResource(R.string.order_details_items_count, order.items.size), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
             order.items.forEachIndexed { index, item ->
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                     Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                         Text(item.productName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, color = Navy), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        Text("Qty: ${item.quantity} × ${order.currency} ${"%.2f".format(item.unitPriceAmount)}", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
+                        Text(stringResource(R.string.order_details_quantity, item.quantity, order.currency, item.unitPriceAmount), style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
                     }
-                    Text("${order.currency} ${"%.2f".format(item.subtotalAmount ?: (item.unitPriceAmount * item.quantity))}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Navy), modifier = Modifier.align(Alignment.Top))
+                    Text(stringResource(R.string.order_currency_format, order.currency, item.subtotalAmount ?: (item.unitPriceAmount * item.quantity)), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Navy), modifier = Modifier.align(Alignment.Top))
                 }
                 if (index < order.items.size - 1) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
@@ -306,15 +312,15 @@ private fun OrderItemsCard(order: OrderDetails) {
 private fun PaymentSummaryCard(order: OrderDetails) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Payment Summary", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
+            Text(stringResource(R.string.order_details_payment_summary), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
             order.subtotalAmount?.let {
-                InfoRow(label = "Subtotal", value = "${order.currency} ${"%.2f".format(it)}")
+                InfoRow(label = stringResource(R.string.order_label_subtotal), value = stringResource(R.string.order_currency_format, order.currency, it))
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Total", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
-                Text("${order.currency} ${"%.2f".format(order.totalAmount)}", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Navy))
+                Text(stringResource(R.string.order_label_total), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
+                Text(stringResource(R.string.order_currency_format, order.currency, order.totalAmount), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Navy))
             }
         }
     }
@@ -327,7 +333,7 @@ private fun PaymentSummaryCard(order: OrderDetails) {
 private fun StatusHistoryCard(entries: List<StatusHistoryEntry>) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Status History", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
+            Text(stringResource(R.string.order_details_status_history), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
             entries.forEachIndexed { index, entry ->
                 StatusTimelineItem(entry = entry)
@@ -360,14 +366,14 @@ private fun StatusTimelineItem(entry: StatusHistoryEntry) {
                 Text(entry.timestamp.take(16), style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight, fontFamily = FontFamily.Monospace), modifier = Modifier.align(Alignment.CenterVertically))
             }
             if (!entry.previousStatus.isNullOrBlank()) {
-                Text("from: ${entry.previousStatus}", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
+                Text(stringResource(R.string.order_details_from, entry.previousStatus), style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
             }
             Text(entry.statusType.uppercase(), style = MaterialTheme.typography.labelSmall.copy(color = if (entry.statusType == "order") Indigo else EmeraldSuccess, fontWeight = FontWeight.Bold))
             if (!entry.actorRole.isNullOrBlank()) {
-                Text("by: ${entry.actorRole}", style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
+                Text(stringResource(R.string.order_details_by, entry.actorRole), style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
             }
             if (!entry.reason.isNullOrBlank()) {
-                Text("Reason: ${entry.reason}", style = MaterialTheme.typography.bodySmall.copy(color = RoseDark), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.order_details_reason, entry.reason), style = MaterialTheme.typography.bodySmall.copy(color = RoseDark), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -388,34 +394,34 @@ private fun OrderActionButtons(
 ) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Actions", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
+            Text(stringResource(R.string.order_details_actions), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
 
             // Confirm: available when order is pending and fulfillment is awaiting confirmation
             if (order.status == OrderStatus.PENDING && order.fulfillmentStatus == FulfillmentStatus.AWAITING_CONFIRMATION) {
-                ActionButton(label = "Confirm Order", icon = Icons.Outlined.CheckCircle, onClick = onConfirm, isLoading = isActionLoading)
+                ActionButton(label = stringResource(R.string.order_action_confirm_order), icon = Icons.Outlined.CheckCircle, onClick = onConfirm, isLoading = isActionLoading)
                 Spacer(modifier = Modifier.height(8.dp))
-                ActionButton(label = "Reject Order", icon = Icons.Outlined.Block, onClick = onReject, isLoading = isActionLoading, isDestructive = true)
+                ActionButton(label = stringResource(R.string.order_action_reject_order), icon = Icons.Outlined.Block, onClick = onReject, isLoading = isActionLoading, isDestructive = true)
             }
 
             // Process: available when order is pending and fulfillment is confirmed
             if (order.status == OrderStatus.PENDING && order.fulfillmentStatus == FulfillmentStatus.CONFIRMED) {
-                ActionButton(label = "Process Order", icon = Icons.Outlined.Build, onClick = onProcess, isLoading = isActionLoading)
+                ActionButton(label = stringResource(R.string.order_action_process_order), icon = Icons.Outlined.Build, onClick = onProcess, isLoading = isActionLoading)
             }
 
             // Dispatch: available when fulfillment is processing
             if (order.fulfillmentStatus == FulfillmentStatus.PROCESSING) {
-                ActionButton(label = "Dispatch Order", icon = Icons.Outlined.LocalShipping, onClick = onDispatch, isLoading = isActionLoading)
+                ActionButton(label = stringResource(R.string.order_action_dispatch_order), icon = Icons.Outlined.LocalShipping, onClick = onDispatch, isLoading = isActionLoading)
             }
 
             // Deliver: available when fulfillment is out for delivery
             if (order.fulfillmentStatus == FulfillmentStatus.OUT_FOR_DELIVERY) {
-                ActionButton(label = "Mark as Delivered", icon = Icons.Outlined.CheckCircle, onClick = onDeliver, isLoading = isActionLoading)
+                ActionButton(label = stringResource(R.string.order_action_mark_delivered), icon = Icons.Outlined.CheckCircle, onClick = onDeliver, isLoading = isActionLoading)
             }
 
             // No actions available
             if (order.status == OrderStatus.COMPLETED || order.status == OrderStatus.CANCELLED || order.status == OrderStatus.REJECTED) {
-                Text("This order is ${order.status.displayLabel.lowercase()}. No actions available.", style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
+                Text(stringResource(R.string.order_details_no_actions, order.status.displayLabel.lowercase()), style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
             }
         }
     }
@@ -466,15 +472,15 @@ private fun RejectDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Reject Order") },
+        title = { Text(stringResource(R.string.order_reject_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Provide a reason for rejecting this order.", style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
+                Text(stringResource(R.string.order_reject_description), style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
                 OutlinedTextField(
                     value = reason,
                     onValueChange = onReasonChanged,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Rejection reason (required)") },
+                    placeholder = { Text(stringResource(R.string.order_reject_reason_hint)) },
                     minLines = 3,
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -489,13 +495,13 @@ private fun RejectDialog(
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
-                    Text("Reject", color = Color.White)
+                    Text(stringResource(R.string.order_reject_button), color = Color.White)
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = TextSecondaryLight)
+                Text(stringResource(R.string.order_details_cancel), color = TextSecondaryLight)
             }
         }
     )

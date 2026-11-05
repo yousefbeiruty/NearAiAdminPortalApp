@@ -63,4 +63,49 @@
     <string name="inventory_movement_history">Stock Movement History</string>
     <string name="inventory_no_movement_history">No movement history</string>
     <string name="inventory_load_more">Load More</string>
+
+    <!-- Inventory Filter Tabs -->
+    <string name="inventory_tab_all">All (%1$d)</string>
+    <string name="inventory_tab_active">Active (%1$d)</string>
+    <string name="inventory_tab_low_stock">Low Stock (%1$d)</string>
+    <string name="inventory_tab_out_of_stock">Out of Stock (%1$d)</string>
+
+    <!-- Inventory Actions -->
+    <string name="inventory_receive">Receive</string>
+    <string name="inventory_adjust">Adjust</string>
+    <string name="inventory_history">History</string>
+    <string name="inventory_retry">Retry</string>
+    <string name="inventory_search_hint">Search products…</string>
+
+    <!-- SKU Status Labels -->
+    <string name="sku_status_active">Active</string>
+    <string name="sku_status_reviewing">Reviewing</string>
+    <string name="sku_status_deprecated">Deprecated</string>
+
+    <!-- Stock Movement Types -->
+    <string name="movement_type_receive">Receive</string>
+    <string name="movement_type_sale">Sale</string>
+    <string name="movement_type_adjustment">Adjustment</string>
+    <string name="movement_type_return">Return</string>
+
+    <!-- Stock Operation Dialog -->
+    <string name="inventory_receive_stock_title">Receive Stock</string>
+    <string name="inventory_adjust_stock_title">Adjust Stock</string>
+    <string name="inventory_sku_subtitle">SKU: %1$s</string>
+    <string name="inventory_current_stock_label">Current stock: %1$d</string>
+
+    <!-- Product Details -->
+    <string name="product_primary">Primary</string>
+
+    <!-- Accessibility Content Descriptions -->
+    <string name="inventory_cd_brand_mark">NearAI Brand Mark</string>
+    <string name="inventory_cd_notifications">Notifications</string>
+    <string name="inventory_cd_back">Back</string>
+    <string name="inventory_cd_search">Search Catalog</string>
+    <string name="inventory_cd_filter">Filter Catalog</string>
+    <string name="inventory_cd_edit">Edit</string>
+    <string name="inventory_cd_delete">Delete SKU</string>
+
+    <!-- Preview -->
+    <string name="inventory_preview_title">Products &amp; Inventory</string>
 </resources>

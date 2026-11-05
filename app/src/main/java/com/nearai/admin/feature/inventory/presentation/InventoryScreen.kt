@@ -205,18 +205,18 @@ fun InventoryScreen(
         }
     }
     val tabs = listOf(
-        "All (${uiState.totalItems})",
-        "Active (${uiState.kpiActiveSkus})",
-        "Low Stock (${uiState.kpiLowStockCount})",
-        "Out of Stock (${uiState.kpiOutOfStockCount})"
+        stringResource(R.string.inventory_tab_all, uiState.totalItems),
+        stringResource(R.string.inventory_tab_active, uiState.kpiActiveSkus),
+        stringResource(R.string.inventory_tab_low_stock, uiState.kpiLowStockCount),
+        stringResource(R.string.inventory_tab_out_of_stock, uiState.kpiOutOfStockCount)
     )
 
     // Show dialogs
     selectedVariantForAction?.let { variant ->
         if (showReceiveDialog) {
             StockOperationDialog(
-                title = "Receive Stock",
-                subtitle = "SKU: ${variant.variant.sku}",
+                title = stringResource(R.string.inventory_receive_stock_title),
+                subtitle = stringResource(R.string.inventory_sku_subtitle, variant.variant.sku),
                 currentStock = variant.stock?.availableQuantity ?: 0,
                 onDismiss = { showReceiveDialog = false },
                 onConfirm = { quantity, reason ->
@@ -227,8 +227,8 @@ fun InventoryScreen(
         }
         if (showAdjustDialog) {
             StockAdjustDialog(
-                title = "Adjust Stock",
-                subtitle = "SKU: ${variant.variant.sku}",
+                title = stringResource(R.string.inventory_adjust_stock_title),
+                subtitle = stringResource(R.string.inventory_sku_subtitle, variant.variant.sku),
                 currentStock = variant.stock?.availableQuantity ?: 0,
                 onDismiss = { showAdjustDialog = false },
                 onConfirm = { delta, reason ->
@@ -271,7 +271,7 @@ fun InventoryScreen(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Default.Inventory2,
-                                    contentDescription = "NearAI Brand Mark",
+                                    contentDescription = stringResource(R.string.inventory_cd_brand_mark),
                                     tint = Color.White,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -312,7 +312,7 @@ fun InventoryScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Notifications,
-                                contentDescription = "Notifications",
+                                contentDescription = stringResource(R.string.inventory_cd_notifications),
                                 tint = Navy
                             )
                         }
@@ -389,7 +389,7 @@ fun InventoryScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.inventory_cd_back),
                                 tint = Navy
                             )
                         }
@@ -408,7 +408,7 @@ fun InventoryScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Search,
-                                contentDescription = "Search Catalog",
+                                contentDescription = stringResource(R.string.inventory_cd_search),
                                 tint = Navy
                             )
                         }
@@ -422,7 +422,7 @@ fun InventoryScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Tune,
-                                contentDescription = "Filter Catalog",
+                                contentDescription = stringResource(R.string.inventory_cd_filter),
                                 tint = Navy
                             )
                         }
@@ -602,7 +602,7 @@ fun InventoryScreen(
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Navy)
                             ) {
-                                Text("Retry", color = Color.White)
+                                Text(stringResource(R.string.inventory_retry), color = Color.White)
                             }
                         }
                     }
@@ -1030,7 +1030,7 @@ fun SkuProductCard(
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Receive", color = EmeraldDark, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                        Text(stringResource(R.string.inventory_receive), color = EmeraldDark, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                     }
                     OutlinedButton(
                         onClick = onAdjustStock,
@@ -1044,7 +1044,7 @@ fun SkuProductCard(
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Adjust", color = Indigo, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                        Text(stringResource(R.string.inventory_adjust), color = Indigo, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                     }
                     OutlinedButton(
                         onClick = onViewMovements,
@@ -1058,7 +1058,7 @@ fun SkuProductCard(
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("History", color = Navy, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                        Text(stringResource(R.string.inventory_history), color = Navy, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                     }
                 }
                 Spacer(modifier = Modifier.height(10.dp))
@@ -1110,12 +1110,12 @@ fun SkuProductCard(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Edit,
-                                contentDescription = "Edit",
+                                contentDescription = stringResource(R.string.inventory_cd_edit),
                                 tint = Navy,
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = "Edit",
+                                text = stringResource(R.string.inventory_cd_edit),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = Navy,
                                     fontWeight = FontWeight.Bold
@@ -1130,7 +1130,7 @@ fun SkuProductCard(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Delete,
-                            contentDescription = "Delete SKU",
+                            contentDescription = stringResource(R.string.inventory_cd_delete),
                             tint = RoseError,
                             modifier = Modifier.size(18.dp)
                         )
@@ -1464,7 +1464,7 @@ fun InventoryScreenPreview() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Products & Inventory", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Navy)
+            Text(stringResource(R.string.inventory_preview_title), fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Navy)
             SkuProductCard(item = skuItem, onEdit = {}, onDelete = {})
             val lowStockProduct = com.nearai.admin.feature.catalog.domain.Product(
                 id = "p2",

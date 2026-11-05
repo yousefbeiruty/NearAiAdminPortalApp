@@ -69,4 +69,33 @@
     <!-- Order Currency Format -->
     <string name="order_currency_format">%1$s %2$.2f</string>
     <string name="order_id_format">#%1$s</string>
+
+    <!-- Order Details UI -->
+    <string name="order_details_back">Back</string>
+    <string name="order_details_retry">Retry</string>
+    <string name="order_details_cancel">Cancel</string>
+    <string name="order_details_dismiss">Dismiss</string>
+    <string name="order_details_order_info">Order Information</string>
+    <string name="order_details_order_id">Order ID</string>
+    <string name="order_details_created">Created</string>
+    <string name="order_details_customer_delivery">Customer &amp; Delivery</string>
+    <string name="order_details_items_count">Order Items (%1$d)</string>
+    <string name="order_details_quantity">Qty: %1$d × %2$s %3$.2f</string>
+    <string name="order_details_payment_summary">Payment Summary</string>
+    <string name="order_details_status_history">Status History</string>
+    <string name="order_details_from">from: %1$s</string>
+    <string name="order_details_by">by: %1$s</string>
+    <string name="order_details_reason">Reason: %1$s</string>
+    <string name="order_details_actions">Actions</string>
+    <string name="order_action_confirm_order">Confirm Order</string>
+    <string name="order_action_reject_order">Reject Order</string>
+    <string name="order_action_process_order">Process Order</string>
+    <string name="order_action_dispatch_order">Dispatch Order</string>
+    <string name="order_action_mark_delivered">Mark as Delivered</string>
+
+    <!-- Reject Dialog -->
+    <string name="order_reject_title">Reject Order</string>
+    <string name="order_reject_description">Provide a reason for rejecting this order.</string>
+    <string name="order_reject_reason_hint">Rejection reason (required)</string>
+    <string name="order_reject_button">Reject</string>
 </resources>
