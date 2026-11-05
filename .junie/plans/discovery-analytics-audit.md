@@ -83,3 +83,52 @@ Deleted 7 unused files: DiscoveryApiService, DiscoveryRepository, DiscoveryRepos
 
 ### ✓ Step 20: Final verification
 Compilation passes clean. All 306 unit tests pass (0 failures, 0 skipped) in 7.9s. Full rebuild with --rerun-tasks: 33 tasks executed, BUILD SUCCESSFUL in 1m 43s.
+
+# Phase 1 — Customer Discovery Event Tracking (FastAPI Backend)
+
+### ✓ Step 21: Create discovery_events and discovery_sessions ORM models
+Created SQLAlchemy models in `app/modules/discovery/repositories/orm_models.py` with proper indexes.
+
+### ✓ Step 22: Create Alembic migration
+Not created — test DB uses `create_all` from SQLAlchemy metadata. Production migration can be generated with `alembic revision --autogenerate`.
+
+### ✓ Step 23: Create event taxonomy and Pydantic schemas
+Created event types, metadata schemas, and request/response models in `app/modules/discovery/controllers/schemas.py`.
+
+### ✓ Step 24: Create event ingestion handler
+Created `IngestEventHandler` with validation, idempotency, session management, and rate limiting.
+
+### ✓ Step 25: Create event ingestion controller
+Created `POST /api/v1/events` and `POST /api/v1/events/batch` endpoints.
+
+### ✓ Step 26: Register events router
+Added events router and discovery analytics router to `app/api/router.py`.
+
+### ✓ Step 27: Create discovery admin analytics handler
+Created handlers for overview, search analytics, popular products, categories, and funnel.
+
+### ✓ Step 28: Create discovery admin analytics controller
+Created admin-only endpoints under `/api/v1/admin/analytics/discovery/`.
+
+### Step 29: Create aggregation foundation
+Deferred to Phase 2 — daily aggregation job and raw event retention cleanup.
+
+### ✓ Step 30: Create comprehensive tests
+Created 25 tests covering event ingestion, validation, idempotency, session management, guest-to-auth transition, IP hashing, and all admin analytics endpoints.
+
+### ✓ Step 31: Run linting and tests
+Ruff passes clean. All 525 API tests pass (25 new discovery + 500 existing). Full test suite: 525 passed in 87.69s.
+
+# Phase 1 — Migration and Production Readiness
+
+### ✓ Step 32: Create Alembic migration
+Generated and manually verified migration `9869688fc7f0_add_discovery_sessions_and_events.py`. Both tables, all indexes (including GIN on JSONB), foreign keys, and downgrade verified against live PostgreSQL.
+
+### ✓ Step 33: Security review and tests
+Added 8 security tests: purchase_completed spoofing, customer ID impersonation, PII in metadata, extra field stripping, guest customer_id NULL, rate limiting, purchase metadata validation, and batch transaction rollback. All 33 discovery tests pass.
+
+### ✓ Step 34: Aggregation & retention documentation
+Created `AGGREGATION_RETENTION_PLAN.md` (141 lines) documenting current query patterns, expensive queries, proposed daily aggregation table, idempotent aggregation job, 90-day raw event retention, session retention, and implementation order.
+
+### ✓ Step 35: Final verification
+Ruff passes clean. All 533 API tests pass (33 discovery + 500 existing) in 93s.

@@ -34,7 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.nearai.admin.R
 import com.nearai.admin.core.designsystem.theme.*
 
 // =============================================================================
@@ -81,7 +83,7 @@ fun DashboardScreen(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Default.Hub,
-                                    contentDescription = "NearAI Brand Mark",
+                                    contentDescription = stringResource(R.string.dashboard_brand_mark),
                                     tint = Color.White,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -89,14 +91,14 @@ fun DashboardScreen(
                         }
                         Column {
                             Text(
-                                text = "NearAI Admin",
+                                text = stringResource(R.string.dashboard_title),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = Navy
                                 )
                             )
                             Text(
-                                text = "OVERVIEW",
+                                text = stringResource(R.string.dashboard_overview),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = TextSecondaryLight,
                                     letterSpacing = 1.sp,
@@ -123,7 +125,7 @@ fun DashboardScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Notifications,
-                                contentDescription = "Alerts & Notifications",
+                                contentDescription = stringResource(R.string.dashboard_notifications),
                                 tint = Navy
                             )
                         }
@@ -134,7 +136,7 @@ fun DashboardScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.ReceiptLong,
-                            contentDescription = "Audit Logs",
+                            contentDescription = stringResource(R.string.dashboard_audit_logs),
                             tint = Navy
                         )
                     }
@@ -180,7 +182,7 @@ fun DashboardScreen(
                         modifier = Modifier.size(48.dp)
                     )
                     Text(
-                        text = "Loading dashboard...",
+                        text = stringResource(R.string.dashboard_loading),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = TextSecondaryLight
                         )
@@ -207,13 +209,13 @@ fun DashboardScreen(
                         modifier = Modifier.size(48.dp)
                     )
                     Text(
-                        text = "Failed to load dashboard",
+                        text = stringResource(R.string.dashboard_load_error),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = Navy
                         )
                     )
-                    val errorMessage = uiState.error ?: "Unknown error"
+                    val errorMessage = uiState.error ?: stringResource(R.string.common_unknown_error)
                     Text(
                         text = errorMessage,
                         style = MaterialTheme.typography.bodyMedium.copy(
@@ -226,7 +228,7 @@ fun DashboardScreen(
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Text(
-                            text = "Retry",
+                            text = stringResource(R.string.common_retry),
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
@@ -271,13 +273,13 @@ private fun DashboardContent(
             ) {
                 Column {
                     Text(
-                        text = "Good evening,",
+                        text = stringResource(R.string.dashboard_greeting),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = TextSecondaryLight
                         )
                     )
                     Text(
-                        text = "Alex",
+                        text = stringResource(R.string.dashboard_user_name),
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = Navy
@@ -301,7 +303,7 @@ private fun DashboardContent(
                                 .background(EmeraldSuccess)
                         )
                         Text(
-                            text = "Live",
+                            text = stringResource(R.string.dashboard_live),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = TextSecondaryLight,
                                 fontWeight = FontWeight.Medium
@@ -320,13 +322,13 @@ private fun DashboardContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     MetricCard(
-                        title = "Total Users",
+                        title = stringResource(R.string.dashboard_total_users),
                         value = uiState.totalUsers.toString(),
                         icon = Icons.Outlined.People,
                         modifier = Modifier.weight(1f)
                     )
                     MetricCard(
-                        title = "Products",
+                        title = stringResource(R.string.dashboard_products),
                         value = uiState.totalProducts.toString(),
                         icon = Icons.Outlined.Inventory2,
                         modifier = Modifier.weight(1f)
@@ -337,13 +339,13 @@ private fun DashboardContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     MetricCard(
-                        title = "Categories",
+                        title = stringResource(R.string.dashboard_categories),
                         value = uiState.totalCategories.toString(),
                         icon = Icons.Outlined.Category,
                         modifier = Modifier.weight(1f)
                     )
                     MetricCard(
-                        title = "Total Orders",
+                        title = stringResource(R.string.dashboard_total_orders),
                         value = uiState.totalOrders.toString(),
                         icon = Icons.Outlined.ShoppingCart,
                         modifier = Modifier.weight(1f)
@@ -354,13 +356,13 @@ private fun DashboardContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     MetricCard(
-                        title = "Pending Orders",
+                        title = stringResource(R.string.dashboard_pending_orders),
                         value = uiState.pendingOrders.toString(),
                         icon = Icons.Outlined.Schedule,
                         modifier = Modifier.weight(1f)
                     )
                     MetricCard(
-                        title = "Completed Orders",
+                        title = stringResource(R.string.dashboard_completed_orders),
                         value = uiState.completedOrders.toString(),
                         icon = Icons.Outlined.CheckCircle,
                         modifier = Modifier.weight(1f)
@@ -380,7 +382,7 @@ private fun DashboardContent(
         if (uiState.recentOrders.isNotEmpty()) {
             item {
                 SectionHeaderWithCount(
-                    title = "Recent Orders",
+                    title = stringResource(R.string.dashboard_recent_orders),
                     count = uiState.recentOrders.size
                 )
             }
@@ -393,7 +395,7 @@ private fun DashboardContent(
         if (uiState.recentRegistrations.isNotEmpty()) {
             item {
                 SectionHeaderWithCount(
-                    title = "Recent Registrations",
+                    title = stringResource(R.string.dashboard_recent_registrations),
                     count = uiState.recentRegistrations.size
                 )
             }
@@ -406,7 +408,7 @@ private fun DashboardContent(
         if (uiState.lowStockAlerts.isNotEmpty()) {
             item {
                 SectionHeaderWithCount(
-                    title = "Low Stock Alerts",
+                    title = stringResource(R.string.dashboard_low_stock_alerts),
                     count = uiState.lowStockAlerts.size
                 )
             }
@@ -528,7 +530,7 @@ private fun RevenueSection(revenues: List<RevenueItem>) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Revenue by Currency",
+                text = stringResource(R.string.dashboard_revenue_by_currency),
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = Navy
@@ -615,7 +617,7 @@ private fun RecentOrderCard(order: RecentOrderItem) {
                     )
                 )
                 Text(
-                    text = "Order #${order.id.take(8)} · ${order.orderDate}",
+                    text = stringResource(R.string.dashboard_order_id, order.id.take(8), order.orderDate),
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = TextSecondaryLight
                     )
@@ -749,7 +751,7 @@ private fun LowStockAlertCard(alert: LowStockAlertItem) {
                     )
                 )
                 Text(
-                    text = "SKU: ${alert.sku}",
+                    text = stringResource(R.string.dashboard_sku_label, alert.sku),
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = TextSecondaryLight
                     )
@@ -757,14 +759,14 @@ private fun LowStockAlertCard(alert: LowStockAlertItem) {
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${alert.currentStock} left",
+                    text = stringResource(R.string.dashboard_stock_left, alert.currentStock),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = AmberWarning
                     )
                 )
                 Text(
-                    text = "Threshold: ${alert.threshold}",
+                    text = stringResource(R.string.dashboard_stock_threshold, alert.threshold),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = TextSecondaryLight
                     )
@@ -797,7 +799,7 @@ fun OverviewDashboardLoadingPreview() {
                     modifier = Modifier.size(48.dp)
                 )
                 Text(
-                    text = "Loading dashboard...",
+                    text = stringResource(R.string.dashboard_loading),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = TextSecondaryLight
                     )

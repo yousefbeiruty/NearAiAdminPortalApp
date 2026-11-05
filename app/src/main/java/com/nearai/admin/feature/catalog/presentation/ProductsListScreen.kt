@@ -24,6 +24,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.nearai.admin.R
 import com.nearai.admin.core.designsystem.components.StatusPill
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.catalog.domain.Product
@@ -68,7 +70,7 @@ fun ProductsListScreen(
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
-                            text = "Products",
+                            text = stringResource(R.string.products_title),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = Navy
@@ -182,7 +184,7 @@ fun ProductsListScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Error loading products",
+                            text = stringResource(R.string.products_error_loading),
                             style = MaterialTheme.typography.bodyLarge.copy(color = RoseError)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -213,7 +215,7 @@ fun ProductsListScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "No products found",
+                            text = stringResource(R.string.products_empty),
                             style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondaryLight)
                         )
                     }

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Orders List -->
+    <string name="orders_title">Orders</string>
+    <string name="orders_error_loading">Error loading orders</string>
+    <string name="orders_empty">No orders found</string>
+    <string name="orders_empty_message">There are no orders matching your filters.</string>
+    <string name="orders_count">%1$d orders</string>
+    <string name="orders_page">Page %1$d of %2$d</string>
+
+    <!-- Orders Filters -->
+    <string name="orders_filter_order_status">Order Status</string>
+    <string name="orders_filter_fulfillment">Fulfillment</string>
+    <string name="orders_filter_all">All</string>
+    <string name="orders_clear_filters">Clear Filters</string>
+
+    <!-- Order Status Labels -->
+    <string name="order_status_pending">Pending</string>
+    <string name="order_status_completed">Completed</string>
+    <string name="order_status_cancelled">Cancelled</string>
+    <string name="order_status_rejected">Rejected</string>
+
+    <!-- Fulfillment Status Labels -->
+    <string name="fulfillment_unfulfilled">Unfulfilled</string>
+    <string name="fulfillment_awaiting">Awaiting</string>
+    <string name="fulfillment_confirmed">Confirmed</string>
+    <string name="fulfillment_processing">Processing</string>
+    <string name="fulfillment_out_for_delivery">Out for Delivery</string>
+    <string name="fulfillment_delivered">Delivered</string>
+
+    <!-- Order Details -->
+    <string name="order_details_title">Order Details</string>
+    <string name="order_details_error">Error loading order</string>
+    <string name="order_details_confirm_title">Confirm %1$s</string>
+    <string name="order_details_confirm_message">Are you sure you want to %1$s this order?</string>
+    <string name="order_details_confirm_yes">Yes, %1$s</string>
+    <string name="order_details_no_actions">This order is %1$s. No actions available.</string>
+
+    <!-- Order Details Sections -->
+    <string name="order_section_status">Status</string>
+    <string name="order_section_items">Items</string>
+    <string name="order_section_summary">Summary</string>
+    <string name="order_section_delivery">Delivery</string>
+    <string name="order_section_actions">Actions</string>
+
+    <!-- Order Details Labels -->
+    <string name="order_label_order_status">Order: %1$s</string>
+    <string name="order_label_fulfillment_status">Fulfillment: %1$s</string>
+    <string name="order_label_subtotal">Subtotal</string>
+    <string name="order_label_delivery_fee">Delivery Fee</string>
+    <string name="order_label_total">Total</string>
+    <string name="order_label_created">Created</string>
+    <string name="order_label_recipient">Recipient</string>
+    <string name="order_label_phone">Phone</string>
+    <string name="order_label_city">City</string>
+    <string name="order_label_area">Area</string>
+    <string name="order_label_street">Street</string>
+    <string name="order_label_building">Building</string>
+    <string name="order_label_apartment">Apartment</string>
+    <string name="order_label_instructions">Instructions</string>
+
+    <!-- Order Actions -->
+    <string name="order_action_confirm">Confirm</string>
+    <string name="order_action_reject">Reject</string>
+    <string name="order_action_process">Process</string>
+    <string name="order_action_dispatch">Dispatch</string>
+    <string name="order_action_deliver">Deliver</string>
+
+    <!-- Order Currency Format -->
+    <string name="order_currency_format">%1$s %2$.2f</string>
+    <string name="order_id_format">#%1$s</string>
+</resources>

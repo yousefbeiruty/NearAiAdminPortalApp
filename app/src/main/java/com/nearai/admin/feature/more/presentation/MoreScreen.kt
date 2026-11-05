@@ -11,9 +11,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
+import com.nearai.admin.R
 
 data class MoreMenuItem(
     val title: String,
@@ -34,19 +36,19 @@ fun MoreScreen(
     modifier: Modifier = Modifier
 ) {
     val menuItems = listOf(
-        MoreMenuItem("Orders", Icons.Default.ReceiptLong, onNavigateToOrders),
-        MoreMenuItem("Categories", Icons.Default.Category, onNavigateToCategories),
-        MoreMenuItem("Products", Icons.Default.ShoppingBag, onNavigateToProducts),
-        MoreMenuItem("Products & Inventory", Icons.Default.Inventory2, onNavigateToInventory),
-        MoreMenuItem("System Health", Icons.Default.MonitorHeart, onNavigateToSystemHealth),
-        MoreMenuItem("Audit Logs", Icons.Default.ListAlt, onNavigateToAuditLogs),
-        MoreMenuItem("Settings", Icons.Default.Settings, onNavigateToSettings)
+        MoreMenuItem(stringResource(R.string.orders_title), Icons.Default.ReceiptLong, onNavigateToOrders),
+        MoreMenuItem(stringResource(R.string.categories_title), Icons.Default.Category, onNavigateToCategories),
+        MoreMenuItem(stringResource(R.string.products_title), Icons.Default.ShoppingBag, onNavigateToProducts),
+        MoreMenuItem(stringResource(R.string.inventory_and_products), Icons.Default.Inventory2, onNavigateToInventory),
+        MoreMenuItem(stringResource(R.string.system_health_title), Icons.Default.MonitorHeart, onNavigateToSystemHealth),
+        MoreMenuItem(stringResource(R.string.audit_logs_title), Icons.Default.ListAlt, onNavigateToAuditLogs),
+        MoreMenuItem(stringResource(R.string.nav_more), Icons.Default.Settings, onNavigateToSettings)
     )
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("More") }
+                title = { Text(stringResource(R.string.nav_more)) }
             )
         }
     ) { padding ->

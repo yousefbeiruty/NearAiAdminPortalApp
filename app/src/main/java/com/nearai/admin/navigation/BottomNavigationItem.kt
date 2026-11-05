@@ -35,10 +35,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
+import com.nearai.admin.R
 
 // =============================================================================
 // Bottom Navigation Destination Routes & Definitions
@@ -46,7 +48,7 @@ import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
 
 sealed class AdminBottomDestination(
     val route: Any,
-    val label: String,
+    val labelRes: Int,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
     val badgeCount: Int? = null,
@@ -54,21 +56,21 @@ sealed class AdminBottomDestination(
 ) {
     object Overview : AdminBottomDestination(
         route = OverviewRoute,
-        label = "Overview",
+        labelRes = R.string.nav_overview,
         selectedIcon = Icons.Filled.Dashboard,
         unselectedIcon = Icons.Outlined.Dashboard
     )
 
     object Users : AdminBottomDestination(
         route = UsersRoute,
-        label = "Users",
+        labelRes = R.string.nav_users,
         selectedIcon = Icons.Filled.People,
         unselectedIcon = Icons.Outlined.People
     )
 
     object AIUsage : AdminBottomDestination(
         route = AiUsageRoute,
-        label = "AI Compute",
+        labelRes = R.string.nav_ai_compute,
         selectedIcon = Icons.Filled.Memory,
         unselectedIcon = Icons.Outlined.Memory,
         hasAlertDot = true // Shows soft-cap warning indicator (71% budget consumed)
@@ -76,14 +78,14 @@ sealed class AdminBottomDestination(
 
     object Analytics : AdminBottomDestination(
         route = DiscoveryRoute,
-        label = "Analytics",
+        labelRes = R.string.nav_analytics,
         selectedIcon = Icons.Filled.Explore,
         unselectedIcon = Icons.Outlined.Explore
     )
 
     object More : AdminBottomDestination(
         route = MoreRoute,
-        label = "More",
+        labelRes = R.string.nav_more,
         selectedIcon = Icons.Filled.MoreHoriz,
         unselectedIcon = Icons.Outlined.MoreHoriz
     )
@@ -174,14 +176,14 @@ fun NearAiBottomNavBar(
                     ) {
                         Icon(
                             imageVector = if (isSelected) screen.selectedIcon else screen.unselectedIcon,
-                            contentDescription = screen.label,
+                            contentDescription = stringResource(screen.labelRes),
                             modifier = Modifier.size(22.dp)
                         )
                     }
                 },
                 label = {
                     Text(
-                        text = screen.label,
+                        text = stringResource(screen.labelRes),
                         fontSize = 11.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                         letterSpacing = 0.2.sp
@@ -241,14 +243,14 @@ fun NearAiBottomNavBarStateless(
                     ) {
                         Icon(
                             imageVector = if (isSelected) screen.selectedIcon else screen.unselectedIcon,
-                            contentDescription = screen.label,
+                            contentDescription = stringResource(screen.labelRes),
                             modifier = Modifier.size(22.dp)
                         )
                     }
                 },
                 label = {
                     Text(
-                        text = screen.label,
+                        text = stringResource(screen.labelRes),
                         fontSize = 11.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                     )

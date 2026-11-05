@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AI Usage Screen -->
+    <string name="ai_usage_title">AI Usage &amp; Credits</string>
+    <string name="ai_usage_live_telemetry">Live Ingestion Telemetry</string>
+    <string name="ai_usage_monthly_budget">Monthly Budget Envelope</string>
+    <string name="ai_usage_webhook_enabled">Webhook dispatch notifications enabled</string>
+    <string name="ai_usage_remaining">remaining</string>
+    <string name="ai_usage_requests">%1$d requests</string>
+    <string name="ai_usage_percentage_of_total">%1$d%% of total</string>
+    <string name="ai_usage_tokens">%1$d tokens</string>
+    <string name="ai_usage_consumed_format">%1$s of %2$s consumed</string>
+</resources>

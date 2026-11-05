@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Business Analytics / Discovery -->
+    <string name="discovery_title">Business Analytics</string>
+    <string name="discovery_period">Period: %1$s — %2$s</string>
+    <string name="discovery_vs_previous">vs previous: %1$s — %2$s</string>
+    <string name="discovery_orders_count">%1$s orders</string>
+    <string name="discovery_avg_order">Avg: %1$s %2$s</string>
+    <string name="discovery_units_sold">%1$s units</string>
+    <string name="discovery_revenue">%1$s %2$s</string>
+    <string name="discovery_load_error">Failed to load analytics</string>
+</resources>

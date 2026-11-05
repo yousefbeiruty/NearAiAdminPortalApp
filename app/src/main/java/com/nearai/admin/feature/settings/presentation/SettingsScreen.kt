@@ -9,10 +9,12 @@ import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.nearai.admin.core.designsystem.components.ConfirmationDialog
 import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
+import com.nearai.admin.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,9 +27,9 @@ fun SettingsScreen(
 
     if (showLogoutDialog) {
         ConfirmationDialog(
-            title = "Sign Out",
-            message = "Are you sure you want to sign out of your administrator session?",
-            confirmText = "Sign Out",
+            title = stringResource(R.string.settings_sign_out_title),
+            message = stringResource(R.string.settings_sign_out_message),
+            confirmText = stringResource(R.string.settings_sign_out_confirm),
             isDestructive = true,
             onConfirm = onLogout,
             onDismiss = { showLogoutDialog = false }
@@ -75,7 +77,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                        text = "Sign Out",
+                        text = stringResource(R.string.settings_sign_out),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -85,7 +87,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "NearAI Admin v1.0.0",
+                text = stringResource(R.string.settings_version),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

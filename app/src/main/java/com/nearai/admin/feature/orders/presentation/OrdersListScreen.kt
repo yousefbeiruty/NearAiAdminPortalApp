@@ -17,6 +17,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.nearai.admin.R
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderStatus
@@ -62,7 +64,7 @@ fun OrdersListScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Orders",
+                        stringResource(R.string.orders_title),
                         fontWeight = FontWeight.Bold,
                         color = Navy
                     )
@@ -106,7 +108,7 @@ fun OrdersListScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Error loading orders",
+                        text = stringResource(R.string.orders_error_loading),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = Navy
@@ -124,7 +126,7 @@ fun OrdersListScreen(
                         onClick = { viewModel.onRetry() },
                         colors = ButtonDefaults.buttonColors(containerColor = Navy)
                     ) {
-                        Text("Retry", color = Color.White)
+                        Text(stringResource(R.string.common_retry), color = Color.White)
                     }
                 }
             }
@@ -138,7 +140,7 @@ fun OrdersListScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "No orders found",
+                        text = stringResource(R.string.orders_empty),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = Navy
@@ -146,7 +148,7 @@ fun OrdersListScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "There are no orders matching your filters.",
+                        text = stringResource(R.string.orders_empty_message),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = TextSecondaryLight
                         )
@@ -154,7 +156,7 @@ fun OrdersListScreen(
                     if (uiState.filterOrderStatus != null || uiState.filterFulfillmentStatus != null) {
                         Spacer(modifier = Modifier.height(16.dp))
                         TextButton(onClick = { viewModel.clearFilters() }) {
-                            Text("Clear Filters", color = Indigo)
+                            Text(stringResource(R.string.orders_clear_filters), color = Indigo)
                         }
                     }
                 }
@@ -183,7 +185,7 @@ fun OrdersListScreen(
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "${uiState.totalItems} orders",
+                            text = stringResource(R.string.orders_count, uiState.totalItems),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = TextSecondaryLight,
                                 fontWeight = FontWeight.Medium
@@ -191,7 +193,7 @@ fun OrdersListScreen(
                         )
                         if (uiState.totalPages > 1) {
                             Text(
-                                text = "Page ${uiState.currentPage} of ${uiState.totalPages}",
+                                text = stringResource(R.string.orders_page, uiState.currentPage, uiState.totalPages),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = TextSecondaryLight
                                 )
@@ -250,7 +252,7 @@ private fun FilterSection(
     Column(modifier = modifier) {
         // Order status filters
         Text(
-            text = "Order Status",
+            text = stringResource(R.string.orders_filter_order_status),
             style = MaterialTheme.typography.labelSmall.copy(
                 color = TextSecondaryLight,
                 fontWeight = FontWeight.SemiBold
@@ -264,7 +266,7 @@ private fun FilterSection(
                 FilterChip(
                     selected = uiState.filterOrderStatus == null,
                     onClick = { onOrderStatusFilter(null) },
-                    label = { Text("All") },
+                    label = { Text(stringResource(R.string.orders_filter_all)) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Navy,
                         selectedLabelColor = Color.White,
@@ -290,7 +292,7 @@ private fun FilterSection(
 
         // Fulfillment status filters
         Text(
-            text = "Fulfillment",
+            text = stringResource(R.string.orders_filter_fulfillment),
             style = MaterialTheme.typography.labelSmall.copy(
                 color = TextSecondaryLight,
                 fontWeight = FontWeight.SemiBold
@@ -304,7 +306,7 @@ private fun FilterSection(
                 FilterChip(
                     selected = uiState.filterFulfillmentStatus == null,
                     onClick = { onFulfillmentStatusFilter(null) },
-                    label = { Text("All") },
+                    label = { Text(stringResource(R.string.orders_filter_all)) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Navy,
                         selectedLabelColor = Color.White,
@@ -333,7 +335,7 @@ private fun FilterSection(
                 onClick = onClearFilters,
                 modifier = Modifier.align(androidx.compose.ui.Alignment.Start)
             ) {
-                Text("Clear Filters", color = Indigo, fontSize = 13.sp)
+                Text(stringResource(R.string.orders_clear_filters), color = Indigo, fontSize = 13.sp)
             }
         }
     }
@@ -388,7 +390,7 @@ fun OrdersListScreenPreview() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Orders", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Navy)
+            Text(stringResource(R.string.orders_title), fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Navy)
             sampleOrders.forEach { order ->
                 OrderSummaryCard(
                     order = order,

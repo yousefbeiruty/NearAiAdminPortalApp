@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -22,6 +23,7 @@ import com.nearai.admin.core.designsystem.components.KpiCard
 import com.nearai.admin.core.designsystem.components.KpiTrend
 import com.nearai.admin.core.designsystem.components.SimpleBarChart
 import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.R
 
 /**
  * Business Analytics screen displaying real backend metrics.
@@ -57,7 +59,7 @@ fun BusinessAnalyticsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Business Analytics",
+                        text = stringResource(R.string.discovery_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -108,13 +110,15 @@ fun BusinessAnalyticsScreen(
                 if (uiState.startDate.isNotBlank() && uiState.endDate.isNotBlank()) {
                     item {
                         Text(
-                            text = "Period: ${uiState.startDate} — ${uiState.endDate}",
+                            text = stringResource(R.string.discovery_period, uiState.startDate, uiState.endDate),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (uiState.compare && uiState.previousStartDate != null && uiState.previousEndDate != null) {
+                            val prevStart = uiState.previousStartDate!!
+                            val prevEnd = uiState.previousEndDate!!
                             Text(
-                                text = "vs previous: ${uiState.previousStartDate} — ${uiState.previousEndDate}",
+                                text = stringResource(R.string.discovery_vs_previous, prevStart, prevEnd),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -442,7 +446,7 @@ private fun RevenueByCurrencyList(revenues: List<RevenueByCurrencyUi>) {
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${revenue.formattedOrderCount} orders",
+                                text = stringResource(R.string.discovery_orders_count, revenue.formattedOrderCount),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -455,7 +459,7 @@ private fun RevenueByCurrencyList(revenues: List<RevenueByCurrencyUi>) {
                                 color = EmeraldSuccess
                             )
                             Text(
-                                text = "Avg: ${revenue.currency} ${revenue.formattedAvgOrderValue}",
+                                text = stringResource(R.string.discovery_avg_order, revenue.currency, revenue.formattedAvgOrderValue),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -552,13 +556,13 @@ private fun ProductSalesList(products: List<ProductSalesUi>) {
                         }
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = "${product.formattedUnitsSold} units",
+                                text = stringResource(R.string.discovery_units_sold, product.formattedUnitsSold),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${product.currency} ${product.formattedRevenue}",
+                                text = stringResource(R.string.discovery_revenue, product.currency, product.formattedRevenue),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = EmeraldSuccess
                             )
@@ -606,13 +610,13 @@ private fun CategorySalesList(categories: List<CategorySalesUi>) {
                         )
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = "${category.formattedUnitsSold} units",
+                                text = stringResource(R.string.discovery_units_sold, category.formattedUnitsSold),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${category.currency} ${category.formattedRevenue}",
+                                text = stringResource(R.string.discovery_revenue, category.currency, category.formattedRevenue),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = EmeraldSuccess
                             )
@@ -743,7 +747,7 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
                 modifier = Modifier.size(48.dp)
             )
             Text(
-                text = "Failed to load analytics",
+                text = stringResource(R.string.discovery_load_error),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )

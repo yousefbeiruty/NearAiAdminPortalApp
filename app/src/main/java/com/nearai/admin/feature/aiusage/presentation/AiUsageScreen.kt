@@ -17,11 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.nearai.admin.core.designsystem.components.*
 import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.R
 
 /**
  * AI Usage & Budget Health screen with budget envelope, model distribution,
@@ -39,7 +41,7 @@ fun AiUsageScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "AI Usage & Credits",
+                        text = stringResource(R.string.ai_usage_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -87,7 +89,7 @@ fun AiUsageScreen(
             // Live Ingestion Telemetry
             item {
                 SectionHeader(
-                    title = "Live Ingestion Telemetry",
+                    title = stringResource(R.string.ai_usage_live_telemetry),
                     actionText = "View All",
                     onActionClick = { /* TODO */ }
                 )
@@ -120,13 +122,13 @@ fun BudgetEnvelopeCard() {
             ) {
                 Column {
                     Text(
-                        text = "Monthly Budget Envelope",
+                        text = stringResource(R.string.ai_usage_monthly_budget),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Webhook dispatch notifications enabled",
+                        text = stringResource(R.string.ai_usage_webhook_enabled),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -164,7 +166,7 @@ fun BudgetEnvelopeCard() {
                         color = EmeraldSuccess
                     )
                     Text(
-                        text = "remaining",
+                        text = stringResource(R.string.ai_usage_remaining),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

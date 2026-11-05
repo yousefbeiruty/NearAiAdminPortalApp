@@ -71,6 +71,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import com.nearai.admin.R
 import com.nearai.admin.core.designsystem.theme.*
 
 /**
@@ -112,12 +114,12 @@ fun AdminSignInScreen(
                 title = {
                     Column {
                         Text(
-                            text = "NearAI Admin",
+                            text = stringResource(R.string.auth_title),
                             style = MaterialTheme.typography.titleMedium,
                             color = Navy
                         )
                         Text(
-                            text = "Executive Operations Console",
+                            text = stringResource(R.string.auth_subtitle),
                             style = MaterialTheme.typography.labelSmall,
                             color = TextSecondaryLight
                         )
@@ -127,7 +129,7 @@ fun AdminSignInScreen(
                     IconButton(onClick = { /* Back navigation */ }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.common_back),
                             tint = Navy
                         )
                     }
@@ -136,7 +138,7 @@ fun AdminSignInScreen(
                     IconButton(onClick = { /* Refresh */ }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
+                            contentDescription = stringResource(R.string.common_refresh),
                             tint = Indigo
                         )
                     }
@@ -239,7 +241,7 @@ private fun ClusterSecurityHeroSection() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "NearAI Admin",
+                text = stringResource(R.string.auth_title),
                 style = MaterialTheme.typography.headlineMedium,
                 color = Navy
             )
@@ -250,7 +252,7 @@ private fun ClusterSecurityHeroSection() {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "CORE",
+                    text = stringResource(R.string.auth_core_badge),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = Indigo
@@ -262,7 +264,7 @@ private fun ClusterSecurityHeroSection() {
 
         // Subtitle
         Text(
-            text = "Executive Operations & Compute Cluster Control Plane",
+            text = stringResource(R.string.auth_hero_subtitle),
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = TextSecondaryLight
             ),
@@ -299,12 +301,12 @@ private fun TelemetryMfaCard() {
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "Hardware Key / MFA Enforced",
+                    text = stringResource(R.string.auth_mfa_enforced_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = Navy
                 )
                 Text(
-                    text = "Unauthorized ingress attempts are audited via immutable eBPF telemetry and routed to root ops.",
+                    text = stringResource(R.string.auth_mfa_enforced_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondaryLight
                 )
@@ -384,7 +386,7 @@ private fun MfaCard(
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            text = uiState.error ?: "Access denied. Admin role required.",
+                            text = uiState.error ?: stringResource(R.string.auth_error_access_denied),
                             style = MaterialTheme.typography.bodySmall,
                             color = RoseDark
                         )
@@ -409,7 +411,7 @@ private fun MfaCard(
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            text = uiState.error ?: "Account is inactive.",
+                            text = uiState.error ?: stringResource(R.string.auth_error_account_inactive),
                             style = MaterialTheme.typography.bodySmall,
                             color = AmberDark
                         )
@@ -434,7 +436,7 @@ private fun MfaCard(
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            text = uiState.error ?: "Email not verified.",
+                            text = uiState.error ?: stringResource(R.string.auth_error_email_not_verified),
                             style = MaterialTheme.typography.bodySmall,
                             color = AmberDark
                         )
@@ -474,7 +476,7 @@ private fun MfaCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Authenticate & Enter Console",
+                        text = stringResource(R.string.auth_sign_in),
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White
                     )
@@ -487,7 +489,7 @@ private fun MfaCard(
                 color = BorderSubtle
             )
             Text(
-                text = "FAST HARDWARE PASS",
+                text = stringResource(R.string.auth_fast_hardware_pass),
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = FontWeight.Bold,
                     color = TextSecondaryLight
@@ -517,7 +519,7 @@ private fun MfaCard(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Biometrics")
+                    Text(stringResource(R.string.auth_biometrics))
                 }
 
                 OutlinedButton(
@@ -533,14 +535,14 @@ private fun MfaCard(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("FIDO2 / NFC")
+                    Text(stringResource(R.string.auth_fido2_nfc))
                 }
             }
 
             // Recovery trigger
             TextButton(onClick = { /* TODO: Recovery flow */ }) {
                 Text(
-                    text = "Lost hardware token or locked root quorum?",
+                    text = stringResource(R.string.auth_recovery_link),
                     style = MaterialTheme.typography.bodySmall,
                     color = Indigo,
                     textDecoration = TextDecoration.Underline
@@ -567,7 +569,7 @@ private fun EmailField(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Work Email or Founder ID",
+                text = stringResource(R.string.auth_email_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = Navy
             )
@@ -578,7 +580,7 @@ private fun EmailField(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "SSO Partition 0",
+                    text = stringResource(R.string.auth_sso_partition),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = TextSecondaryLight
                     ),
@@ -592,7 +594,7 @@ private fun EmailField(
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text(
-                    text = "alex.founder@nearai.internal",
+                    text = stringResource(R.string.auth_email_placeholder),
                     color = TextSecondaryDark,
                     fontSize = 14.sp
                 )
@@ -609,7 +611,7 @@ private fun EmailField(
                     IconButton(onClick = { onValueChange("") }) {
                         Icon(
                             imageVector = Icons.Outlined.Cancel,
-                            contentDescription = "Clear",
+                            contentDescription = stringResource(R.string.common_clear),
                             tint = TextSecondaryLight
                         )
                     }
@@ -645,7 +647,7 @@ private fun PasswordField(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Master Passphrase",
+                text = stringResource(R.string.auth_password_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = Navy
             )
@@ -660,7 +662,7 @@ private fun PasswordField(
                     modifier = Modifier.size(14.dp)
                 )
                 Text(
-                    text = "Argon2id Enforced",
+                    text = stringResource(R.string.auth_argon2id_enforced),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = Indigo,
                         fontWeight = FontWeight.Medium
@@ -674,7 +676,7 @@ private fun PasswordField(
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text(
-                    text = "Enter your master passphrase",
+                    text = stringResource(R.string.auth_password_placeholder),
                     color = TextSecondaryDark,
                     fontSize = 14.sp
                 )
@@ -690,7 +692,7 @@ private fun PasswordField(
                 IconButton(onClick = onTogglePasswordVisibility) {
                     Icon(
                         imageVector = if (isPasswordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
-                        contentDescription = if (isPasswordVisible) "Hide password" else "Show password",
+                        contentDescription = if (isPasswordVisible) stringResource(R.string.common_hide_password) else stringResource(R.string.common_show_password),
                         tint = TextSecondaryLight
                     )
                 }
@@ -726,12 +728,12 @@ private fun TotpInputSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Hardware / Authenticator TOTP",
+                text = stringResource(R.string.auth_totp_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = Navy
             )
             Text(
-                text = "Step 2 of 2",
+                text = stringResource(R.string.auth_totp_step),
                 style = MaterialTheme.typography.labelSmall.copy(
                     color = Indigo,
                     fontWeight = FontWeight.Medium
@@ -836,7 +838,7 @@ private fun ClusterBoundaryFooter() {
                     .background(EmeraldSuccess)
             )
             Text(
-                text = "cluster: gcp-nearai-prod · us-central1",
+                text = stringResource(R.string.auth_cluster_status),
                 style = MaterialTheme.typography.labelSmall,
                 color = TextSecondaryLight
             )
@@ -847,7 +849,7 @@ private fun ClusterBoundaryFooter() {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "TLS 1.3",
+                    text = stringResource(R.string.auth_tls_version),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = TextSecondaryLight,
                         fontWeight = FontWeight.Medium
@@ -859,7 +861,7 @@ private fun ClusterBoundaryFooter() {
 
         // Security notice
         Text(
-            text = "Strict boundary: Separated from public customer accounts. Consumer NearAI credentials are not authorized for cluster infrastructure.",
+            text = stringResource(R.string.auth_boundary_notice),
             style = MaterialTheme.typography.labelSmall.copy(
                 color = TextSecondaryLight
             ),
@@ -869,7 +871,7 @@ private fun ClusterBoundaryFooter() {
 
         // Version metadata
         Text(
-            text = "NearAI Admin v2.4.1 (Build 8902-prod) · Zero-Trust Policy",
+            text = stringResource(R.string.auth_version),
             style = MaterialTheme.typography.labelSmall.copy(
                 color = TextSecondaryDark
             ),
@@ -895,14 +897,14 @@ fun AdminSignInScreenPreview() {
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
         ) {
             androidx.compose.material3.Text(
-                text = "NearAI Admin",
+                text = stringResource(R.string.auth_title),
                 style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 color = com.nearai.admin.core.designsystem.theme.Navy
             )
             androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.height(8.dp))
             androidx.compose.material3.Text(
-                text = "Sign in to your administrator account",
+                text = stringResource(R.string.auth_preview_sign_in),
                 style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
                 color = com.nearai.admin.core.designsystem.theme.TextSecondaryLight
             )
@@ -911,7 +913,7 @@ fun AdminSignInScreenPreview() {
                 value = "",
                 onValueChange = {},
                 modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
-                label = { androidx.compose.material3.Text("Email") },
+                label = { androidx.compose.material3.Text(stringResource(R.string.auth_preview_email_label)) },
                 singleLine = true,
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
             )
@@ -920,7 +922,7 @@ fun AdminSignInScreenPreview() {
                 value = "",
                 onValueChange = {},
                 modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
-                label = { androidx.compose.material3.Text("Password") },
+                label = { androidx.compose.material3.Text(stringResource(R.string.auth_preview_password_label)) },
                 singleLine = true,
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                 visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
@@ -936,7 +938,7 @@ fun AdminSignInScreenPreview() {
                     containerColor = com.nearai.admin.core.designsystem.theme.Navy
                 )
             ) {
-                androidx.compose.material3.Text("Sign In", color = androidx.compose.ui.graphics.Color.White, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                androidx.compose.material3.Text(stringResource(R.string.auth_preview_button), color = androidx.compose.ui.graphics.Color.White, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             }
         }
     }

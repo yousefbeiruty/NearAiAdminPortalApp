@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Audit Logs Screen -->
+    <string name="audit_logs_title">Audit Logs</string>
+    <string name="audit_logs_entries_count">%1$d entries</string>
+    <string name="audit_logs_resource_id">#%1$s</string>
+    <string name="audit_logs_by_actor">by %1$s</string>
+    <string name="audit_logs_changes">Changes</string>
+    <string name="audit_logs_metadata">Metadata</string>
+</resources>

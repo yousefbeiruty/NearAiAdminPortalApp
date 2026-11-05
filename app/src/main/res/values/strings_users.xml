@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Users Screen -->
+    <string name="users_title">Users</string>
+    <string name="users_search_hint">Search users…</string>
+    <string name="users_filter_all">All Users</string>
+    <string name="users_filter_pro">Pro Tier</string>
+    <string name="users_filter_free">Free Plan</string>
+    <string name="users_filter_flagged">Flagged</string>
+    <string name="users_suspended">Suspended</string>
+    <string name="users_active">Active</string>
+
+    <!-- User Detail Sheet -->
+    <string name="user_detail_title">User Details</string>
+    <string name="user_detail_email">Email</string>
+    <string name="user_detail_role">Role</string>
+    <string name="user_detail_status">Status</string>
+    <string name="user_detail_plan">Plan</string>
+    <string name="user_detail_created">Created</string>
+    <string name="user_detail_last_seen">Last Seen</string>
+    <string name="user_detail_suspend">Suspend Account</string>
+    <string name="user_detail_suspend_message">Are you sure you want to suspend this user account? This action will require re-authentication.</string>
+    <string name="user_detail_suspend_confirm">Suspend</string>
+    <string name="user_detail_admin_actions">Administrative Actions</string>
+    <string name="user_detail_id">ID: %1$s</string>
+    <string name="user_detail_email_verified">Email Verified</string>
+    <string name="user_detail_updated">Updated</string>
+    <string name="user_detail_yes">Yes</string>
+    <string name="user_detail_no">No</string>
+</resources>

@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -29,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.nearai.admin.core.designsystem.components.SearchBar
 import com.nearai.admin.core.designsystem.components.StatusPill
 import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.R
 import com.nearai.admin.feature.users.domain.AdminUser
 
 /**
@@ -70,7 +72,7 @@ fun UsersScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "User Management",
+                        text = stringResource(R.string.users_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
@@ -413,7 +415,7 @@ fun UserDetailBottomSheet(
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(
-                        text = "Account Details",
+                        text = stringResource(R.string.user_detail_title),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -427,7 +429,7 @@ fun UserDetailBottomSheet(
 
             // Admin actions
             Text(
-                text = "Administrative Actions",
+                text = stringResource(R.string.user_detail_admin_actions),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )

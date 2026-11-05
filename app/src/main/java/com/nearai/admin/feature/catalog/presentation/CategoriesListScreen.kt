@@ -19,6 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.nearai.admin.R
 import com.nearai.admin.core.common.AppError
 import com.nearai.admin.core.common.Result
 import com.nearai.admin.core.designsystem.theme.*
@@ -74,7 +76,7 @@ fun CategoriesListScreen(
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
-                            text = "Categories",
+                            text = stringResource(R.string.categories_title),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = Navy
@@ -131,7 +133,7 @@ fun CategoriesListScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Error loading categories",
+                        text = stringResource(R.string.categories_error_loading),
                         style = MaterialTheme.typography.bodyLarge.copy(color = RoseError)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -160,11 +162,11 @@ fun CategoriesListScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "No categories yet",
+                        text = stringResource(R.string.categories_empty),
                         style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondaryLight)
                     )
                     Text(
-                        text = "Create your first category to get started",
+                        text = stringResource(R.string.categories_empty_message),
                         style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight)
                     )
                 }

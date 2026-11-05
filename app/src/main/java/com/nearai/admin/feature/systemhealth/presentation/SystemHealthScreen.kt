@@ -16,12 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nearai.admin.core.designsystem.components.*
 import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.R
 import com.nearai.admin.feature.systemhealth.domain.ApplicationHealth
 import com.nearai.admin.feature.systemhealth.domain.ComponentHealth
 import com.nearai.admin.feature.systemhealth.domain.SystemHealthData
@@ -48,7 +50,7 @@ fun SystemHealthScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "System Health",
+                        text = stringResource(R.string.system_health_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )

@@ -22,7 +22,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.nearai.admin.R
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.catalog.domain.ProductStatus
 
@@ -58,7 +60,7 @@ fun ProductCreateScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Create Product",
+                        text = stringResource(R.string.product_create_title),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = Navy

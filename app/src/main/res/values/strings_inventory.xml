@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Inventory Screen -->
+    <string name="inventory_title">NearAI Admin</string>
+    <string name="inventory_subtitle">INVENTORY</string>
+    <string name="inventory_new_product">New Product</string>
+    <string name="inventory_and_products">Inventory &amp; Products</string>
+    <string name="inventory_catalog_directory">Catalog Directory</string>
+    <string name="inventory_showing_count">(%1$d Showing)</string>
+    <string name="inventory_add_sku">Add SKU</string>
+    <string name="inventory_loading">Loading inventory…</string>
+    <string name="inventory_empty">No products found</string>
+    <string name="inventory_sku_label">SKU: %1$s</string>
+
+    <!-- Product Edit Screen -->
+    <string name="product_edit_subtitle">PRODUCT EDIT</string>
+    <string name="product_edit_configure">Configure %1$s…</string>
+    <string name="product_edit_billing_classification">BILLING CLASSIFICATION</string>
+    <string name="product_edit_metadata_identity">Metadata &amp; Identity</string>
+    <string name="product_edit_core_spec">Core Spec</string>
+    <string name="product_edit_public_display_name">Public Display Name</string>
+    <string name="product_edit_internal_identifier">Internal Identifier</string>
+    <string name="product_edit_description">Description</string>
+    <string name="product_edit_category">Category</string>
+    <string name="product_edit_price">Price</string>
+    <string name="product_edit_currency">Currency</string>
+    <string name="product_edit_status">Status</string>
+    <string name="product_edit_variants">Variants</string>
+    <string name="product_edit_add_variant">Add Variant</string>
+    <string name="product_edit_variant_sku">Variant SKU</string>
+    <string name="product_edit_variant_name">Variant Name</string>
+    <string name="product_edit_stock">Stock</string>
+    <string name="product_edit_save">Save Changes</string>
+    <string name="product_edit_saved">Product saved successfully</string>
+    <string name="product_edit_error">Failed to save product</string>
+    <string name="product_edit_close">Close</string>
+    <string name="product_edit_alerts">Alerts</string>
+
+    <!-- Product Status -->
+    <string name="product_status_active">Active</string>
+    <string name="product_status_inactive">Inactive</string>
+</resources>

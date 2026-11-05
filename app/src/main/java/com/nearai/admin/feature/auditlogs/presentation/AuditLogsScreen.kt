@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,6 +29,7 @@ import com.nearai.admin.core.designsystem.components.EmptyState
 import com.nearai.admin.core.designsystem.components.ErrorState
 import com.nearai.admin.core.designsystem.components.LoadingScreen
 import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.R
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -138,7 +140,7 @@ fun AuditLogsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Audit Logs",
+                        text = stringResource(R.string.audit_logs_title),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -206,7 +208,7 @@ fun AuditLogsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "${uiState.totalItems} entries",
+                            text = stringResource(R.string.audit_logs_entries_count, uiState.totalItems),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -394,7 +396,7 @@ private fun AuditLogCard(
                         // Resource ID
                         if (log.resourceId != null) {
                             Text(
-                                text = "#${log.resourceId.take(8)}",
+                                text = stringResource(R.string.audit_logs_resource_id, log.resourceId.take(8)),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -427,7 +429,7 @@ private fun AuditLogCard(
                 )
                 if (log.actorId != null) {
                     Text(
-                        text = "by ${log.actorId.take(8)}",
+                        text = stringResource(R.string.audit_logs_by_actor, log.actorId.take(8)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -469,7 +471,7 @@ private fun AuditLogCard(
                     if (changesJson.isNotBlank()) {
                         Divider(modifier = Modifier.padding(vertical = 8.dp))
                         Text(
-                            text = "Changes",
+                            text = stringResource(R.string.audit_logs_changes),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
@@ -483,7 +485,7 @@ private fun AuditLogCard(
                     if (metadataJson.isNotBlank()) {
                         Divider(modifier = Modifier.padding(vertical = 8.dp))
                         Text(
-                            text = "Metadata",
+                            text = stringResource(R.string.audit_logs_metadata),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium

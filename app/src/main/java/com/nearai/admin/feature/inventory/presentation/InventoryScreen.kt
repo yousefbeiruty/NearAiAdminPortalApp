@@ -41,6 +41,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.nearai.admin.R
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.catalog.domain.ProductStatus
 import com.nearai.admin.feature.catalog.domain.StockMovementType
@@ -277,14 +279,14 @@ fun InventoryScreen(
                         }
                         Column {
                             Text(
-                                text = "NearAI Admin",
+                                text = stringResource(R.string.inventory_title),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = Navy
                                 )
                             )
                             Text(
-                                text = "INVENTORY",
+                                text = stringResource(R.string.inventory_subtitle),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = TextSecondaryLight,
                                     letterSpacing = 1.sp,
@@ -353,7 +355,7 @@ fun InventoryScreen(
                 },
                 text = {
                     Text(
-                        text = "New Product",
+                        text = stringResource(R.string.inventory_new_product),
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.2.sp
                     )
@@ -392,7 +394,7 @@ fun InventoryScreen(
                             )
                         }
                         Text(
-                            text = "Inventory & Products",
+                            text = stringResource(R.string.inventory_and_products),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = Navy
@@ -518,14 +520,14 @@ fun InventoryScreen(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = "Catalog Directory",
+                            text = stringResource(R.string.inventory_catalog_directory),
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = Navy
                             )
                         )
                         Text(
-                            text = "(${uiState.inventoryItems.size} Showing)",
+                            text = stringResource(R.string.inventory_showing_count, uiState.inventoryItems.size),
                             style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight)
                         )
                     }
@@ -543,7 +545,7 @@ fun InventoryScreen(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Add SKU",
+                            text = stringResource(R.string.inventory_add_sku),
                             color = Color.White,
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                         )
@@ -562,7 +564,7 @@ fun InventoryScreen(
                             CircularProgressIndicator(color = Navy)
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "Loading inventory...",
+                                text = stringResource(R.string.inventory_loading),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = TextSecondaryLight
                                 )
@@ -623,7 +625,7 @@ fun InventoryScreen(
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "No products found",
+                                text = stringResource(R.string.inventory_empty),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = TextSecondaryLight
                                 )
@@ -888,7 +890,7 @@ fun SkuProductCard(
                             }
                         }
                         Text(
-                            text = "SKU: ${item.skuCode}",
+                            text = stringResource(R.string.inventory_sku_label, item.skuCode),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = TextSecondaryLight,
                                 fontFamily = FontFamily.Monospace

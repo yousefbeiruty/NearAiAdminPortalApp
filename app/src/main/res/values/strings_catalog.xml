@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Products List -->
+    <string name="products_title">Products</string>
+    <string name="products_error_loading">Error loading products</string>
+    <string name="products_empty">No products found</string>
+
+    <!-- Categories -->
+    <string name="categories_title">Categories</string>
+    <string name="categories_error_loading">Error loading categories</string>
+    <string name="categories_empty">No categories yet</string>
+    <string name="categories_empty_message">Create your first category to get started</string>
+
+    <!-- Product Create -->
+    <string name="product_create_title">Create Product</string>
+
+    <!-- Product Details -->
+    <string name="product_details_error">Error loading product</string>
+    <string name="product_created">Created: %1$s</string>
+    <string name="product_no_images">No images yet. Tap \"Add Image\" to upload.</string>
+    <string name="product_no_variants">No variants yet</string>
+    <string name="product_metadata_format">%1$s: %2$s</string>
+
+    <!-- Product Currency Format -->
+    <string name="product_currency_format">%1$s %2$.2f</string>
+</resources>
