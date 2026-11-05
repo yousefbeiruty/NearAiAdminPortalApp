@@ -57,13 +57,20 @@ fun UsersScreen(
         }
     }
 
-    // Trigger loadMore when user scrolls near the end — keyed by currentPage
-    // to avoid re-firing on every recomposition
-    LaunchedEffect(uiState.hasMore, uiState.currentPage) {
-        val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-        val totalItems = listState.layoutInfo.totalItemsCount
-        if (lastVisibleItem != null && lastVisibleItem.index >= totalItems - 2 && uiState.hasMore) {
-            viewModel.loadMore()
+    // Trigger loadMore when user scrolls near the end
+    // listState in keys ensures this re-runs on every scroll position change
+    LaunchedEffect(listState, uiState.hasMore, uiState.isLoadingMore) {
+        while (uiState.hasMore && !uiState.isLoadingMore) {
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            val totalItems = listState.layoutInfo.totalItemsCount
+            if (lastVisibleItem != null && lastVisibleItem.index >= totalItems - 2) {
+                viewModel.loadMore()
+                // Wait for loading to start before checking again
+                while (uiState.isLoadingMore) {
+                    kotlinx.coroutines.delay(100)
+                }
+            }
+            kotlinx.coroutines.delay(16) // ~1 frame to avoid excessive polling
         }
     }
 

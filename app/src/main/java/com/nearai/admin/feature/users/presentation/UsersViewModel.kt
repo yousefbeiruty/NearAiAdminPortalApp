@@ -146,37 +146,40 @@ class UsersViewModel @Inject constructor(
 
         isLoadMorePending = true
         viewModelScope.launch {
-            isLoadMorePending = false
-            _uiState.update { it.copy(isLoadingMore = true) }
-            val nextPage = state.currentPage + 1
-            val query = state.searchQuery
-            when (val result = usersRepository.listUsers(
-                page = nextPage,
-                size = PAGE_SIZE,
-                search = if (query.isBlank()) null else query,
-                role = state.filterRole,
-                isActive = state.filterIsActive
-            )) {
-                is Result.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            isLoadingMore = false,
-                            users = it.users + result.data.users,
-                            currentPage = result.data.page,
-                            totalPages = result.data.totalPages,
-                            totalItems = result.data.totalItems,
-                            hasMore = result.data.page < result.data.totalPages
-                        )
+            try {
+                _uiState.update { it.copy(isLoadingMore = true) }
+                val nextPage = state.currentPage + 1
+                val query = state.searchQuery
+                when (val result = usersRepository.listUsers(
+                    page = nextPage,
+                    size = PAGE_SIZE,
+                    search = if (query.isBlank()) null else query,
+                    role = state.filterRole,
+                    isActive = state.filterIsActive
+                )) {
+                    is Result.Success -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoadingMore = false,
+                                users = it.users + result.data.users,
+                                currentPage = result.data.page,
+                                totalPages = result.data.totalPages,
+                                totalItems = result.data.totalItems,
+                                hasMore = result.data.page < result.data.totalPages
+                            )
+                        }
+                    }
+                    is Result.Error -> {
+                        _uiState.update {
+                            it.copy(isLoadingMore = false, hasMore = false, error = result.exception.message)
+                        }
+                    }
+                    is Result.Loading -> {
+                        _uiState.update { it.copy(isLoadingMore = false) }
                     }
                 }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(isLoadingMore = false, hasMore = false, error = result.exception.message)
-                    }
-                }
-                is Result.Loading -> {
-                    _uiState.update { it.copy(isLoadingMore = false) }
-                }
+            } finally {
+                isLoadMorePending = false
             }
         }
     }
