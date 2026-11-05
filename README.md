@@ -22,6 +22,8 @@
 - [Build Configuration](#build-configuration)
 - [Testing](#testing)
 - [Backend Integration](#backend-integration)
+- [CI/CD](#cicd)
+- [Engineering Constitution](#engineering-constitution)
 - [Development Guidelines](#development-guidelines)
 - [License](#license)
 
@@ -56,11 +58,11 @@
 - ⏳ UI implemented; real backend integration pending
 
 ### 4. AI Usage & Credits
-- **Budget envelope card** with 50%/75%/90% threshold markers
-- **Provider/model distribution** breakdown (OpenAI, Anthropic, Self-Hosted)
-- **Quota safeguards**: Free Tier, Burst Rate Limits, Circuit Breaker
-- **Live ingestion telemetry** with 429 rate limit status
-- ⏳ UI implemented; real backend integration pending
+- **Honest unavailable state** — no fabricated metrics displayed in production
+- **Proper feature architecture**: `AiUsageRepository`, `AiUsageRepositoryImpl`, `AiUsageViewModel`
+- **ViewModel-driven UI** with LoadingScreen/ErrorState/EmptyState states
+- **9 unit tests** confirming unavailable state is displayed honestly
+- ⏳ Backend AI usage API pending; UI will render real data when available
 
 ### 5. Places & Discovery
 - **Pipeline telemetry grid**: Discovery Volume, Places Spend, Avg Latency, Cache Hit Ratio
@@ -252,9 +254,15 @@ com.nearai.admin/
     ├── users/                             # ⏳ UI only, backend integration pending
     │   └── presentation/
     │       └── UsersScreen.kt             # Search, filter, user list, detail sheet
-    ├── aiusage/                           # ⏳ UI only, backend integration pending
+    ├── aiusage/                           # ⏳ Backend pending, proper architecture in place
+    │   ├── domain/
+    │   │   └── AiUsageRepository.kt       # Repository interface + domain models
+    │   ├── data/
+    │   │   ├── AiUsageRepositoryImpl.kt   # Returns honest unavailable state
+    │   │   └── AiUsageModule.kt           # Hilt @Binds module
     │   └── presentation/
-    │       └── AiUsageScreen.kt           # Budget envelope, provider distribution
+    │       ├── AiUsageViewModel.kt        # @HiltViewModel, StateFlow<AiUsageUiState>
+    │       └── AiUsageScreen.kt           # Loading/Error/Empty states, no fabricated data
     ├── discovery/                         # ⏳ UI only, backend integration pending
     │   └── presentation/
     │       └── DiscoveryScreen.kt         # Pipeline telemetry, trace inspector
@@ -507,11 +515,12 @@ Key dependencies are managed via Gradle Version Catalog (`gradle/libs.versions.t
 | **OrderMapperTest.kt** | 8 | DTO-to-domain mapping for orders, items, status history |
 | **CatalogMapperTest.kt** | 8 | Product, variant, stock balance, stock movement, pagination mapping |
 | **ProductDetailsViewModelTest.kt** | 6 | Product loading, error handling |
+| **AiUsageViewModelTest.kt** | 9 | Unavailable feature state, error display, retry, clear error |
 | **TokenRefreshManagerTest.kt** | 8 | Single-flight refresh, retry logic, session cleanup, auth endpoint exclusion |
 | **ApiErrorParserTest.kt** | 6 | HTTP 401, 403, 404, 422, 500, network error mapping |
 | **ProductImageDtoSerializationTest.kt** | 6 | Image DTO serialization and deserialization |
 
-**Total: 146 unit tests, all passing.**
+**Total: 315 unit tests, all passing.**
 
 ### Testing Approach
 - **ViewModel tests**: MockK for repository mocking, `runTest` with `UnconfinedTestDispatcher`, Turbine for StateFlow verification
@@ -535,7 +544,7 @@ Key dependencies are managed via Gradle Version Catalog (`gradle/libs.versions.t
 | **Product Editing** | ✅ Connected | `CatalogApiService` | `CatalogRepositoryImpl` | `ProductEditViewModel` |
 | **Orders** | ✅ Connected | `OrderApiService` | `OrderRepositoryImpl` | `OrdersListViewModel`, `OrderDetailsViewModel` |
 | **Users** | ⏳ UI only | — | — | — |
-| **AI Usage** | ⏳ UI only | — | — | — |
+| **AI Usage** | ⏳ Backend pending | — | `AiUsageRepositoryImpl` | `AiUsageViewModel` |
 | **Discovery** | ⏳ UI only | — | — | — |
 | **System Health** | ⏳ UI only | — | — | — |
 | **Audit Logs** | ⏳ UI only | — | — | — |
@@ -615,6 +624,44 @@ Key dependencies are managed via Gradle Version Catalog (`gradle/libs.versions.t
 
 ---
 
+## CI/CD
+
+### GitHub Actions
+
+The project uses GitHub Actions for automated quality gates on pull requests and pushes to `main`.
+
+**Workflow**: `.github/workflows/build.yml`
+
+| Job | Command | Purpose |
+|---|---|---|
+| **Gradle Wrapper Validation** | `gradlew --version` | Verify wrapper integrity |
+| **Compile** | `compileDebugKotlin` | Kotlin compilation check |
+| **Tests** | `testDebugUnitTest` | Run all unit tests (315 tests) |
+| **Lint** | `lintDebug` | Android lint analysis |
+
+**Features**:
+- Triggered on pull requests and pushes to `main`
+- Dependency caching for faster builds
+- Test results and lint results uploaded as artifacts
+- No credentials or secrets exposed
+
+---
+
+## Engineering Constitution
+
+The project follows permanent engineering standards documented in version-controlled files:
+
+| Document | Purpose |
+|---|---|
+| [`AGENTS.md`](AGENTS.md) | Engineering constitution: Clean Architecture, SOLID principles, Android-specific rules, testing mandates, mandatory workflow |
+| [`PR_CHECKLIST.md`](PR_CHECKLIST.md) | Reusable PR checklist covering 13 categories (architecture, SOLID, code quality, string resources, error handling, security, testing, etc.) |
+| [`DEFINITION_OF_DONE.md`](DEFINITION_OF_DONE.md) | 13 mandatory criteria every implementation must satisfy |
+| [`ENGINEERING_CONSTITUTION_REPORT.md`](ENGINEERING_CONSTITUTION_REPORT.md) | Audit report documenting completed items, remaining gaps, and build status |
+
+These documents are loaded automatically by coding agents and must be followed for every implementation, bug fix, refactoring, and code review.
+
+---
+
 ## Development Guidelines
 
 ### Code Style
@@ -663,17 +710,21 @@ Key dependencies are managed via Gradle Version Catalog (`gradle/libs.versions.t
 - ✅ **Inventory**: Real stock data via `InventoryViewModel` with search, filtering, receive/adjust stock, movement history
 - ✅ **Product Editing**: Real backend integration via `PATCH /api/v1/products/{id}` with `ProductEditViewModel`
 - ✅ **Orders**: Full module with listing, details, status updates; `OrderApiService`, `OrderRepositoryImpl`, `OrderMapper`, 30 tests
+- ✅ **AI Usage**: Proper feature architecture with `AiUsageRepository`, `AiUsageRepositoryImpl`, `AiUsageViewModel`; no fabricated data; 9 tests
 - ✅ **Automatic token refresh** via `TokenRefreshManager` with single-flight locking and retry
 - ✅ **Error handling** via `ApiErrorParser` mapping HTTP errors to typed `AppError` categories
 - ✅ **Navigation fixes**: Proper back-stack management, state preservation, duplicate navigation prevention
+- ✅ **String resources**: Hardcoded strings extracted from 7 screens into feature-specific `strings_*.xml` files
+- ✅ **CI/CD**: GitHub Actions workflow with Gradle wrapper validation, compilation, tests, and lint
+- ✅ **Engineering constitution**: `AGENTS.md`, `PR_CHECKLIST.md`, `DEFINITION_OF_DONE.md` for permanent standards
 - ✅ Secure token storage with AES256_GCM encryption
 - ✅ Session management with auto-redirect on expiry
 - ✅ Material 3 design system with NearAI branding
-- ✅ Build compiles, all 146 tests pass
+- ✅ Build compiles, all 315 tests pass
 
 ### Pending (requires backend API contracts)
 - ⏳ **Users Management**: Real backend integration (API service, repository, ViewModel)
-- ⏳ **AI Usage**: Real backend integration (API service, repository, ViewModel)
+- ⏳ **AI Usage**: Backend API integration (restore full UI with real data from ViewModel)
 - ⏳ **Discovery**: Real backend integration (API service, repository, ViewModel)
 - ⏳ **System Health**: Real backend integration (API service, repository, ViewModel)
 - ⏳ **Audit Logs**: Real backend integration (API service, repository, ViewModel)
@@ -681,6 +732,7 @@ Key dependencies are managed via Gradle Version Catalog (`gradle/libs.versions.t
 - ⏳ BiometricPrompt integration for local re-authentication
 - ⏳ FIDO2/NFC hardware key integration
 - ⏳ Comprehensive unit tests for remaining ViewModels
+- ⏳ Remaining hardcoded string extraction in lower-priority screens
 
 ---
 
