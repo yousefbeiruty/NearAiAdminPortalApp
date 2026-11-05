@@ -120,7 +120,6 @@ class DashboardViewModelTest {
         val state = viewModel.uiState.value
         assertEquals(2, state.recentRegistrations.size)
         assertEquals("usr-1", state.recentRegistrations[0].id)
-        assertEquals("Jane Smith", state.recentRegistrations[0].name)
         assertEquals("jane@example.com", state.recentRegistrations[0].email)
     }
 
@@ -134,8 +133,8 @@ class DashboardViewModelTest {
         assertEquals(2, state.lowStockAlerts.size)
         assertEquals("Widget A", state.lowStockAlerts[0].productName)
         assertEquals("SKU-001", state.lowStockAlerts[0].sku)
-        assertEquals(3, state.lowStockAlerts[0].currentStock)
-        assertEquals(10, state.lowStockAlerts[0].threshold)
+        assertEquals(3, state.lowStockAlerts[0].available)
+        assertEquals(7, state.lowStockAlerts[0].reserved)
     }
 
     @Test
@@ -299,12 +298,12 @@ class DashboardViewModelTest {
                 RecentOrder("ord-3", "Bob Wilson", "2024-01-14", "completed", 200.0, "EUR")
             ),
             recentRegistrations = listOf(
-                RecentRegistration("usr-1", "Jane Smith", "jane@example.com", "2024-01-15"),
-                RecentRegistration("usr-2", "Bob Wilson", "bob@example.com", "2024-01-14")
+                RecentRegistration("usr-1", "jane@example.com", "customer", "2024-01-15"),
+                RecentRegistration("usr-2", "bob@example.com", "customer", "2024-01-14")
             ),
             lowStockAlerts = listOf(
-                LowStockAlert("Widget A", "SKU-001", 3, 10),
-                LowStockAlert("Gadget B", "SKU-002", 5, 15)
+                LowStockAlert("var-1", "Widget A", "SKU-001", 10, 7, 3),
+                LowStockAlert("var-2", "Gadget B", "SKU-002", 20, 15, 5)
             )
         )
     }

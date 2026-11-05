@@ -27,8 +27,8 @@ data class RecentOrder(
  */
 data class RecentRegistration(
     val id: String,
-    val name: String,
     val email: String,
+    val role: String,
     val registrationDate: String
 )
 
@@ -36,10 +36,12 @@ data class RecentRegistration(
  * A low stock alert for a product variant.
  */
 data class LowStockAlert(
+    val variantId: String,
     val productName: String,
     val sku: String,
-    val currentStock: Int,
-    val threshold: Int
+    val onHand: Int,
+    val reserved: Int,
+    val available: Int
 )
 
 /**
@@ -52,6 +54,10 @@ data class DashboardData(
     val totalOrders: Int = 0,
     val pendingOrders: Int = 0,
     val completedOrders: Int = 0,
+    val cancelledOrders: Int = 0,
+    val rejectedOrders: Int = 0,
+    val totalRevenue: Double = 0.0,
+    val revenueCurrency: String = "",
     val revenueByCurrency: List<RevenueByCurrency> = emptyList(),
     val recentOrders: List<RecentOrder> = emptyList(),
     val recentRegistrations: List<RecentRegistration> = emptyList(),

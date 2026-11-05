@@ -19,17 +19,16 @@ class DashboardMapperTest {
             totalOrders = 1250,
             pendingOrders = 45,
             completedOrders = 1180,
-            revenueByCurrency = listOf(
-                RevenueDto(currency = "USD", amount = 4820.50)
-            ),
+            totalRevenue = 4820.50,
+            revenueCurrency = "USD",
             recentOrders = listOf(
                 RecentOrderDto("ord-1", "John Doe", "2024-01-15", "completed", 150.0, "USD")
             ),
             recentRegistrations = listOf(
-                RecentRegistrationDto("usr-1", "Jane Smith", "jane@example.com", "2024-01-15")
+                RecentRegistrationDto("usr-1", "jane@example.com", "customer", "2024-01-15")
             ),
             lowStockAlerts = listOf(
-                LowStockAlertDto("Widget A", "SKU-001", 3, 10)
+                LowStockAlertDto("var-1", "Widget A", "SKU-001", 10, 7, 3)
             )
         )
 
@@ -41,7 +40,8 @@ class DashboardMapperTest {
         assertEquals(1250, data.totalOrders)
         assertEquals(45, data.pendingOrders)
         assertEquals(1180, data.completedOrders)
-        assertEquals(1, data.revenueByCurrency.size)
+        assertEquals(4820.50, data.totalRevenue, 0.001)
+        assertEquals("USD", data.revenueCurrency)
         assertEquals(1, data.recentOrders.size)
         assertEquals(1, data.recentRegistrations.size)
         assertEquals(1, data.lowStockAlerts.size)
@@ -73,26 +73,28 @@ class DashboardMapperTest {
 
     @Test
     fun `mapRecentRegistration maps all fields`() {
-        val dto = RecentRegistrationDto("usr-1", "Jane Smith", "jane@example.com", "2024-01-15")
+        val dto = RecentRegistrationDto("usr-1", "jane@example.com", "customer", "2024-01-15")
 
         val domain = DashboardMapper.mapRecentRegistration(dto)
 
         assertEquals("usr-1", domain.id)
-        assertEquals("Jane Smith", domain.name)
         assertEquals("jane@example.com", domain.email)
+        assertEquals("customer", domain.role)
         assertEquals("2024-01-15", domain.registrationDate)
     }
 
     @Test
     fun `mapLowStockAlert maps all fields`() {
-        val dto = LowStockAlertDto("Widget A", "SKU-001", 3, 10)
+        val dto = LowStockAlertDto("var-1", "Widget A", "SKU-001", 10, 7, 3)
 
         val domain = DashboardMapper.mapLowStockAlert(dto)
 
+        assertEquals("var-1", domain.variantId)
         assertEquals("Widget A", domain.productName)
         assertEquals("SKU-001", domain.sku)
-        assertEquals(3, domain.currentStock)
-        assertEquals(10, domain.threshold)
+        assertEquals(10, domain.onHand)
+        assertEquals(7, domain.reserved)
+        assertEquals(3, domain.available)
     }
 
     @Test
@@ -103,7 +105,7 @@ class DashboardMapperTest {
 
         assertEquals(0, data.totalUsers)
         assertEquals(0, data.totalProducts)
-        assertTrue(data.revenueByCurrency.isEmpty())
+        assertEquals(0.0, data.totalRevenue, 0.001)
         assertTrue(data.recentOrders.isEmpty())
         assertTrue(data.recentRegistrations.isEmpty())
         assertTrue(data.lowStockAlerts.isEmpty())
@@ -112,18 +114,16 @@ class DashboardMapperTest {
     @Test
     fun `mapDashboardData handles multiple currencies`() {
         val dto = DashboardResponseDto(
-            revenueByCurrency = listOf(
-                RevenueDto(currency = "USD", amount = 100.0),
-                RevenueDto(currency = "EUR", amount = 200.0),
-                RevenueDto(currency = "GBP", amount = 300.0)
-            )
+            totalRevenue = 600.0,
+            revenueCurrency = "USD",
+            recentOrders = emptyList(),
+            recentRegistrations = emptyList(),
+            lowStockAlerts = emptyList()
         )
 
         val data = DashboardMapper.mapDashboardData(dto)
 
-        assertEquals(3, data.revenueByCurrency.size)
-        assertEquals("USD", data.revenueByCurrency[0].currency)
-        assertEquals("EUR", data.revenueByCurrency[1].currency)
-        assertEquals("GBP", data.revenueByCurrency[2].currency)
+        assertEquals(600.0, data.totalRevenue, 0.001)
+        assertEquals("USD", data.revenueCurrency)
     }
 }

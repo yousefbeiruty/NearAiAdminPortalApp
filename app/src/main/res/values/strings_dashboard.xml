@@ -27,13 +27,12 @@
     <string name="dashboard_retry">Retry</string>
 
     <!-- Dashboard Order Card -->
-    <string name="dashboard_order_id">Order #%1$s</string>
-    <string name="dashboard_order_date_format">%1$s · %2$s</string>
+    <string name="dashboard_order_id">Order #%1$s · %2$s</string>
 
     <!-- Dashboard Low Stock -->
     <string name="dashboard_sku_label">SKU: %1$s</string>
-    <string name="dashboard_stock_left">%1$d left</string>
-    <string name="dashboard_stock_threshold">Threshold: %1$d</string>
+    <string name="dashboard_stock_available">%1$d available</string>
+    <string name="dashboard_stock_reserved">%1$d reserved</string>
 
     <!-- Dashboard Notifications -->
     <string name="dashboard_notifications">Alerts &amp; Notifications</string>

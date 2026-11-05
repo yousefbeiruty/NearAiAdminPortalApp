@@ -26,6 +26,10 @@ data class DashboardUiState(
     val totalOrders: Int = 0,
     val pendingOrders: Int = 0,
     val completedOrders: Int = 0,
+    val cancelledOrders: Int = 0,
+    val rejectedOrders: Int = 0,
+    val totalRevenue: Double = 0.0,
+    val revenueCurrency: String = "",
     val revenueByCurrency: List<RevenueItem> = emptyList(),
     val recentOrders: List<RecentOrderItem> = emptyList(),
     val recentRegistrations: List<RecentRegistrationItem> = emptyList(),
@@ -60,8 +64,8 @@ data class RecentOrderItem(
  */
 data class RecentRegistrationItem(
     val id: String,
-    val name: String,
     val email: String,
+    val role: String,
     val registrationDate: String
 )
 
@@ -69,10 +73,12 @@ data class RecentRegistrationItem(
  * UI-specific low stock alert item.
  */
 data class LowStockAlertItem(
+    val variantId: String,
     val productName: String,
     val sku: String,
-    val currentStock: Int,
-    val threshold: Int
+    val onHand: Int,
+    val reserved: Int,
+    val available: Int
 )
 
 /**
@@ -127,6 +133,10 @@ class DashboardViewModel @Inject constructor(
                             totalOrders = data.totalOrders,
                             pendingOrders = data.pendingOrders,
                             completedOrders = data.completedOrders,
+                            cancelledOrders = data.cancelledOrders,
+                            rejectedOrders = data.rejectedOrders,
+                            totalRevenue = data.totalRevenue,
+                            revenueCurrency = data.revenueCurrency,
                             revenueByCurrency = data.revenueByCurrency.map { rev ->
                                 RevenueItem(
                                     currency = rev.currency,
@@ -148,17 +158,19 @@ class DashboardViewModel @Inject constructor(
                             recentRegistrations = data.recentRegistrations.map { reg ->
                                 RecentRegistrationItem(
                                     id = reg.id,
-                                    name = reg.name,
                                     email = reg.email,
+                                    role = reg.role,
                                     registrationDate = reg.registrationDate
                                 )
                             },
                             lowStockAlerts = data.lowStockAlerts.map { alert ->
                                 LowStockAlertItem(
+                                    variantId = alert.variantId,
                                     productName = alert.productName,
                                     sku = alert.sku,
-                                    currentStock = alert.currentStock,
-                                    threshold = alert.threshold
+                                    onHand = alert.onHand,
+                                    reserved = alert.reserved,
+                                    available = alert.available
                                 )
                             }
                         )

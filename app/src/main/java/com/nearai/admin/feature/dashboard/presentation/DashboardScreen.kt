@@ -688,7 +688,7 @@ private fun RecentRegistrationCard(registration: RecentRegistrationItem) {
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = registration.name,
+                    text = registration.email,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = Navy
@@ -759,14 +759,14 @@ private fun LowStockAlertCard(alert: LowStockAlertItem) {
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = stringResource(R.string.dashboard_stock_left, alert.currentStock),
+                    text = stringResource(R.string.dashboard_stock_available, alert.available),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = AmberWarning
                     )
                 )
                 Text(
-                    text = stringResource(R.string.dashboard_stock_threshold, alert.threshold),
+                    text = stringResource(R.string.dashboard_stock_reserved, alert.reserved),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = TextSecondaryLight
                     )

@@ -28,9 +28,12 @@ data class DashboardResponseDto(
     @SerialName("total_orders") val totalOrders: Int = 0,
     @SerialName("pending_orders") val pendingOrders: Int = 0,
     @SerialName("completed_orders") val completedOrders: Int = 0,
-    @SerialName("revenue_by_currency") val revenueByCurrency: List<RevenueDto> = emptyList(),
+    @SerialName("cancelled_orders") val cancelledOrders: Int = 0,
+    @SerialName("rejected_orders") val rejectedOrders: Int = 0,
+    @SerialName("total_revenue") val totalRevenue: Double = 0.0,
+    @SerialName("revenue_currency") val revenueCurrency: String = "",
     @SerialName("recent_orders") val recentOrders: List<RecentOrderDto> = emptyList(),
-    @SerialName("recent_registrations") val recentRegistrations: List<RecentRegistrationDto> = emptyList(),
+    @SerialName("recent_users") val recentRegistrations: List<RecentRegistrationDto> = emptyList(),
     @SerialName("low_stock_alerts") val lowStockAlerts: List<LowStockAlertDto> = emptyList()
 )
 
@@ -43,25 +46,27 @@ data class RevenueDto(
 @Serializable
 data class RecentOrderDto(
     val id: String,
-    @SerialName("user_name") val userName: String = "",
-    @SerialName("order_date") val orderDate: String = "",
+    @SerialName("user_email") val userName: String = "",
+    @SerialName("created_at") val orderDate: String = "",
     val status: String = "",
-    val total: Double = 0.0,
+    @SerialName("total_amount") val total: Double = 0.0,
     val currency: String = ""
 )
 
 @Serializable
 data class RecentRegistrationDto(
     val id: String,
-    val name: String = "",
     val email: String = "",
-    @SerialName("registration_date") val registrationDate: String = ""
+    val role: String = "",
+    @SerialName("created_at") val registrationDate: String = ""
 )
 
 @Serializable
 data class LowStockAlertDto(
+    @SerialName("variant_id") val variantId: String = "",
     @SerialName("product_name") val productName: String = "",
     val sku: String = "",
-    @SerialName("current_stock") val currentStock: Int = 0,
-    @SerialName("threshold") val threshold: Int = 0
+    @SerialName("on_hand") val onHand: Int = 0,
+    @SerialName("reserved") val reserved: Int = 0,
+    @SerialName("available") val available: Int = 0
 )

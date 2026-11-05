@@ -19,7 +19,10 @@ object DashboardMapper {
             totalOrders = dto.totalOrders,
             pendingOrders = dto.pendingOrders,
             completedOrders = dto.completedOrders,
-            revenueByCurrency = dto.revenueByCurrency.map { mapRevenue(it) },
+            cancelledOrders = dto.cancelledOrders,
+            rejectedOrders = dto.rejectedOrders,
+            totalRevenue = dto.totalRevenue,
+            revenueCurrency = dto.revenueCurrency,
             recentOrders = dto.recentOrders.map { mapRecentOrder(it) },
             recentRegistrations = dto.recentRegistrations.map { mapRecentRegistration(it) },
             lowStockAlerts = dto.lowStockAlerts.map { mapLowStockAlert(it) }
@@ -47,18 +50,20 @@ object DashboardMapper {
     fun mapRecentRegistration(dto: RecentRegistrationDto): RecentRegistration {
         return RecentRegistration(
             id = dto.id,
-            name = dto.name,
             email = dto.email,
+            role = dto.role,
             registrationDate = dto.registrationDate
         )
     }
 
     fun mapLowStockAlert(dto: LowStockAlertDto): LowStockAlert {
         return LowStockAlert(
+            variantId = dto.variantId,
             productName = dto.productName,
             sku = dto.sku,
-            currentStock = dto.currentStock,
-            threshold = dto.threshold
+            onHand = dto.onHand,
+            reserved = dto.reserved,
+            available = dto.available
         )
     }
 }
