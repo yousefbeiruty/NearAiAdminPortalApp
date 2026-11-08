@@ -7,6 +7,7 @@ import com.nearai.admin.core.common.Result
 import com.nearai.admin.feature.orders.domain.OrderDetails
 import com.nearai.admin.feature.orders.domain.OrderRepository
 import com.nearai.admin.feature.orders.domain.OrderStatus
+import com.nearai.admin.feature.orders.domain.PaymentInfo
 import com.nearai.admin.feature.orders.domain.StatusHistoryEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +29,12 @@ data class OrderDetailsUiState(
     val actionError: String? = null,
     val showRejectDialog: Boolean = false,
     val rejectReason: String = "",
-    val showConfirmDialog: String? = null // action label to confirm
+    val showConfirmDialog: String? = null, // action label to confirm
+    val paymentInfo: PaymentInfo? = null,
+    val isCollectingCash: Boolean = false,
+    val collectionError: String? = null,
+    val showCollectCashDialog: Boolean = false,
+    val showCancelDialog: Boolean = false
 )
 
 /**
@@ -48,6 +54,25 @@ class OrderDetailsViewModel @Inject constructor(
 
     init {
         loadOrder()
+    }
+
+    /**
+     * Loads payment information for the current order.
+     */
+    fun loadPaymentInfo() {
+        viewModelScope.launch {
+            when (val result = orderRepository.getPaymentByOrderId(orderId)) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(paymentInfo = result.data, collectionError = null) }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(paymentInfo = null, collectionError = result.exception.message) }
+                }
+                is Result.Loading -> {
+                    // No-op
+                }
+            }
+        }
     }
 
     /**
@@ -274,5 +299,91 @@ class OrderDetailsViewModel @Inject constructor(
      */
     fun clearActionError() {
         _uiState.update { it.copy(actionError = null) }
+    }
+
+    /**
+     * Shows the collect cash confirmation dialog.
+     */
+    fun showCollectCashDialog() {
+        _uiState.update { it.copy(showCollectCashDialog = true, collectionError = null) }
+    }
+
+    /**
+     * Dismisses the collect cash confirmation dialog.
+     */
+    fun dismissCollectCashDialog() {
+        _uiState.update { it.copy(showCollectCashDialog = false, collectionError = null) }
+    }
+
+    /**
+     * Collects COD cash for the order's payment.
+     */
+    fun collectCash() {
+        val payment = _uiState.value.paymentInfo ?: return
+        if (_uiState.value.isCollectingCash) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCollectingCash = true, collectionError = null, showCollectCashDialog = false) }
+            when (val result = orderRepository.collectCash(payment.id)) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(isCollectingCash = false, paymentInfo = result.data) }
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isCollectingCash = false, collectionError = result.exception.message) }
+                }
+                is Result.Loading -> {
+                    _uiState.update { it.copy(isCollectingCash = false) }
+                }
+            }
+        }
+    }
+
+    /**
+     * Clears the collection error.
+     */
+    fun clearCollectionError() {
+        _uiState.update { it.copy(collectionError = null) }
+    }
+
+    /**
+     * Shows the cancel order confirmation dialog.
+     */
+    fun showCancelDialog() {
+        _uiState.update { it.copy(showCancelDialog = true) }
+    }
+
+    /**
+     * Dismisses the cancel order confirmation dialog.
+     */
+    fun dismissCancelDialog() {
+        _uiState.update { it.copy(showCancelDialog = false) }
+    }
+
+    /**
+     * Cancels the order (admin only).
+     */
+    fun cancelOrder() {
+        if (_uiState.value.isActionLoading) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isActionLoading = true, actionError = null, showCancelDialog = false) }
+            when (val result = orderRepository.cancelOrder(orderId)) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(isActionLoading = false) }
+                    loadOrder()
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isActionLoading = false, actionError = result.exception.message) }
+                }
+                is Result.Loading -> {
+                    _uiState.update { it.copy(isActionLoading = false) }
+                }
+            }
+        }
+    }
+
+    /**
+     * Refreshes payment info after a successful action.
+     */
+    fun refreshPaymentInfo() {
+        loadPaymentInfo()
     }
 }

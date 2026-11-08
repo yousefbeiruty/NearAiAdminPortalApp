@@ -41,6 +41,13 @@ fun OrderDetailsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // Load payment info when order loads
+    LaunchedEffect(uiState.order) {
+        if (uiState.order != null) {
+            viewModel.loadPaymentInfo()
+        }
+    }
+
     // Rejection dialog — must stay in route composable as it involves ViewModel state
     if (uiState.showRejectDialog) {
         RejectDialog(
@@ -49,6 +56,71 @@ fun OrderDetailsScreen(
             onDismiss = { viewModel.dismissRejectDialog() },
             onConfirm = { viewModel.rejectOrder() },
             isLoading = uiState.isActionLoading
+        )
+    }
+
+    // Collect cash confirmation dialog
+    if (uiState.showCollectCashDialog) {
+        val payment = uiState.paymentInfo
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissCollectCashDialog() },
+            title = { Text(stringResource(R.string.order_collect_cash_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.order_collect_cash_description))
+                    if (payment != null) {
+                        Text(
+                            text = stringResource(R.string.order_currency_format, payment.currency, payment.amount),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.collectCash() },
+                    enabled = !uiState.isCollectingCash,
+                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess)
+                ) {
+                    if (uiState.isCollectingCash) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(R.string.order_collect_cash_confirm), color = Color.White)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissCollectCashDialog() }) {
+                    Text(stringResource(R.string.order_details_cancel), color = TextSecondaryLight)
+                }
+            }
+        )
+    }
+
+    // Cancel order confirmation dialog
+    if (uiState.showCancelDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissCancelDialog() },
+            title = { Text(stringResource(R.string.order_cancel_title)) },
+            text = { Text(stringResource(R.string.order_cancel_description)) },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.cancelOrder() },
+                    enabled = !uiState.isActionLoading,
+                    colors = ButtonDefaults.buttonColors(containerColor = RoseError)
+                ) {
+                    if (uiState.isActionLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(R.string.order_cancel_confirm), color = Color.White)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissCancelDialog() }) {
+                    Text(stringResource(R.string.order_details_cancel), color = TextSecondaryLight)
+                }
+            }
         )
     }
 
@@ -94,7 +166,10 @@ fun OrderDetailsScreen(
         onProcess = { viewModel.showConfirmDialog(processLabel) },
         onDispatch = { viewModel.showConfirmDialog(dispatchLabel) },
         onDeliver = { viewModel.showConfirmDialog(deliverLabel) },
-        onClearActionError = { viewModel.clearActionError() }
+        onCollectCash = { viewModel.showCollectCashDialog() },
+        onCancel = { viewModel.showCancelDialog() },
+        onClearActionError = { viewModel.clearActionError() },
+        onClearCollectionError = { viewModel.clearCollectionError() }
     )
 }
 
@@ -122,7 +197,10 @@ fun OrderDetailsScreenContent(
     onProcess: () -> Unit = {},
     onDispatch: () -> Unit = {},
     onDeliver: () -> Unit = {},
+    onCollectCash: () -> Unit = {},
+    onCancel: () -> Unit = {},
     onClearActionError: () -> Unit = {},
+    onClearCollectionError: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Dynamic title from order ID
@@ -210,6 +288,17 @@ fun OrderDetailsScreenContent(
                         PaymentSummaryCard(order)
                     }
 
+                    // Payment status & COD collection
+                    item {
+                        PaymentStatusCard(
+                            paymentInfo = uiState.paymentInfo,
+                            isCollectingCash = uiState.isCollectingCash,
+                            collectionError = uiState.collectionError,
+                            onCollectCash = onCollectCash,
+                            onClearCollectionError = onClearCollectionError
+                        )
+                    }
+
                     // Status history
                     if (uiState.statusHistory.isNotEmpty()) {
                         item {
@@ -221,12 +310,16 @@ fun OrderDetailsScreenContent(
                     item {
                         OrderActionButtons(
                             order = order,
+                            paymentInfo = uiState.paymentInfo,
                             isActionLoading = uiState.isActionLoading,
+                            isCollectingCash = uiState.isCollectingCash,
                             onConfirm = onConfirm,
                             onReject = onReject,
                             onProcess = onProcess,
                             onDispatch = onDispatch,
-                            onDeliver = onDeliver
+                            onDeliver = onDeliver,
+                            onCollectCash = onCollectCash,
+                            onCancel = onCancel
                         )
                     }
 
@@ -245,6 +338,28 @@ fun OrderDetailsScreenContent(
                                     Icon(Icons.Outlined.WarningAmber, contentDescription = null, tint = RoseError, modifier = Modifier.size(20.dp))
                                     Text(uiState.actionError.orEmpty(), style = MaterialTheme.typography.bodySmall.copy(color = RoseDark), modifier = Modifier.weight(1f))
                                     TextButton(onClick = onClearActionError) {
+                                        Text(stringResource(R.string.order_details_dismiss), color = RoseDark, fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Collection error
+                    if (uiState.collectionError != null) {
+                        item {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = RoseBg),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(Icons.Outlined.WarningAmber, contentDescription = null, tint = RoseError, modifier = Modifier.size(20.dp))
+                                    Text(uiState.collectionError.orEmpty(), style = MaterialTheme.typography.bodySmall.copy(color = RoseDark), modifier = Modifier.weight(1f))
+                                    TextButton(onClick = onClearCollectionError) {
                                         Text(stringResource(R.string.order_details_dismiss), color = RoseDark, fontSize = 12.sp)
                                     }
                                 }
@@ -349,7 +464,7 @@ private fun OrderItemsCard(order: OrderDetails) {
 }
 
 /**
- * Payment summary card.
+ * Payment summary card with delivery fee and discount.
  */
 @Composable
 private fun PaymentSummaryCard(order: OrderDetails) {
@@ -359,6 +474,16 @@ private fun PaymentSummaryCard(order: OrderDetails) {
             Spacer(modifier = Modifier.height(12.dp))
             order.subtotalAmount?.let {
                 InfoRow(label = stringResource(R.string.order_label_subtotal), value = stringResource(R.string.order_currency_format, order.currency, it))
+            }
+            order.deliveryFeeAmount?.let { fee ->
+                if (fee > 0) {
+                    InfoRow(label = stringResource(R.string.order_label_delivery_fee), value = stringResource(R.string.order_currency_format, order.currency, fee))
+                }
+            }
+            order.discountAmount?.let { discount ->
+                if (discount > 0) {
+                    InfoRow(label = stringResource(R.string.order_label_discount), value = "-${stringResource(R.string.order_currency_format, order.currency, discount)}")
+                }
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -428,23 +553,46 @@ private fun StatusTimelineItem(entry: StatusHistoryEntry) {
 @Composable
 private fun OrderActionButtons(
     order: OrderDetails,
+    paymentInfo: com.nearai.admin.feature.orders.domain.PaymentInfo?,
     isActionLoading: Boolean,
+    isCollectingCash: Boolean,
     onConfirm: () -> Unit,
     onReject: () -> Unit,
     onProcess: () -> Unit,
     onDispatch: () -> Unit,
-    onDeliver: () -> Unit
+    onDeliver: () -> Unit,
+    onCollectCash: () -> Unit,
+    onCancel: () -> Unit
 ) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.order_details_actions), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Collect COD cash: available when payment is COD and pending
+            if (paymentInfo?.status == "pending" && paymentInfo.paymentMethod == "cash_on_delivery") {
+                ActionButton(
+                    label = stringResource(R.string.order_action_collect_cash),
+                    icon = Icons.Outlined.MonetizationOn,
+                    onClick = onCollectCash,
+                    isLoading = isCollectingCash,
+                    isDestructive = false
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             // Confirm: available when order is pending and fulfillment is awaiting confirmation
             if (order.status == OrderStatus.PENDING && order.fulfillmentStatus == FulfillmentStatus.AWAITING_CONFIRMATION) {
                 ActionButton(label = stringResource(R.string.order_action_confirm_order), icon = Icons.Outlined.CheckCircle, onClick = onConfirm, isLoading = isActionLoading)
                 Spacer(modifier = Modifier.height(8.dp))
                 ActionButton(label = stringResource(R.string.order_action_reject_order), icon = Icons.Outlined.Block, onClick = onReject, isLoading = isActionLoading, isDestructive = true)
+                Spacer(modifier = Modifier.height(8.dp))
+                ActionButton(label = stringResource(R.string.order_action_cancel_order), icon = Icons.Outlined.Cancel, onClick = onCancel, isLoading = isActionLoading, isDestructive = true)
+            }
+
+            // Cancel: available for pending orders
+            if (order.status == OrderStatus.PENDING && order.fulfillmentStatus != FulfillmentStatus.AWAITING_CONFIRMATION) {
+                ActionButton(label = stringResource(R.string.order_action_cancel_order), icon = Icons.Outlined.Cancel, onClick = onCancel, isLoading = isActionLoading, isDestructive = true)
             }
 
             // Process: available when order is pending and fulfillment is confirmed
@@ -564,6 +712,75 @@ private fun InfoRow(label: String, value: String) {
     Spacer(modifier = Modifier.height(8.dp))
 }
 
+/**
+ * Payment status card showing method, status, and collection info.
+ */
+@Composable
+private fun PaymentStatusCard(
+    paymentInfo: com.nearai.admin.feature.orders.domain.PaymentInfo?,
+    isCollectingCash: Boolean,
+    collectionError: String?,
+    onCollectCash: () -> Unit,
+    onClearCollectionError: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                stringResource(R.string.order_details_payment_status),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            if (paymentInfo == null) {
+                Text(
+                    stringResource(R.string.order_payment_not_available),
+                    style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight)
+                )
+            } else {
+                InfoRow(
+                    label = stringResource(R.string.order_label_payment_method),
+                    value = if (paymentInfo.paymentMethod == "cash_on_delivery") stringResource(R.string.order_payment_cod) else paymentInfo.paymentMethod
+                )
+                val statusColor = when (paymentInfo.status) {
+                    "collected" -> EmeraldSuccess
+                    "pending" -> AmberWarning
+                    "cancelled" -> TextSecondaryLight
+                    else -> Indigo
+                }
+                val statusLabel = when (paymentInfo.status) {
+                    "collected" -> stringResource(R.string.order_payment_collected)
+                    "pending" -> stringResource(R.string.order_payment_pending)
+                    "cancelled" -> stringResource(R.string.order_payment_cancelled)
+                    else -> paymentInfo.status
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        stringResource(R.string.order_label_payment_status),
+                        style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight, fontWeight = FontWeight.SemiBold)
+                    )
+                    StatusBadge(label = statusLabel, tint = statusColor)
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                InfoRow(
+                    label = stringResource(R.string.order_label_payment_amount),
+                    value = stringResource(R.string.order_currency_format, paymentInfo.currency, paymentInfo.amount)
+                )
+                if (!paymentInfo.collectedAt.isNullOrBlank()) {
+                    InfoRow(
+                        label = stringResource(R.string.order_label_collected_at),
+                        value = paymentInfo.collectedAt.take(16)
+                    )
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
@@ -581,22 +798,15 @@ fun OrderDetailsScreenPreview() {
                     sku = "SKU-001",
                     quantity = 1,
                     unitPriceAmount = 29.99,
-                    unitPriceCurrency = "USD",
+                    unitPriceCurrency = "JOD",
                     subtotalAmount = 29.99
-                ),
-                com.nearai.admin.feature.orders.domain.OrderItem(
-                    variantId = "v2",
-                    productName = "Delivery Fee",
-                    sku = null,
-                    quantity = 1,
-                    unitPriceAmount = 5.50,
-                    unitPriceCurrency = "USD",
-                    subtotalAmount = 5.50
                 )
             ),
             subtotalAmount = 29.99,
+            deliveryFeeAmount = 5.50,
+            discountAmount = 0.0,
             totalAmount = 35.49,
-            currency = "USD",
+            currency = "JOD",
             deliveryRecipientName = "John Alexander Doe",
             deliveryPhone = "+1 (555) 123-4567",
             deliveryCity = "New York",
@@ -652,12 +862,16 @@ fun OrderDetailsScreenPreview() {
                 item {
                     OrderActionButtons(
                         order = sampleOrder,
+                        paymentInfo = null,
                         isActionLoading = false,
+                        isCollectingCash = false,
                         onConfirm = {},
                         onReject = {},
                         onProcess = {},
                         onDispatch = {},
-                        onDeliver = {}
+                        onDeliver = {},
+                        onCollectCash = {},
+                        onCancel = {}
                     )
                 }
                 item { Spacer(modifier = Modifier.height(16.dp)) }

@@ -31,7 +31,7 @@ enum class OrderStatus {
  * Backend values: unfulfilled, awaiting_confirmation, confirmed, processing, out_for_delivery, delivered
  */
 enum class FulfillmentStatus {
-    UNFULILLED,
+    UNFULFILLED,
     AWAITING_CONFIRMATION,
     CONFIRMED,
     PROCESSING,
@@ -41,13 +41,13 @@ enum class FulfillmentStatus {
     companion object {
         /**
          * Safely parses a backend string value to [FulfillmentStatus].
-         * Falls back to [UNFULILLED] for unknown values so new backend statuses don't crash the app.
+         * Falls back to [UNFULFILLED] for unknown values so new backend statuses don't crash the app.
          */
         fun fromString(value: String): FulfillmentStatus {
             // Backend uses snake_case; convert to UPPER_SNAKE_CASE for matching
             val normalized = value.lowercase().replace("_", "_")
             return values().find { it.name.lowercase() == normalized }
-                ?: UNFULILLED
+                ?: UNFULFILLED
         }
     }
 }

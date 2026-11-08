@@ -25,6 +25,8 @@ data class OrderSummary(
     val fulfillmentStatus: FulfillmentStatus,
     val totalAmount: Double,
     val subtotalAmount: Double?,
+    val deliveryFeeAmount: Double?,
+    val discountAmount: Double?,
     val currency: String,
     val items: List<OrderItem>,
     val deliveryRecipientName: String?,
@@ -47,6 +49,8 @@ data class OrderDetails(
     val fulfillmentStatus: FulfillmentStatus,
     val items: List<OrderItem>,
     val subtotalAmount: Double?,
+    val deliveryFeeAmount: Double?,
+    val discountAmount: Double?,
     val totalAmount: Double,
     val currency: String,
     val deliveryRecipientName: String?,
@@ -69,6 +73,20 @@ data class StatusHistoryEntry(
     val actorRole: String?,
     val reason: String?,
     val timestamp: String
+)
+
+/**
+ * Payment information for an order.
+ */
+data class PaymentInfo(
+    val id: String,
+    val orderId: String,
+    val paymentMethod: String,
+    val amount: Double,
+    val currency: String,
+    val status: String,
+    val collectedAt: String? = null,
+    val collectedBy: String? = null
 )
 
 /**
@@ -132,4 +150,19 @@ interface OrderRepository {
      * Marks an order as delivered.
      */
     suspend fun deliverOrder(orderId: String): Result<Unit>
+
+    /**
+     * Cancels an order (admin only).
+     */
+    suspend fun cancelOrder(orderId: String): Result<Unit>
+
+    /**
+     * Fetches payment information for a specific order.
+     */
+    suspend fun getPaymentByOrderId(orderId: String): Result<PaymentInfo>
+
+    /**
+     * Collects COD cash for a payment.
+     */
+    suspend fun collectCash(paymentId: String): Result<PaymentInfo>
 }

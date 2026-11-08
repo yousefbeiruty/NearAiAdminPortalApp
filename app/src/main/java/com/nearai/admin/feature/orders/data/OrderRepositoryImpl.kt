@@ -9,6 +9,7 @@ import com.nearai.admin.feature.orders.domain.OrderDetails
 import com.nearai.admin.feature.orders.domain.OrderRepository
 import com.nearai.admin.feature.orders.domain.OrderStatus
 import com.nearai.admin.feature.orders.domain.PaginatedOrders
+import com.nearai.admin.feature.orders.domain.PaymentInfo
 import com.nearai.admin.feature.orders.domain.StatusHistoryEntry
 import retrofit2.HttpException
 import java.io.IOException
@@ -24,6 +25,7 @@ import javax.inject.Singleton
 @Singleton
 class OrderRepositoryImpl @Inject constructor(
     private val apiService: OrderApiService,
+    private val paymentApiService: PaymentApiService,
     private val tokenRefreshManager: TokenRefreshManager
 ) : OrderRepository {
 
@@ -119,6 +121,57 @@ class OrderRepositoryImpl @Inject constructor(
             try {
                 apiService.deliverOrder(orderId)
                 Result.Success(Unit)
+            } catch (e: Exception) {
+                handleOrderException(e)
+            }
+        }
+    }
+
+    override suspend fun cancelOrder(orderId: String): Result<Unit> {
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                apiService.cancelOrder(orderId)
+                Result.Success(Unit)
+            } catch (e: Exception) {
+                handleOrderException(e)
+            }
+        }
+    }
+
+    override suspend fun getPaymentByOrderId(orderId: String): Result<PaymentInfo> {
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                val response = paymentApiService.getPaymentByOrderId(orderId)
+                Result.Success(PaymentInfo(
+                    id = response.id,
+                    orderId = response.orderId,
+                    paymentMethod = response.paymentMethod,
+                    amount = response.amount,
+                    currency = response.currency,
+                    status = response.status,
+                    collectedAt = response.collectedAt,
+                    collectedBy = response.collectedBy
+                ))
+            } catch (e: Exception) {
+                handleOrderException(e)
+            }
+        }
+    }
+
+    override suspend fun collectCash(paymentId: String): Result<PaymentInfo> {
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                val response = paymentApiService.collectCash(paymentId)
+                Result.Success(PaymentInfo(
+                    id = response.id,
+                    orderId = response.orderId,
+                    paymentMethod = response.paymentMethod,
+                    amount = response.amount,
+                    currency = response.currency,
+                    status = response.status,
+                    collectedAt = response.collectedAt,
+                    collectedBy = response.collectedBy
+                ))
             } catch (e: Exception) {
                 handleOrderException(e)
             }

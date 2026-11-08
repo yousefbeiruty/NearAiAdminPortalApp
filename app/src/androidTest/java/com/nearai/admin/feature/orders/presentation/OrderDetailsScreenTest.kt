@@ -172,7 +172,7 @@ class OrderDetailsScreenTest {
         // Given — cancelled order
         val order = TestDataFactory.orderDetailsCompletedDelivered().copy(
             status = OrderStatus.CANCELLED,
-            fulfillmentStatus = FulfillmentStatus.UNFULILLED
+            fulfillmentStatus = FulfillmentStatus.UNFULFILLED
         )
         val uiState = OrderDetailsUiState(order = order)
 
@@ -196,7 +196,7 @@ class OrderDetailsScreenTest {
         // Given — rejected order
         val order = TestDataFactory.orderDetailsCompletedDelivered().copy(
             status = OrderStatus.REJECTED,
-            fulfillmentStatus = FulfillmentStatus.UNFULILLED
+            fulfillmentStatus = FulfillmentStatus.UNFULFILLED
         )
         val uiState = OrderDetailsUiState(order = order)
 

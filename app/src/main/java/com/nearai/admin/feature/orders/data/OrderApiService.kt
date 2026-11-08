@@ -51,6 +51,9 @@ interface OrderApiService {
 
     @POST("api/v1/orders/{order_id}/deliver")
     suspend fun deliverOrder(@Path("order_id") orderId: String)
+
+    @POST("api/v1/orders/admin/{order_id}/cancel")
+    suspend fun cancelOrder(@Path("order_id") orderId: String)
 }
 
 // =============================================================================
@@ -95,6 +98,8 @@ data class OrderSummaryDto(
     @SerialName("fulfillment_status") val fulfillmentStatus: String,
     @SerialName("total_amount") val totalAmount: Double,
     @SerialName("subtotal_amount") val subtotalAmount: Double? = null,
+    @SerialName("delivery_fee_amount") val deliveryFeeAmount: Double? = null,
+    @SerialName("discount_amount") val discountAmount: Double? = null,
     @SerialName("currency") val currency: String,
     @SerialName("items") val items: List<OrderItemDto>,
     @SerialName("delivery_recipient_name") val deliveryRecipientName: String? = null,
@@ -121,6 +126,8 @@ data class OrderDetailsResponse(
     @SerialName("fulfillment_status") val fulfillmentStatus: String,
     @SerialName("items") val items: List<OrderItemDto>,
     @SerialName("subtotal_amount") val subtotalAmount: Double? = null,
+    @SerialName("delivery_fee_amount") val deliveryFeeAmount: Double? = null,
+    @SerialName("discount_amount") val discountAmount: Double? = null,
     @SerialName("total_amount") val totalAmount: Double,
     @SerialName("currency") val currency: String,
     @SerialName("delivery_recipient_name") val deliveryRecipientName: String? = null,

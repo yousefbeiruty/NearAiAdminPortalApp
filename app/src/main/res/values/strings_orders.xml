@@ -48,6 +48,7 @@
     <string name="order_label_fulfillment_status">Fulfillment: %1$s</string>
     <string name="order_label_subtotal">Subtotal</string>
     <string name="order_label_delivery_fee">Delivery Fee</string>
+    <string name="order_label_discount">Discount</string>
     <string name="order_label_total">Total</string>
     <string name="order_label_created">Created</string>
     <string name="order_label_recipient">Recipient</string>
@@ -92,6 +93,30 @@
     <string name="order_action_process_order">Process Order</string>
     <string name="order_action_dispatch_order">Dispatch Order</string>
     <string name="order_action_mark_delivered">Mark as Delivered</string>
+    <string name="order_action_collect_cash">Collect Cash</string>
+    <string name="order_action_cancel_order">Cancel Order</string>
+
+    <!-- Payment Status -->
+    <string name="order_details_payment_status">Payment Status</string>
+    <string name="order_label_payment_method">Payment Method</string>
+    <string name="order_label_payment_status">Status</string>
+    <string name="order_label_payment_amount">Amount</string>
+    <string name="order_label_collected_at">Collected At</string>
+    <string name="order_payment_cod">Cash on Delivery</string>
+    <string name="order_payment_pending">Pending</string>
+    <string name="order_payment_collected">Collected</string>
+    <string name="order_payment_cancelled">Cancelled</string>
+    <string name="order_payment_not_available">Payment information not available</string>
+
+    <!-- Collect Cash Dialog -->
+    <string name="order_collect_cash_title">Collect COD Cash</string>
+    <string name="order_collect_cash_description">Confirm cash collection for this order?</string>
+    <string name="order_collect_cash_confirm">Collect Cash</string>
+
+    <!-- Cancel Order Dialog -->
+    <string name="order_cancel_title">Cancel Order</string>
+    <string name="order_cancel_description">Are you sure you want to cancel this order? This will release the reserved stock.</string>
+    <string name="order_cancel_confirm">Cancel Order</string>
 
     <!-- Reject Dialog -->
     <string name="order_reject_title">Reject Order</string>

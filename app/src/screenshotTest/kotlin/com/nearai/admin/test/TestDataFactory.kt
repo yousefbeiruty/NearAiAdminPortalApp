@@ -75,7 +75,7 @@ object TestDataFactory {
             orderSummary(
                 id = "ord-002",
                 status = OrderStatus.PENDING,
-                fulfillmentStatus = FulfillmentStatus.UNFULILLED,
+                fulfillmentStatus = FulfillmentStatus.UNFULFILLED,
                 totalAmount = 85.50,
                 currency = "USD",
                 recipientName = "Bob Smith",
@@ -120,6 +120,8 @@ object TestDataFactory {
         fulfillmentStatus = fulfillmentStatus,
         totalAmount = totalAmount,
         subtotalAmount = totalAmount,
+        deliveryFeeAmount = 0.0,
+        discountAmount = 0.0,
         currency = currency,
         items = listOf(
             OrderItem("var-001", "Wireless Mouse", "WM-001", 2, 25.0, "USD", 50.0),
@@ -149,6 +151,8 @@ object TestDataFactory {
             OrderItem("var-011", "Keyboard Wrist Rest", "KW-011", 1, 60.0, "EUR", 60.0)
         ),
         subtotalAmount = 210.00,
+        deliveryFeeAmount = 0.0,
+        discountAmount = 0.0,
         totalAmount = 210.00,
         currency = "EUR",
         deliveryRecipientName = "Carol White",
@@ -171,6 +175,8 @@ object TestDataFactory {
             OrderItem("var-002", "USB-C Cable", "UC-002", 1, 15.0, "USD", 15.0)
         ),
         subtotalAmount = 120.00,
+        deliveryFeeAmount = 0.0,
+        discountAmount = 0.0,
         totalAmount = 120.00,
         currency = "USD",
         deliveryRecipientName = "Alice Martin",

@@ -148,7 +148,7 @@ val OrderStatus.badgeTint: Color
 
 val FulfillmentStatus.displayLabel: String
     get() = when (this) {
-        FulfillmentStatus.UNFULILLED -> "Unfulfilled"
+        FulfillmentStatus.UNFULFILLED -> "Unfulfilled"
         FulfillmentStatus.AWAITING_CONFIRMATION -> "Awaiting"
         FulfillmentStatus.CONFIRMED -> "Confirmed"
         FulfillmentStatus.PROCESSING -> "Processing"
@@ -158,7 +158,7 @@ val FulfillmentStatus.displayLabel: String
 
 val FulfillmentStatus.badgeTint: Color
     get() = when (this) {
-        FulfillmentStatus.UNFULILLED -> Indigo
+        FulfillmentStatus.UNFULFILLED -> Indigo
         FulfillmentStatus.AWAITING_CONFIRMATION -> Indigo
         FulfillmentStatus.CONFIRMED -> EmeraldSuccess
         FulfillmentStatus.PROCESSING -> Indigo
@@ -182,7 +182,9 @@ fun OrderSummaryCardPreview() {
                 fulfillmentStatus = FulfillmentStatus.AWAITING_CONFIRMATION,
                 totalAmount = 45.50,
                 subtotalAmount = 40.00,
-                currency = "USD",
+                deliveryFeeAmount = 5.50,
+                discountAmount = 0.0,
+                currency = "JOD",
                 items = emptyList(),
                 deliveryRecipientName = "John Doe",
                 deliveryPhone = "+1234567890",

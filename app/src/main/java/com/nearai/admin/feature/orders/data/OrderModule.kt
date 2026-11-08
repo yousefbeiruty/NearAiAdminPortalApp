@@ -30,5 +30,11 @@ abstract class OrderModule {
         fun provideOrderApiService(
             retrofit: retrofit2.Retrofit
         ): OrderApiService = retrofit.create(OrderApiService::class.java)
+
+        @Provides
+        @Singleton
+        fun providePaymentApiService(
+            retrofit: retrofit2.Retrofit
+        ): PaymentApiService = retrofit.create(PaymentApiService::class.java)
     }
 }
