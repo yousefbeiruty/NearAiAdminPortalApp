@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -40,7 +41,7 @@ fun OrderDetailsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Rejection dialog
+    // Rejection dialog — must stay in route composable as it involves ViewModel state
     if (uiState.showRejectDialog) {
         RejectDialog(
             reason = uiState.rejectReason,
@@ -51,7 +52,7 @@ fun OrderDetailsScreen(
         )
     }
 
-    // Confirmation dialog
+    // Confirmation dialog — must stay in route composable as it involves ViewModel state
     uiState.showConfirmDialog?.let { actionLabel ->
         AlertDialog(
             onDismissRequest = { viewModel.dismissConfirmDialog() },
@@ -78,14 +79,54 @@ fun OrderDetailsScreen(
         )
     }
 
-    // Dynamic title from order ID
-    val title = uiState.order?.id?.let { "#${it.take(8)}" } ?: stringResource(R.string.order_details_title)
-
     // Resolve action labels for ViewModel callbacks
     val confirmLabel = stringResource(R.string.order_action_confirm)
     val processLabel = stringResource(R.string.order_action_process)
     val dispatchLabel = stringResource(R.string.order_action_dispatch)
     val deliverLabel = stringResource(R.string.order_action_deliver)
+
+    OrderDetailsScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onRetry = { viewModel.onRetry() },
+        onConfirm = { viewModel.showConfirmDialog(confirmLabel) },
+        onReject = { viewModel.showRejectDialog() },
+        onProcess = { viewModel.showConfirmDialog(processLabel) },
+        onDispatch = { viewModel.showConfirmDialog(dispatchLabel) },
+        onDeliver = { viewModel.showConfirmDialog(deliverLabel) },
+        onClearActionError = { viewModel.clearActionError() }
+    )
+}
+
+// =============================================================================
+// Stateless Content Composable — renders order details from UiState
+// =============================================================================
+
+/**
+ * Stateless order details content that renders the full screen from [OrderDetailsUiState].
+ *
+ * This composable can be used independently in tests and screenshot previews
+ * without requiring a ViewModel or Hilt dependency injection.
+ *
+ * Note: Dialogs (reject/confirm) are not included here as they require ViewModel
+ * interaction. They are rendered by the route composable [OrderDetailsScreen].
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OrderDetailsScreenContent(
+    uiState: OrderDetailsUiState,
+    onNavigateBack: () -> Unit,
+    onRetry: () -> Unit,
+    onConfirm: () -> Unit = {},
+    onReject: () -> Unit = {},
+    onProcess: () -> Unit = {},
+    onDispatch: () -> Unit = {},
+    onDeliver: () -> Unit = {},
+    onClearActionError: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    // Dynamic title from order ID
+    val title = uiState.order?.id?.let { "#${it.take(8)}" } ?: stringResource(R.string.order_details_title)
 
     Scaffold(
         topBar = {
@@ -116,7 +157,8 @@ fun OrderDetailsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding),
+                        .padding(padding)
+                        .testTag("orderDetailsLoading"),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = Indigo)
@@ -127,7 +169,8 @@ fun OrderDetailsScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
-                        .padding(32.dp),
+                        .padding(32.dp)
+                        .testTag("orderDetailsError"),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -135,7 +178,7 @@ fun OrderDetailsScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(uiState.error.orEmpty(), style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { viewModel.onRetry() }, colors = ButtonDefaults.buttonColors(containerColor = Navy)) {
+                    Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = Navy), modifier = Modifier.testTag("orderDetailsRetryButton")) {
                         Text(stringResource(R.string.order_details_retry), color = Color.White)
                     }
                 }
@@ -143,7 +186,7 @@ fun OrderDetailsScreen(
             else -> {
                 val order = uiState.order ?: return@Scaffold
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(padding),
+                    modifier = Modifier.fillMaxSize().padding(padding).testTag("orderDetailsContent"),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
@@ -179,11 +222,11 @@ fun OrderDetailsScreen(
                         OrderActionButtons(
                             order = order,
                             isActionLoading = uiState.isActionLoading,
-                            onConfirm = { viewModel.showConfirmDialog(confirmLabel) },
-                            onReject = { viewModel.showRejectDialog() },
-                            onProcess = { viewModel.showConfirmDialog(processLabel) },
-                            onDispatch = { viewModel.showConfirmDialog(dispatchLabel) },
-                            onDeliver = { viewModel.showConfirmDialog(deliverLabel) }
+                            onConfirm = onConfirm,
+                            onReject = onReject,
+                            onProcess = onProcess,
+                            onDispatch = onDispatch,
+                            onDeliver = onDeliver
                         )
                     }
 
@@ -201,7 +244,7 @@ fun OrderDetailsScreen(
                                 ) {
                                     Icon(Icons.Outlined.WarningAmber, contentDescription = null, tint = RoseError, modifier = Modifier.size(20.dp))
                                     Text(uiState.actionError.orEmpty(), style = MaterialTheme.typography.bodySmall.copy(color = RoseDark), modifier = Modifier.weight(1f))
-                                    TextButton(onClick = { viewModel.clearActionError() }) {
+                                    TextButton(onClick = onClearActionError) {
                                         Text(stringResource(R.string.order_details_dismiss), color = RoseDark, fontSize = 12.sp)
                                     }
                                 }

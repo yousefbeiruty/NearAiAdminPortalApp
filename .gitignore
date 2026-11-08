@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Android testing skills source repo (symlinked from .agents/skills/)
+.android-testing-skills-source/

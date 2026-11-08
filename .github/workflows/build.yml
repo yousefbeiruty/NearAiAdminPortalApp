@@ -50,6 +50,9 @@ jobs:
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest
 
+      - name: Validate screenshot baselines
+        run: ./gradlew validateDebugScreenshotTest
+
       - name: Run lint
         run: ./gradlew lintDebug
 

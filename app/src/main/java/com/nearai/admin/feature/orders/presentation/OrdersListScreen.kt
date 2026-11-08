@@ -11,6 +11,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,6 +23,7 @@ import com.nearai.admin.R
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderStatus
+import com.nearai.admin.feature.orders.domain.OrderSummary
 
 /**
  * Orders list screen with filters, pagination, and pull-to-refresh.
@@ -47,6 +49,41 @@ fun OrdersListScreen(
         }
     }
 
+    OrdersListScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onOrderClicked = { viewModel.onOrderClicked(it) },
+        onRetry = { viewModel.onRetry() },
+        onOrderStatusFilter = { viewModel.setFilterOrderStatus(it) },
+        onFulfillmentStatusFilter = { viewModel.setFilterFulfillmentStatus(it) },
+        onClearFilters = { viewModel.clearFilters() },
+        onLoadMore = { viewModel.loadMore() }
+    )
+}
+
+// =============================================================================
+// Stateless Content Composable — renders orders list from UiState
+// =============================================================================
+
+/**
+ * Stateless orders list content that renders the full screen from [OrdersListUiState].
+ *
+ * This composable can be used independently in tests and screenshot previews
+ * without requiring a ViewModel or Hilt dependency injection.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OrdersListScreenContent(
+    uiState: OrdersListUiState,
+    onNavigateBack: () -> Unit,
+    onOrderClicked: (String) -> Unit,
+    onRetry: () -> Unit,
+    onOrderStatusFilter: (OrderStatus?) -> Unit,
+    onFulfillmentStatusFilter: (FulfillmentStatus?) -> Unit,
+    onClearFilters: () -> Unit,
+    onLoadMore: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val listState = rememberLazyListState()
 
     // Auto-load more when user scrolls near the end
@@ -54,7 +91,7 @@ fun OrdersListScreen(
         if (uiState.hasMore && !uiState.isLoadingMore) {
             val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             if (lastVisible >= uiState.orders.size - 3) {
-                viewModel.loadMore()
+                onLoadMore()
             }
         }
     }
@@ -76,7 +113,7 @@ fun OrdersListScreen(
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.common_back),
                             tint = Navy
                         )
                     }
@@ -92,7 +129,8 @@ fun OrdersListScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding),
+                        .padding(padding)
+                        .testTag("ordersLoading"),
                     contentAlignment = androidx.compose.ui.Alignment.Center
                 ) {
                     CircularProgressIndicator(color = Indigo)
@@ -103,7 +141,8 @@ fun OrdersListScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
-                        .padding(32.dp),
+                        .padding(32.dp)
+                        .testTag("ordersError"),
                     horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -123,8 +162,9 @@ fun OrdersListScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
-                        onClick = { viewModel.onRetry() },
-                        colors = ButtonDefaults.buttonColors(containerColor = Navy)
+                        onClick = onRetry,
+                        colors = ButtonDefaults.buttonColors(containerColor = Navy),
+                        modifier = Modifier.testTag("ordersRetryButton")
                     ) {
                         Text(stringResource(R.string.common_retry), color = Color.White)
                     }
@@ -135,7 +175,8 @@ fun OrdersListScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
-                        .padding(32.dp),
+                        .padding(32.dp)
+                        .testTag("ordersEmpty"),
                     horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -155,7 +196,7 @@ fun OrdersListScreen(
                     )
                     if (uiState.filterOrderStatus != null || uiState.filterFulfillmentStatus != null) {
                         Spacer(modifier = Modifier.height(16.dp))
-                        TextButton(onClick = { viewModel.clearFilters() }) {
+                        TextButton(onClick = onClearFilters) {
                             Text(stringResource(R.string.orders_clear_filters), color = Indigo)
                         }
                     }
@@ -166,13 +207,14 @@ fun OrdersListScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
+                        .testTag("ordersContent")
                 ) {
                     // Filter chips
                     FilterSection(
                         uiState = uiState,
-                        onOrderStatusFilter = { viewModel.setFilterOrderStatus(it) },
-                        onFulfillmentStatusFilter = { viewModel.setFilterFulfillmentStatus(it) },
-                        onClearFilters = { viewModel.clearFilters() },
+                        onOrderStatusFilter = onOrderStatusFilter,
+                        onFulfillmentStatusFilter = onFulfillmentStatusFilter,
+                        onClearFilters = onClearFilters,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
 
@@ -211,7 +253,8 @@ fun OrdersListScreen(
                         items(uiState.orders, key = { it.id }) { order ->
                             OrderSummaryCard(
                                 order = order,
-                                onClick = { viewModel.onOrderClicked(order.id) }
+                                onClick = { onOrderClicked(order.id) },
+                                modifier = Modifier.testTag("orderCard_${order.id}")
                             )
                         }
                         // Loading more indicator

@@ -34,13 +34,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nearai.admin.R
 import com.nearai.admin.core.designsystem.theme.*
 
 // =============================================================================
-// Overview Dashboard Composable
+// Route Composable — connects ViewModel to stateless content
 // =============================================================================
 
 /**
@@ -61,6 +62,36 @@ fun DashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    DashboardScreenContent(
+        uiState = uiState,
+        onRetry = { viewModel.onRetry() },
+        onRefresh = { viewModel.onRefresh() },
+        onNavigateToAuditLogs = onNavigateToAuditLogs,
+        onNavigateToSystemHealth = onNavigateToSystemHealth,
+        modifier = modifier
+    )
+}
+
+// =============================================================================
+// Stateless Content Composable — renders dashboard from UiState
+// =============================================================================
+
+/**
+ * Stateless dashboard content that renders the full screen from [DashboardUiState].
+ *
+ * This composable can be used independently in tests and screenshot previews
+ * without requiring a ViewModel or Hilt dependency injection.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DashboardScreenContent(
+    uiState: DashboardUiState,
+    onRetry: () -> Unit,
+    onRefresh: () -> Unit,
+    onNavigateToAuditLogs: () -> Unit = {},
+    onNavigateToSystemHealth: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     val hasData = uiState.totalUsers > 0 ||
         uiState.totalProducts > 0 ||
         uiState.recentOrders.isNotEmpty() ||
@@ -170,7 +201,8 @@ fun DashboardScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    .testTag("dashboardLoading"),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -194,7 +226,8 @@ fun DashboardScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    .testTag("dashboardError"),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -223,9 +256,10 @@ fun DashboardScreen(
                         )
                     )
                     Button(
-                        onClick = { viewModel.onRetry() },
+                        onClick = onRetry,
                         colors = ButtonDefaults.buttonColors(containerColor = Navy),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.testTag("dashboardRetryButton")
                     ) {
                         Text(
                             text = stringResource(R.string.common_retry),
@@ -240,10 +274,11 @@ fun DashboardScreen(
             DashboardContent(
                 uiState = uiState,
                 onNavigateToSystemHealth = onNavigateToSystemHealth,
-                onRefresh = { viewModel.onRefresh() },
+                onRefresh = onRefresh,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
+                    .testTag("dashboardContent")
             )
         }
     }
