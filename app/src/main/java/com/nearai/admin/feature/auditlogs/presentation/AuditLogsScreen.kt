@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -166,7 +168,8 @@ fun AuditLogsScreen(
                     }
                 }
             )
-        }
+        },
+        containerColor = BackgroundLight
     ) { paddingValues ->
         when {
             uiState.isLoading && uiState.logs.isEmpty() -> {
@@ -269,18 +272,20 @@ private fun AuditLogsFilterBar(
     Column {
         // Action filter chips
         if (actions.isNotEmpty()) {
-            Row(
+            LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(
-                    selected = uiState.filterAction == null,
-                    onClick = { onFilterAction(null) },
-                    label = { Text("All") }
-                )
-                actions.take(5).forEach { action ->
+                item {
+                    FilterChip(
+                        selected = uiState.filterAction == null,
+                        onClick = { onFilterAction(null) },
+                        label = { Text("All") }
+                    )
+                }
+                items(actions) { action ->
                     FilterChip(
                         selected = uiState.filterAction == action,
                         onClick = { onFilterAction(action) },
@@ -298,18 +303,20 @@ private fun AuditLogsFilterBar(
 
         // Resource type filter chips
         if (resourceTypes.isNotEmpty()) {
-            Row(
+            LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(
-                    selected = uiState.filterResourceType == null,
-                    onClick = { onFilterResourceType(null) },
-                    label = { Text("All Types") }
-                )
-                resourceTypes.forEach { type ->
+                item {
+                    FilterChip(
+                        selected = uiState.filterResourceType == null,
+                        onClick = { onFilterResourceType(null) },
+                        label = { Text("All Types") }
+                    )
+                }
+                items(resourceTypes) { type ->
                     FilterChip(
                         selected = uiState.filterResourceType == type,
                         onClick = { onFilterResourceType(type) },
@@ -334,9 +341,12 @@ private fun AuditLogCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp)
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
         onClick = onToggleExpand
     ) {
         Column(

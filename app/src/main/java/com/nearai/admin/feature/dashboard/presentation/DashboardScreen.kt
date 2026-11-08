@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -507,8 +508,9 @@ private fun MetricCard(
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-        modifier = modifier
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle.copy(alpha = 0.5f)),
+        modifier = modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -560,8 +562,11 @@ private fun RevenueSection(revenues: List<RevenueItem>) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-        modifier = Modifier.fillMaxWidth()
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle.copy(alpha = 0.5f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -621,8 +626,11 @@ private fun RecentOrderCard(order: RecentOrderItem) {
     Card(
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-        modifier = Modifier.fillMaxWidth()
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle.copy(alpha = 0.5f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(14.dp))
     ) {
         Row(
             modifier = Modifier.padding(14.dp),
@@ -699,8 +707,11 @@ private fun RecentRegistrationCard(registration: RecentRegistrationItem) {
     Card(
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-        modifier = Modifier.fillMaxWidth()
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle.copy(alpha = 0.5f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(14.dp))
     ) {
         Row(
             modifier = Modifier.padding(14.dp),
@@ -755,8 +766,11 @@ private fun LowStockAlertCard(alert: LowStockAlertItem) {
     Card(
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-        modifier = Modifier.fillMaxWidth()
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle.copy(alpha = 0.5f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(14.dp))
     ) {
         Row(
             modifier = Modifier.padding(14.dp),

@@ -130,7 +130,8 @@ fun ReviewQueueScreenContent(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
-        }
+        },
+        containerColor = BackgroundLight
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when {
@@ -318,12 +319,14 @@ private fun ReviewQueueOrderCard(
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = if (order.isMandatory) {
             androidx.compose.foundation.BorderStroke(2.dp, RoseError)
         } else {
-            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         },
         modifier = Modifier
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(12.dp))
             .fillMaxWidth()
             .clickable(onClick = onClick)
     ) {

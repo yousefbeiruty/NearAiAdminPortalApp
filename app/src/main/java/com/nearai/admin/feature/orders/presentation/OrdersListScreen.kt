@@ -122,7 +122,8 @@ fun OrdersListScreenContent(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        }
+        },
+        containerColor = BackgroundLight
     ) { padding ->
         when {
             uiState.isLoading && uiState.orders.isEmpty() -> {

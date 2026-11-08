@@ -215,7 +215,8 @@ fun OrderDetailsScreenContent(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
-        }
+        },
+        containerColor = BackgroundLight
     ) { padding ->
         when {
             uiState.isLoading && uiState.order == null -> {
@@ -378,7 +379,13 @@ fun OrderDetailsScreenContent(
  */
 @Composable
 private fun OrderInfoCard(order: OrderDetails) {
-    Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.order_details_order_info), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
@@ -409,7 +416,13 @@ private fun OrderInfoCard(order: OrderDetails) {
  */
 @Composable
 private fun CustomerDeliveryCard(order: OrderDetails) {
-    Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.order_details_customer_delivery), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
@@ -441,7 +454,13 @@ private fun CustomerDeliveryCard(order: OrderDetails) {
  */
 @Composable
 private fun OrderItemsCard(order: OrderDetails) {
-    Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.order_details_items_count, order.items.size), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
@@ -466,7 +485,13 @@ private fun OrderItemsCard(order: OrderDetails) {
  */
 @Composable
 private fun PaymentSummaryCard(order: OrderDetails) {
-    Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.order_details_payment_summary), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
@@ -497,7 +522,13 @@ private fun PaymentSummaryCard(order: OrderDetails) {
  */
 @Composable
 private fun StatusHistoryCard(entries: List<StatusHistoryEntry>) {
-    Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.order_details_status_history), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
@@ -558,8 +589,9 @@ private fun ApprovalInfoCard(
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -649,8 +681,9 @@ private fun ContextualActionCard(
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -1256,8 +1289,9 @@ private fun PaymentStatusCard(
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
