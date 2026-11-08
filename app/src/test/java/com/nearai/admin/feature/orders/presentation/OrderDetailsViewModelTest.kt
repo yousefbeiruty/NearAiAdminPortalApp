@@ -3,6 +3,8 @@ package com.nearai.admin.feature.orders.presentation
 import androidx.lifecycle.SavedStateHandle
 import com.nearai.admin.core.common.AppError
 import com.nearai.admin.core.common.Result
+import com.nearai.admin.feature.orders.domain.ApprovalDecisionSnapshot
+import com.nearai.admin.feature.orders.domain.ApprovalStatus
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderDetails
 import com.nearai.admin.feature.orders.domain.OrderItem
@@ -284,6 +286,148 @@ class OrderDetailsViewModelTest {
     }
 
     // =============================================================================
+    // Approval State Tests
+    // =============================================================================
+
+    @Test
+    fun `auto-approved order syncs approval status`() = runTest {
+        coEvery { orderRepository.getOrderDetails("order-123") } returns Result.Success(
+            orderDetails(
+                approvalStatus = ApprovalStatus.AUTO_APPROVED,
+                approvalDecision = ApprovalDecisionSnapshot(
+                    decision = ApprovalStatus.AUTO_APPROVED,
+                    evaluatedAmount = 120.0,
+                    currency = "JOD",
+                    decisionReason = "Within auto-approval limit",
+                    policyVersion = 1,
+                    evaluatedAt = "2024-01-15T10:30:05Z",
+                    approvedBy = null,
+                    approvedAt = null
+                )
+            )
+        )
+        coEvery { orderRepository.getStatusHistory("order-123") } returns Result.Success(statusHistory())
+
+        val viewModel = createViewModel()
+
+        assertEquals(ApprovalStatus.AUTO_APPROVED, viewModel.uiState.value.approvalStatus)
+        assertNotNull(viewModel.uiState.value.approvalDecision)
+        assertEquals(120.0, viewModel.uiState.value.approvalDecision!!.evaluatedAmount, 0.001)
+    }
+
+    @Test
+    fun `manually approved order syncs approval status`() = runTest {
+        coEvery { orderRepository.getOrderDetails("order-123") } returns Result.Success(
+            orderDetails(
+                approvalStatus = ApprovalStatus.MANUALLY_APPROVED,
+                fulfillmentStatus = FulfillmentStatus.CONFIRMED,
+                approvalDecision = ApprovalDecisionSnapshot(
+                    decision = ApprovalStatus.MANUALLY_APPROVED,
+                    evaluatedAmount = 350.0,
+                    currency = "JOD",
+                    decisionReason = "Manual approval",
+                    policyVersion = 1,
+                    evaluatedAt = "2024-01-15T10:30:05Z",
+                    approvedBy = "admin-1",
+                    approvedAt = "2024-01-15T11:00:00Z"
+                )
+            )
+        )
+        coEvery { orderRepository.getStatusHistory("order-123") } returns Result.Success(statusHistory())
+
+        val viewModel = createViewModel()
+
+        assertEquals(ApprovalStatus.MANUALLY_APPROVED, viewModel.uiState.value.approvalStatus)
+        assertEquals("admin-1", viewModel.uiState.value.approvalDecision!!.approvedBy)
+    }
+
+    @Test
+    fun `pre-automation order has null approval status`() = runTest {
+        coEvery { orderRepository.getOrderDetails("order-123") } returns Result.Success(
+            orderDetails(
+                approvalStatus = null,
+                approvalDecision = null
+            )
+        )
+        coEvery { orderRepository.getStatusHistory("order-123") } returns Result.Success(statusHistory())
+
+        val viewModel = createViewModel()
+
+        assertNull(viewModel.uiState.value.approvalStatus)
+        assertNull(viewModel.uiState.value.approvalDecision)
+    }
+
+    @Test
+    fun `approveForReview success reloads order`() = runTest {
+        coEvery { orderRepository.getOrderDetails("order-123") } returns Result.Success(orderDetails())
+        coEvery { orderRepository.getStatusHistory("order-123") } returns Result.Success(statusHistory())
+        coEvery { orderRepository.approveOrder("order-123") } returns Result.Success(Unit)
+
+        val viewModel = createViewModel()
+        viewModel.approveForReview()
+
+        coVerify { orderRepository.approveOrder("order-123") }
+        assertFalse(viewModel.uiState.value.isActionLoading)
+        assertNull(viewModel.uiState.value.actionError)
+    }
+
+    @Test
+    fun `approveForReview failure shows error`() = runTest {
+        coEvery { orderRepository.getOrderDetails("order-123") } returns Result.Success(orderDetails())
+        coEvery { orderRepository.getStatusHistory("order-123") } returns Result.Success(statusHistory())
+        coEvery { orderRepository.approveOrder("order-123") } returns Result.Error(
+            AppError.ServerError("Reservation expired", 422)
+        )
+
+        val viewModel = createViewModel()
+        viewModel.approveForReview()
+
+        assertEquals("Reservation expired", viewModel.uiState.value.actionError)
+        assertFalse(viewModel.uiState.value.isActionLoading)
+    }
+
+    @Test
+    fun `rejectForApproval with reason succeeds`() = runTest {
+        coEvery { orderRepository.getOrderDetails("order-123") } returns Result.Success(orderDetails())
+        coEvery { orderRepository.getStatusHistory("order-123") } returns Result.Success(statusHistory())
+        coEvery { orderRepository.rejectForApproval("order-123", "Too risky") } returns Result.Success(Unit)
+
+        val viewModel = createViewModel()
+        viewModel.onRejectApprovalReasonChanged("Too risky")
+        viewModel.rejectForApproval()
+
+        coVerify { orderRepository.rejectForApproval("order-123", "Too risky") }
+        assertFalse(viewModel.uiState.value.isActionLoading)
+        assertNull(viewModel.uiState.value.actionError)
+    }
+
+    @Test
+    fun `rejectForApproval with empty reason shows validation error`() = runTest {
+        coEvery { orderRepository.getOrderDetails("order-123") } returns Result.Success(orderDetails())
+        coEvery { orderRepository.getStatusHistory("order-123") } returns Result.Success(statusHistory())
+
+        val viewModel = createViewModel()
+        viewModel.rejectForApproval()
+
+        assertEquals("Rejection reason is required", viewModel.uiState.value.actionError)
+        coVerify(exactly = 0) { orderRepository.rejectForApproval(any(), any()) }
+    }
+
+    @Test
+    fun `approveForReview prevents duplicate submission`() = runTest {
+        coEvery { orderRepository.getOrderDetails("order-123") } returns Result.Success(orderDetails())
+        coEvery { orderRepository.getStatusHistory("order-123") } returns Result.Success(statusHistory())
+        coEvery { orderRepository.approveOrder("order-123") } returns Result.Error(
+            AppError.ServerError("Error", 500)
+        )
+
+        val viewModel = createViewModel()
+        viewModel.approveForReview()
+
+        coVerify(exactly = 1) { orderRepository.approveOrder("order-123") }
+    }
+
+    // =============================================================================
     // Helpers
     // =============================================================================
 
@@ -292,11 +436,15 @@ class OrderDetailsViewModelTest {
         savedStateHandle = SavedStateHandle(mapOf("orderId" to "order-123"))
     )
 
-    private fun orderDetails() = OrderDetails(
+    private fun orderDetails(
+        approvalStatus: ApprovalStatus? = null,
+        approvalDecision: ApprovalDecisionSnapshot? = null,
+        fulfillmentStatus: FulfillmentStatus = FulfillmentStatus.AWAITING_CONFIRMATION
+    ) = OrderDetails(
         id = "order-123",
         createdAt = "2024-01-15T10:30:00Z",
         status = OrderStatus.PENDING,
-        fulfillmentStatus = FulfillmentStatus.AWAITING_CONFIRMATION,
+        fulfillmentStatus = fulfillmentStatus,
         items = listOf(
             OrderItem("var-1", "Widget A", "W-001", 3, 29.99, "JOD", 89.97),
             OrderItem("var-2", "Widget B", "W-002", 1, 15.00, "JOD", 15.00)
@@ -313,7 +461,9 @@ class OrderDetailsViewModelTest {
         deliveryStreet = "123 Main St",
         deliveryBuildingNumber = "4A",
         deliveryApartment = "Apt 5",
-        deliveryInstructions = "Leave at door"
+        deliveryInstructions = "Leave at door",
+        approvalStatus = approvalStatus,
+        approvalDecision = approvalDecision
     )
 
     private fun statusHistory() = listOf(

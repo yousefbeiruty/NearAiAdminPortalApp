@@ -153,7 +153,9 @@ data class OrderSummaryDto(
     @SerialName("delivery_street") val deliveryStreet: String? = null,
     @SerialName("delivery_building_number") val deliveryBuildingNumber: String? = null,
     @SerialName("delivery_apartment") val deliveryApartment: String? = null,
-    @SerialName("delivery_instructions") val deliveryInstructions: String? = null
+    @SerialName("delivery_instructions") val deliveryInstructions: String? = null,
+    @SerialName("approval_status") val approvalStatus: String? = null,
+    @SerialName("approval_decision") val approvalDecision: ApprovalDecisionDto? = null
 )
 
 /**
@@ -181,7 +183,9 @@ data class OrderDetailsResponse(
     @SerialName("delivery_street") val deliveryStreet: String? = null,
     @SerialName("delivery_building_number") val deliveryBuildingNumber: String? = null,
     @SerialName("delivery_apartment") val deliveryApartment: String? = null,
-    @SerialName("delivery_instructions") val deliveryInstructions: String? = null
+    @SerialName("delivery_instructions") val deliveryInstructions: String? = null,
+    @SerialName("approval_status") val approvalStatus: String? = null,
+    @SerialName("approval_decision") val approvalDecision: ApprovalDecisionDto? = null
 )
 
 /**

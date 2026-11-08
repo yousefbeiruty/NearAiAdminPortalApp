@@ -1,5 +1,7 @@
 package com.nearai.admin.feature.orders.data
 
+import com.nearai.admin.feature.orders.domain.ApprovalDecisionSnapshot
+import com.nearai.admin.feature.orders.domain.ApprovalStatus
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderStatus
 import org.junit.Assert.*
@@ -349,5 +351,197 @@ class OrderMapperTest {
         assertTrue(paginated.orders.isEmpty())
         assertEquals(0, paginated.totalItems)
         assertEquals(0, paginated.totalPages)
+    }
+
+    // =============================================================================
+    // ApprovalStatus enum parsing
+    // =============================================================================
+
+    @Test
+    fun `ApprovalStatus fromString handles snake_case`() {
+        assertEquals(ApprovalStatus.AUTO_APPROVED, ApprovalStatus.fromString("auto_approved"))
+        assertEquals(ApprovalStatus.AWAITING_STANDARD_REVIEW, ApprovalStatus.fromString("awaiting_standard_review"))
+        assertEquals(ApprovalStatus.AWAITING_MANDATORY_APPROVAL, ApprovalStatus.fromString("awaiting_mandatory_approval"))
+        assertEquals(ApprovalStatus.MANUALLY_APPROVED, ApprovalStatus.fromString("manually_approved"))
+        assertEquals(ApprovalStatus.REJECTED, ApprovalStatus.fromString("rejected"))
+    }
+
+    @Test
+    fun `ApprovalStatus fromString handles uppercase`() {
+        assertEquals(ApprovalStatus.AUTO_APPROVED, ApprovalStatus.fromString("AUTO_APPROVED"))
+        assertEquals(ApprovalStatus.MANUALLY_APPROVED, ApprovalStatus.fromString("MANUALLY_APPROVED"))
+    }
+
+    @Test
+    fun `ApprovalStatus fromString falls back for unknown`() {
+        assertEquals(ApprovalStatus.AWAITING_STANDARD_REVIEW, ApprovalStatus.fromString("unknown_approval"))
+    }
+
+    // =============================================================================
+    // Approval field mapping
+    // =============================================================================
+
+    @Test
+    fun `mapOrderDetails maps approval status and decision`() {
+        val dto = OrderDetailsResponse(
+            id = "abc-123",
+            createdAt = "2024-01-15T10:30:00Z",
+            status = "pending",
+            fulfillmentStatus = "confirmed",
+            items = emptyList(),
+            subtotalAmount = 120.0,
+            deliveryFeeAmount = 0.0,
+            discountAmount = 0.0,
+            totalAmount = 120.0,
+            currency = "JOD",
+            deliveryRecipientName = "John Doe",
+            deliveryPhone = "+1234567890",
+            deliveryCity = null,
+            deliveryArea = null,
+            deliveryStreet = null,
+            deliveryBuildingNumber = null,
+            deliveryApartment = null,
+            deliveryInstructions = null,
+            approvalStatus = "auto_approved",
+            approvalDecision = ApprovalDecisionDto(
+                decision = "auto_approved",
+                evaluatedAmount = 120.0,
+                currency = "JOD",
+                decisionReason = "Order total within auto-approval limit",
+                policyVersion = 1,
+                evaluatedAt = "2024-01-15T10:30:05Z",
+                approvedBy = null,
+                approvedAt = null
+            )
+        )
+
+        val details = OrderMapper.mapOrderDetails(dto)
+
+        assertEquals(ApprovalStatus.AUTO_APPROVED, details.approvalStatus)
+        assertNotNull(details.approvalDecision)
+        assertEquals(ApprovalStatus.AUTO_APPROVED, details.approvalDecision!!.decision)
+        assertEquals(120.0, details.approvalDecision.evaluatedAmount, 0.001)
+        assertEquals("JOD", details.approvalDecision.currency)
+        assertEquals("Order total within auto-approval limit", details.approvalDecision.decisionReason)
+        assertEquals(1, details.approvalDecision.policyVersion)
+    }
+
+    @Test
+    fun `mapOrderDetails handles null approval fields for pre-automation orders`() {
+        val dto = OrderDetailsResponse(
+            id = "abc-123",
+            createdAt = "2024-01-15T10:30:00Z",
+            status = "pending",
+            fulfillmentStatus = "confirmed",
+            items = emptyList(),
+            subtotalAmount = 120.0,
+            deliveryFeeAmount = 0.0,
+            discountAmount = 0.0,
+            totalAmount = 120.0,
+            currency = "JOD",
+            deliveryRecipientName = "John Doe",
+            deliveryPhone = "+1234567890",
+            deliveryCity = null,
+            deliveryArea = null,
+            deliveryStreet = null,
+            deliveryBuildingNumber = null,
+            deliveryApartment = null,
+            deliveryInstructions = null,
+            approvalStatus = null,
+            approvalDecision = null
+        )
+
+        val details = OrderMapper.mapOrderDetails(dto)
+
+        assertNull(details.approvalStatus)
+        assertNull(details.approvalDecision)
+    }
+
+    @Test
+    fun `mapOrderSummary maps approval status and decision`() {
+        val dto = OrderSummaryDto(
+            id = "abc-123",
+            createdAt = "2024-01-15T10:30:00Z",
+            status = "pending",
+            fulfillmentStatus = "confirmed",
+            totalAmount = 120.0,
+            subtotalAmount = 120.0,
+            deliveryFeeAmount = 0.0,
+            discountAmount = 0.0,
+            currency = "JOD",
+            items = emptyList(),
+            deliveryRecipientName = "John Doe",
+            deliveryPhone = "+1234567890",
+            deliveryCity = null,
+            deliveryArea = null,
+            deliveryStreet = null,
+            deliveryBuildingNumber = null,
+            deliveryApartment = null,
+            deliveryInstructions = null,
+            approvalStatus = "manually_approved",
+            approvalDecision = ApprovalDecisionDto(
+                decision = "manually_approved",
+                evaluatedAmount = 350.0,
+                currency = "JOD",
+                decisionReason = "Manual approval by admin",
+                policyVersion = 1,
+                evaluatedAt = "2024-01-15T10:30:05Z",
+                approvedBy = "admin-1",
+                approvedAt = "2024-01-15T11:00:00Z"
+            )
+        )
+
+        val summary = OrderMapper.mapOrderSummary(dto)
+
+        assertEquals(ApprovalStatus.MANUALLY_APPROVED, summary.approvalStatus)
+        assertNotNull(summary.approvalDecision)
+        assertEquals(ApprovalStatus.MANUALLY_APPROVED, summary.approvalDecision!!.decision)
+        assertEquals("admin-1", summary.approvalDecision.approvedBy)
+        assertEquals("2024-01-15T11:00:00Z", summary.approvalDecision.approvedAt)
+    }
+
+    @Test
+    fun `mapApprovalDecision maps all fields`() {
+        val dto = ApprovalDecisionDto(
+            decision = "awaiting_mandatory_approval",
+            evaluatedAmount = 750.0,
+            currency = "JOD",
+            decisionReason = "Order exceeds mandatory review threshold",
+            policyVersion = 2,
+            evaluatedAt = "2024-01-15T10:30:05Z",
+            approvedBy = null,
+            approvedAt = null
+        )
+
+        val snapshot = OrderMapper.mapApprovalDecision(dto)
+
+        assertEquals(ApprovalStatus.AWAITING_MANDATORY_APPROVAL, snapshot.decision)
+        assertEquals(750.0, snapshot.evaluatedAmount, 0.001)
+        assertEquals("JOD", snapshot.currency)
+        assertEquals("Order exceeds mandatory review threshold", snapshot.decisionReason)
+        assertEquals(2, snapshot.policyVersion)
+        assertEquals("2024-01-15T10:30:05Z", snapshot.evaluatedAt)
+        assertNull(snapshot.approvedBy)
+        assertNull(snapshot.approvedAt)
+    }
+
+    @Test
+    fun `mapApprovalDecision handles nullable fields`() {
+        val dto = ApprovalDecisionDto(
+            decision = "auto_approved",
+            evaluatedAmount = 50.0,
+            currency = "JOD",
+            decisionReason = null,
+            policyVersion = null,
+            evaluatedAt = "2024-01-15T10:30:05Z",
+            approvedBy = null,
+            approvedAt = null
+        )
+
+        val snapshot = OrderMapper.mapApprovalDecision(dto)
+
+        assertEquals(ApprovalStatus.AUTO_APPROVED, snapshot.decision)
+        assertNull(snapshot.decisionReason)
+        assertNull(snapshot.policyVersion)
     }
 }

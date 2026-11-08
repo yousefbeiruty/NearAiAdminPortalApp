@@ -15,11 +15,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -27,6 +33,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nearai.admin.R
+import com.nearai.admin.core.designsystem.components.NearAiAlertDialog
+import com.nearai.admin.core.designsystem.components.NearAiAlertType
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.orders.domain.*
 
@@ -71,94 +79,58 @@ fun OrderDetailsScreen(
     }
 
     // Collect cash confirmation dialog
-    if (uiState.showCollectCashDialog) {
-        val payment = uiState.paymentInfo
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissCollectCashDialog() },
-            title = { Text(stringResource(R.string.order_collect_cash_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(stringResource(R.string.order_collect_cash_description))
-                    if (payment != null) {
-                        Text(
-                            text = stringResource(R.string.order_currency_format, payment.currency, payment.amount),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy)
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.collectCash() },
-                    enabled = !uiState.isCollectingCash,
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess)
-                ) {
-                    if (uiState.isCollectingCash) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                    } else {
-                        Text(stringResource(R.string.order_collect_cash_confirm), color = Color.White)
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.dismissCollectCashDialog() }) {
-                    Text(stringResource(R.string.order_details_cancel), color = TextSecondaryLight)
-                }
+    NearAiAlertDialog(
+        isVisible = uiState.showCollectCashDialog,
+        title = stringResource(R.string.order_collect_cash_title),
+        message = buildString {
+            append(stringResource(R.string.order_collect_cash_description))
+            uiState.paymentInfo?.let { payment ->
+                append("\n")
+                append(stringResource(R.string.order_currency_format, payment.currency, payment.amount))
             }
-        )
-    }
+        },
+        confirmText = stringResource(R.string.order_collect_cash_confirm),
+        dismissText = stringResource(R.string.order_details_cancel),
+        type = NearAiAlertType.SuccessType,
+        onConfirm = {
+            viewModel.dismissCollectCashDialog()
+            viewModel.collectCash()
+        },
+        onDismiss = { viewModel.dismissCollectCashDialog() },
+        isLoading = uiState.isCollectingCash,
+    )
 
     // Cancel order confirmation dialog
-    if (uiState.showCancelDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissCancelDialog() },
-            title = { Text(stringResource(R.string.order_cancel_title)) },
-            text = { Text(stringResource(R.string.order_cancel_description)) },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.cancelOrder() },
-                    enabled = !uiState.isActionLoading,
-                    colors = ButtonDefaults.buttonColors(containerColor = RoseError)
-                ) {
-                    if (uiState.isActionLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                    } else {
-                        Text(stringResource(R.string.order_cancel_confirm), color = Color.White)
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.dismissCancelDialog() }) {
-                    Text(stringResource(R.string.order_details_cancel), color = TextSecondaryLight)
-                }
-            }
-        )
-    }
+    NearAiAlertDialog(
+        isVisible = uiState.showCancelDialog,
+        title = stringResource(R.string.order_cancel_title),
+        message = stringResource(R.string.order_cancel_description),
+        confirmText = stringResource(R.string.order_cancel_confirm),
+        dismissText = stringResource(R.string.order_details_cancel),
+        type = NearAiAlertType.WarningType,
+        onConfirm = {
+            viewModel.dismissCancelDialog()
+            viewModel.cancelOrder()
+        },
+        onDismiss = { viewModel.dismissCancelDialog() },
+        isLoading = uiState.isActionLoading,
+    )
 
     // Confirmation dialog — must stay in route composable as it involves ViewModel state
     uiState.showConfirmDialog?.let { actionLabel ->
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissConfirmDialog() },
-            title = { Text(stringResource(R.string.order_details_confirm_title, actionLabel)) },
-            text = { Text(stringResource(R.string.order_details_confirm_message, actionLabel.lowercase())) },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.executeConfirmedAction() },
-                    enabled = !uiState.isActionLoading,
-                    colors = ButtonDefaults.buttonColors(containerColor = Navy)
-                ) {
-                    if (uiState.isActionLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                    } else {
-                        Text(stringResource(R.string.order_details_confirm_yes, actionLabel), color = Color.White)
-                    }
-                }
+        NearAiAlertDialog(
+            isVisible = true,
+            title = stringResource(R.string.order_details_confirm_title, actionLabel),
+            message = stringResource(R.string.order_details_confirm_message, actionLabel.lowercase()),
+            confirmText = stringResource(R.string.order_details_confirm_yes, actionLabel),
+            dismissText = stringResource(R.string.order_details_cancel),
+            type = NearAiAlertType.NoneType,
+            onConfirm = {
+                viewModel.dismissConfirmDialog()
+                viewModel.executeConfirmedAction()
             },
-            dismissButton = {
-                TextButton(onClick = { viewModel.dismissConfirmDialog() }) {
-                    Text(stringResource(R.string.order_details_cancel), color = TextSecondaryLight)
-                }
-            }
+            onDismiss = { viewModel.dismissConfirmDialog() },
+            isLoading = uiState.isActionLoading,
         )
     }
 
@@ -726,10 +698,29 @@ private fun ContextualActionCard(
                     )
                 }
 
-                // 4. Order is approved (auto or manual) — show fulfillment actions
-                //    Awaiting confirmation from backend
+                // 4. Auto-approved or manually approved order — skip confirmation, go straight to preparing
+                //    The backend already transitions fulfillment to CONFIRMED for AUTO_APPROVED orders.
+                //    For MANUALLY_APPROVED orders, the backend also confirms fulfillment.
+                //    Show "Start Preparing" regardless of whether fulfillment is CONFIRMED or still
+                //    AWAITING_CONFIRMATION (in case of timing lag).
+                (approvalStatus == ApprovalStatus.AUTO_APPROVED ||
+                 approvalStatus == ApprovalStatus.MANUALLY_APPROVED) &&
+                order.status == OrderStatus.PENDING -> {
+                    ActionButton(
+                        label = stringResource(R.string.order_action_start_preparing),
+                        icon = Icons.Outlined.Build,
+                        onClick = onProcess,
+                        isLoading = isActionLoading
+                    )
+                }
+
+                // 5. Order awaiting confirmation (not yet approved) — show Confirm Order
+                //    This branch only reaches orders that are NOT auto/manual approved, so they
+                //    genuinely need manual confirmation.
                 order.status == OrderStatus.PENDING &&
-                        order.fulfillmentStatus == FulfillmentStatus.AWAITING_CONFIRMATION -> {
+                        order.fulfillmentStatus == FulfillmentStatus.AWAITING_CONFIRMATION &&
+                        approvalStatus != ApprovalStatus.AUTO_APPROVED &&
+                        approvalStatus != ApprovalStatus.MANUALLY_APPROVED -> {
                     ActionButton(
                         label = stringResource(R.string.order_action_confirm_order),
                         icon = Icons.Outlined.CheckCircle,
@@ -738,7 +729,8 @@ private fun ContextualActionCard(
                     )
                 }
 
-                // 5. Order confirmed, ready to process (start preparing)
+                // 6. Order confirmed, ready to process (start preparing)
+                //    Catches pre-automation orders with CONFIRMED fulfillment and no approval data.
                 order.status == OrderStatus.PENDING &&
                         order.fulfillmentStatus == FulfillmentStatus.CONFIRMED -> {
                     ActionButton(
@@ -749,7 +741,7 @@ private fun ContextualActionCard(
                     )
                 }
 
-                // 6. Order is being processed — mark ready for delivery
+                // 7. Order is being processed — mark ready for delivery
                 order.fulfillmentStatus == FulfillmentStatus.PROCESSING -> {
                     ActionButton(
                         label = stringResource(R.string.order_action_mark_ready),
@@ -759,7 +751,7 @@ private fun ContextualActionCard(
                     )
                 }
 
-                // 7. Out for delivery — confirm delivery
+                // 8. Out for delivery — confirm delivery
                 order.fulfillmentStatus == FulfillmentStatus.OUT_FOR_DELIVERY -> {
                     ActionButton(
                         label = stringResource(R.string.order_action_confirm_delivery),
@@ -769,7 +761,7 @@ private fun ContextualActionCard(
                     )
                 }
 
-                // 8. Delivered with COD payment pending — collect cash
+                // 9. Delivered with COD payment pending — collect cash
                 order.fulfillmentStatus == FulfillmentStatus.DELIVERED &&
                         paymentInfo?.status == "pending" &&
                         paymentInfo.paymentMethod == "cash_on_delivery" -> {
@@ -782,7 +774,7 @@ private fun ContextualActionCard(
                     )
                 }
 
-                // 9. Payment already collected — show confirmation info
+                // 10. Payment already collected — show confirmation info
                 paymentInfo?.status == "collected" -> {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -883,6 +875,7 @@ private fun ActionButton(
 
 /**
  * Rejection dialog with mandatory reason input (for order rejection).
+ * Uses NearAiAlertDialog styling with a text input field.
  */
 @Composable
 private fun RejectDialog(
@@ -892,12 +885,52 @@ private fun RejectDialog(
     onConfirm: () -> Unit,
     isLoading: Boolean
 ) {
-    AlertDialog(
+    androidx.compose.ui.window.Dialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.order_reject_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.order_reject_description), style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .wrapContentHeight()
+                .clip(RoundedCornerShape(24.dp))
+                .shadow(
+                    elevation = 16.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.08f),
+                    spotColor = Color.Black.copy(alpha = 0.06f),
+                )
+                .background(SurfaceLight, RoundedCornerShape(24.dp)),
+        ) {
+            Column(
+                modifier = Modifier.padding(start = 24.dp, top = 28.dp, end = 24.dp, bottom = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Warning icon
+                AlertIconInline(NearAiAlertType.WarningType)
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = stringResource(R.string.order_reject_title),
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimaryLight,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = (-0.2).sp,
+                    lineHeight = 26.sp,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = stringResource(R.string.order_reject_description),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = TextSecondaryLight,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 21.sp,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
                 OutlinedTextField(
                     value = reason,
                     onValueChange = onReasonChanged,
@@ -906,31 +939,73 @@ private fun RejectDialog(
                     minLines = 3,
                     shape = RoundedCornerShape(12.dp)
                 )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                enabled = reason.trim().isNotEmpty() && !isLoading,
-                colors = ButtonDefaults.buttonColors(containerColor = RoseError)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                } else {
-                    Text(stringResource(R.string.order_reject_button), color = Color.White)
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = TextSecondaryLight,
+                        ),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
+                            width = androidx.compose.ui.unit.Dp.Hairline,
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.order_details_cancel),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+
+                    Button(
+                        onClick = onConfirm,
+                        enabled = reason.trim().isNotEmpty() && !isLoading,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = RoseError,
+                            contentColor = Color.White,
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 2.dp,
+                            pressedElevation = 4.dp,
+                            focusedElevation = 4.dp,
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.order_reject_button),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
                 }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.order_details_cancel), color = TextSecondaryLight)
-            }
         }
-    )
+    }
 }
 
 /**
  * Reject approval dialog with mandatory reason input (for approval review rejection).
+ * Uses NearAiAlertDialog styling with a text input field.
  */
 @Composable
 private fun RejectApprovalDialog(
@@ -940,12 +1015,52 @@ private fun RejectApprovalDialog(
     onConfirm: () -> Unit,
     isLoading: Boolean
 ) {
-    AlertDialog(
+    androidx.compose.ui.window.Dialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.review_queue_reject_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.review_queue_reject_description), style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .wrapContentHeight()
+                .clip(RoundedCornerShape(24.dp))
+                .shadow(
+                    elevation = 16.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.08f),
+                    spotColor = Color.Black.copy(alpha = 0.06f),
+                )
+                .background(SurfaceLight, RoundedCornerShape(24.dp)),
+        ) {
+            Column(
+                modifier = Modifier.padding(start = 24.dp, top = 28.dp, end = 24.dp, bottom = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Warning icon
+                AlertIconInline(NearAiAlertType.WarningType)
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = stringResource(R.string.review_queue_reject_title),
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimaryLight,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = (-0.2).sp,
+                    lineHeight = 26.sp,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = stringResource(R.string.review_queue_reject_description),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = TextSecondaryLight,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 21.sp,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
                 OutlinedTextField(
                     value = reason,
                     onValueChange = onReasonChanged,
@@ -954,27 +1069,162 @@ private fun RejectApprovalDialog(
                     minLines = 3,
                     shape = RoundedCornerShape(12.dp)
                 )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                enabled = reason.trim().isNotEmpty() && !isLoading,
-                colors = ButtonDefaults.buttonColors(containerColor = RoseError)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                } else {
-                    Text(stringResource(R.string.review_queue_reject_confirm), color = Color.White)
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = TextSecondaryLight,
+                        ),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
+                            width = androidx.compose.ui.unit.Dp.Hairline,
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.order_details_cancel),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+
+                    Button(
+                        onClick = onConfirm,
+                        enabled = reason.trim().isNotEmpty() && !isLoading,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = RoseError,
+                            contentColor = Color.White,
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 2.dp,
+                            pressedElevation = 4.dp,
+                            focusedElevation = 4.dp,
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.review_queue_reject_confirm),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
                 }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.order_details_cancel), color = TextSecondaryLight)
+        }
+    }
+}
+
+/**
+ * Inline alert icon for use inside dialogs with custom content (e.g., text input).
+ * Mirrors the [AlertIcon] from Dialogs.kt but is accessible here.
+ */
+@Composable
+private fun AlertIconInline(type: NearAiAlertType) {
+    val accent = when (type) {
+        NearAiAlertType.ErrorType -> RoseError
+        NearAiAlertType.WarningType -> AmberWarning
+        NearAiAlertType.InfoType -> Info
+        NearAiAlertType.SuccessType -> EmeraldSuccess
+        NearAiAlertType.NoneType -> Navy
+    }
+    val bg = when (type) {
+        NearAiAlertType.ErrorType -> RoseBg
+        NearAiAlertType.WarningType -> AmberBg
+        NearAiAlertType.InfoType -> PurpleBg
+        NearAiAlertType.SuccessType -> EmeraldBg
+        NearAiAlertType.NoneType -> PrimaryContainerLight
+    }
+
+    androidx.compose.foundation.Canvas(
+        modifier = Modifier.size(56.dp),
+    ) {
+        val diameter = size.minDimension
+        val radius = diameter / 2f
+        val iconSize = diameter * 0.32f
+        val strokeWidth = 3.5f
+
+        drawCircle(
+            color = bg,
+            radius = radius,
+            center = Offset(radius, radius)
+        )
+
+        when (type) {
+            NearAiAlertType.WarningType -> {
+                val lineTop = radius - iconSize * 0.5f
+                val lineBottom = radius + iconSize * 0.1f
+                val dotCenterY = radius + iconSize * 0.4f
+                val dotRadius = iconSize * 0.18f
+
+                drawLine(
+                    color = accent,
+                    start = Offset(radius, lineTop),
+                    end = Offset(radius, lineBottom),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round,
+                )
+                drawCircle(
+                    color = accent,
+                    radius = dotRadius,
+                    center = Offset(radius, dotCenterY)
+                )
+            }
+            NearAiAlertType.ErrorType -> {
+                val half = iconSize * 0.7f
+                drawLine(
+                    color = accent,
+                    start = Offset(radius - half, radius - half),
+                    end = Offset(radius + half, radius + half),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round,
+                )
+                drawLine(
+                    color = accent,
+                    start = Offset(radius + half, radius - half),
+                    end = Offset(radius - half, radius + half),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round,
+                )
+            }
+            else -> {
+                val lineTop = radius - iconSize * 0.5f
+                val lineBottom = radius + iconSize * 0.1f
+                val dotCenterY = radius + iconSize * 0.4f
+                val dotRadius = iconSize * 0.18f
+                drawLine(
+                    color = accent,
+                    start = Offset(radius, lineTop),
+                    end = Offset(radius, lineBottom),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round,
+                )
+                drawCircle(
+                    color = accent,
+                    radius = dotRadius,
+                    center = Offset(radius, dotCenterY)
+                )
             }
         }
-    )
+    }
 }
 
 /**

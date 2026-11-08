@@ -16,16 +16,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nearai.admin.R
+import com.nearai.admin.core.designsystem.components.NearAiAlertDialog
+import com.nearai.admin.core.designsystem.components.NearAiAlertType
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.orders.domain.ApprovalStatus
 import com.nearai.admin.feature.orders.domain.ReviewQueueOrder
@@ -43,76 +49,29 @@ fun ReviewQueueScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // Approve confirmation dialog
-    if (uiState.showApproveDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissApproveDialog() },
-            title = { Text(stringResource(R.string.review_queue_approve_title)) },
-            text = { Text(stringResource(R.string.review_queue_approve_description)) },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.approveOrder() },
-                    enabled = !uiState.isActionLoading,
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess)
-                ) {
-                    if (uiState.isActionLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text(stringResource(R.string.review_queue_approve_confirm), color = Color.White)
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.dismissApproveDialog() }) {
-                    Text(stringResource(R.string.review_queue_cancel), color = TextSecondaryLight)
-                }
-            }
-        )
-    }
+    NearAiAlertDialog(
+        isVisible = uiState.showApproveDialog,
+        title = stringResource(R.string.review_queue_approve_title),
+        message = stringResource(R.string.review_queue_approve_description),
+        confirmText = stringResource(R.string.review_queue_approve_confirm),
+        dismissText = stringResource(R.string.review_queue_cancel),
+        type = NearAiAlertType.SuccessType,
+        onConfirm = {
+            viewModel.dismissApproveDialog()
+            viewModel.approveOrder()
+        },
+        onDismiss = { viewModel.dismissApproveDialog() },
+        isLoading = uiState.isActionLoading,
+    )
 
     // Reject dialog
     if (uiState.showRejectDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissRejectDialog() },
-            title = { Text(stringResource(R.string.review_queue_reject_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.review_queue_reject_description), style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
-                    OutlinedTextField(
-                        value = uiState.rejectReason,
-                        onValueChange = { viewModel.onRejectReasonChanged(it) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(stringResource(R.string.review_queue_reject_reason_hint)) },
-                        minLines = 3,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.rejectOrder() },
-                    enabled = uiState.rejectReason.trim().isNotEmpty() && !uiState.isActionLoading,
-                    colors = ButtonDefaults.buttonColors(containerColor = RoseError)
-                ) {
-                    if (uiState.isActionLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text(stringResource(R.string.review_queue_reject_confirm), color = Color.White)
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.dismissRejectDialog() }) {
-                    Text(stringResource(R.string.review_queue_cancel), color = TextSecondaryLight)
-                }
-            }
+        ReviewQueueRejectDialog(
+            reason = uiState.rejectReason,
+            onReasonChanged = { viewModel.onRejectReasonChanged(it) },
+            onDismiss = { viewModel.dismissRejectDialog() },
+            onConfirm = { viewModel.rejectOrder() },
+            isLoading = uiState.isActionLoading
         )
     }
 
@@ -501,5 +460,180 @@ private fun ReviewQueueOrderCard(
                 }
             }
         }
+    }
+}
+
+/**
+ * Reject dialog for Review Queue with mandatory reason input.
+ * Uses NearAiAlertDialog styling with a text input field.
+ */
+@Composable
+private fun ReviewQueueRejectDialog(
+    reason: String,
+    onReasonChanged: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    isLoading: Boolean
+) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .wrapContentHeight()
+                .clip(RoundedCornerShape(24.dp))
+                .shadow(
+                    elevation = 16.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.08f),
+                    spotColor = Color.Black.copy(alpha = 0.06f),
+                )
+                .background(SurfaceLight, RoundedCornerShape(24.dp)),
+        ) {
+            Column(
+                modifier = Modifier.padding(start = 24.dp, top = 28.dp, end = 24.dp, bottom = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ReviewQueueAlertIcon(NearAiAlertType.WarningType)
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = stringResource(R.string.review_queue_reject_title),
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimaryLight,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    letterSpacing = (-0.2).sp,
+                    lineHeight = 26.sp,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = stringResource(R.string.review_queue_reject_description),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = TextSecondaryLight,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    lineHeight = 21.sp,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = onReasonChanged,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.review_queue_reject_reason_hint)) },
+                    minLines = 3,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = TextSecondaryLight,
+                        ),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
+                            width = androidx.compose.ui.unit.Dp.Hairline,
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.review_queue_cancel),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+
+                    Button(
+                        onClick = onConfirm,
+                        enabled = reason.trim().isNotEmpty() && !isLoading,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = RoseError,
+                            contentColor = Color.White,
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 2.dp,
+                            pressedElevation = 4.dp,
+                            focusedElevation = 4.dp,
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.review_queue_reject_confirm),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReviewQueueAlertIcon(type: NearAiAlertType) {
+    val accent = when (type) {
+        NearAiAlertType.WarningType -> AmberWarning
+        NearAiAlertType.ErrorType -> RoseError
+        else -> AmberWarning
+    }
+    val bg = when (type) {
+        NearAiAlertType.WarningType -> AmberBg
+        NearAiAlertType.ErrorType -> RoseBg
+        else -> AmberBg
+    }
+
+    androidx.compose.foundation.Canvas(
+        modifier = Modifier.size(56.dp),
+    ) {
+        val diameter = size.minDimension
+        val radius = diameter / 2f
+        val iconSize = diameter * 0.32f
+        val strokeWidth = 3.5f
+
+        drawCircle(
+            color = bg,
+            radius = radius,
+            center = Offset(radius, radius)
+        )
+
+        val lineTop = radius - iconSize * 0.5f
+        val lineBottom = radius + iconSize * 0.1f
+        val dotCenterY = radius + iconSize * 0.4f
+        val dotRadius = iconSize * 0.18f
+
+        drawLine(
+            color = accent,
+            start = Offset(radius, lineTop),
+            end = Offset(radius, lineBottom),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round,
+        )
+        drawCircle(
+            color = accent,
+            radius = dotRadius,
+            center = Offset(radius, dotCenterY)
+        )
     }
 }
