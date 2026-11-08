@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.feature.orders.domain.ApprovalStatus
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderStatus
 import com.nearai.admin.feature.orders.domain.OrderSummary
@@ -164,6 +165,24 @@ val FulfillmentStatus.badgeTint: Color
         FulfillmentStatus.PROCESSING -> Indigo
         FulfillmentStatus.OUT_FOR_DELIVERY -> AmberWarning
         FulfillmentStatus.DELIVERED -> EmeraldSuccess
+    }
+
+val ApprovalStatus.displayLabel: String
+    get() = when (this) {
+        ApprovalStatus.AUTO_APPROVED -> "Auto Approved"
+        ApprovalStatus.AWAITING_STANDARD_REVIEW -> "Manual Review"
+        ApprovalStatus.AWAITING_MANDATORY_APPROVAL -> "Mandatory Approval"
+        ApprovalStatus.MANUALLY_APPROVED -> "Manually Approved"
+        ApprovalStatus.REJECTED -> "Rejected"
+    }
+
+val ApprovalStatus.badgeTint: Color
+    get() = when (this) {
+        ApprovalStatus.AUTO_APPROVED -> EmeraldSuccess
+        ApprovalStatus.AWAITING_STANDARD_REVIEW -> AmberWarning
+        ApprovalStatus.AWAITING_MANDATORY_APPROVAL -> RoseError
+        ApprovalStatus.MANUALLY_APPROVED -> EmeraldSuccess
+        ApprovalStatus.REJECTED -> RoseError
     }
 
 // =============================================================================

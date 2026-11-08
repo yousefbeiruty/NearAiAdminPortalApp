@@ -27,6 +27,7 @@ data class MoreMenuItem(
 @Composable
 fun MoreScreen(
     onNavigateToOrders: () -> Unit,
+    onNavigateToReviewQueue: () -> Unit,
     onNavigateToCategories: () -> Unit,
     onNavigateToProducts: () -> Unit,
     onNavigateToInventory: () -> Unit,
@@ -37,6 +38,7 @@ fun MoreScreen(
 ) {
     val menuItems = listOf(
         MoreMenuItem(stringResource(R.string.orders_title), Icons.Default.ReceiptLong, onNavigateToOrders),
+        MoreMenuItem(stringResource(R.string.review_queue_title), Icons.Default.Assignment, onNavigateToReviewQueue),
         MoreMenuItem(stringResource(R.string.categories_title), Icons.Default.Category, onNavigateToCategories),
         MoreMenuItem(stringResource(R.string.products_title), Icons.Default.ShoppingBag, onNavigateToProducts),
         MoreMenuItem(stringResource(R.string.inventory_and_products), Icons.Default.Inventory2, onNavigateToInventory),
@@ -102,6 +104,7 @@ fun MoreScreenPreview() {
     NearAiAdminTheme {
         MoreScreen(
             onNavigateToOrders = { },
+            onNavigateToReviewQueue = { },
             onNavigateToCategories = { },
             onNavigateToProducts = { },
             onNavigateToInventory = { },

@@ -56,3 +56,9 @@ data class ProductDetailsRoute(val productId: String)
 
 @Serializable
 object ProductCreateRoute
+
+@Serializable
+object ReviewQueueRoute
+
+@Serializable
+object AutomationSettingsRoute

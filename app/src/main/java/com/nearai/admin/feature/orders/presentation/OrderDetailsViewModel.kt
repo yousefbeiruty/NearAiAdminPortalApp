@@ -4,11 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nearai.admin.core.common.Result
-import com.nearai.admin.feature.orders.domain.OrderDetails
-import com.nearai.admin.feature.orders.domain.OrderRepository
-import com.nearai.admin.feature.orders.domain.OrderStatus
-import com.nearai.admin.feature.orders.domain.PaymentInfo
-import com.nearai.admin.feature.orders.domain.StatusHistoryEntry
+import com.nearai.admin.feature.orders.domain.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +30,12 @@ data class OrderDetailsUiState(
     val isCollectingCash: Boolean = false,
     val collectionError: String? = null,
     val showCollectCashDialog: Boolean = false,
-    val showCancelDialog: Boolean = false
+    val showCancelDialog: Boolean = false,
+    // Approval-related fields
+    val approvalStatus: ApprovalStatus? = null,
+    val approvalDecision: ApprovalDecisionSnapshot? = null,
+    val showRejectApprovalDialog: Boolean = false,
+    val rejectApprovalReason: String = ""
 )
 
 /**
@@ -86,6 +87,8 @@ class OrderDetailsViewModel @Inject constructor(
             when (val result = orderRepository.getOrderDetails(orderId)) {
                 is Result.Success -> {
                     _uiState.update { it.copy(order = result.data, isLoading = false) }
+                    // Sync approval state from order data
+                    updateApprovalState(result.data)
                     // Load status history
                     when (val historyResult = orderRepository.getStatusHistory(orderId)) {
                         is Result.Success -> {
@@ -385,5 +388,93 @@ class OrderDetailsViewModel @Inject constructor(
      */
     fun refreshPaymentInfo() {
         loadPaymentInfo()
+    }
+
+    // =============================================================================
+    // Approval Operations
+    // =============================================================================
+
+    /**
+     * Approves an order from the review context.
+     */
+    fun approveForReview() {
+        if (_uiState.value.isActionLoading) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isActionLoading = true, actionError = null) }
+            when (val result = orderRepository.approveOrder(orderId)) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(isActionLoading = false) }
+                    loadOrder()
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isActionLoading = false, actionError = result.exception.message) }
+                }
+                is Result.Loading -> {
+                    _uiState.update { it.copy(isActionLoading = false) }
+                }
+            }
+        }
+    }
+
+    /**
+     * Rejects an order from the review context with a reason.
+     */
+    fun rejectForApproval() {
+        val reason = _uiState.value.rejectApprovalReason.trim()
+        if (reason.isEmpty()) {
+            _uiState.update { it.copy(actionError = "Rejection reason is required") }
+            return
+        }
+        if (_uiState.value.isActionLoading) return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(isActionLoading = true, actionError = null, showRejectApprovalDialog = false)
+            }
+            when (val result = orderRepository.rejectForApproval(orderId, reason)) {
+                is Result.Success -> {
+                    _uiState.update { it.copy(isActionLoading = false) }
+                    loadOrder()
+                }
+                is Result.Error -> {
+                    _uiState.update { it.copy(isActionLoading = false, actionError = result.exception.message) }
+                }
+                is Result.Loading -> {
+                    _uiState.update { it.copy(isActionLoading = false) }
+                }
+            }
+        }
+    }
+
+    /**
+     * Shows the reject approval dialog.
+     */
+    fun showRejectApprovalDialog() {
+        _uiState.update { it.copy(showRejectApprovalDialog = true, rejectApprovalReason = "") }
+    }
+
+    /**
+     * Dismisses the reject approval dialog.
+     */
+    fun dismissRejectApprovalDialog() {
+        _uiState.update { it.copy(showRejectApprovalDialog = false, rejectApprovalReason = "") }
+    }
+
+    /**
+     * Updates the reject approval reason.
+     */
+    fun onRejectApprovalReasonChanged(reason: String) {
+        _uiState.update { it.copy(rejectApprovalReason = reason) }
+    }
+
+    /**
+     * Updates the approval state from the loaded order data.
+     */
+    private fun updateApprovalState(order: OrderDetails?) {
+        _uiState.update {
+            it.copy(
+                approvalStatus = order?.approvalStatus,
+                approvalDecision = order?.approvalDecision
+            )
+        }
     }
 }

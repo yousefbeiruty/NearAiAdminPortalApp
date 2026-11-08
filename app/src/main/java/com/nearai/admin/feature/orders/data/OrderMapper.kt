@@ -1,11 +1,16 @@
 package com.nearai.admin.feature.orders.data
 
+import com.nearai.admin.feature.orders.domain.ApprovalDecisionSnapshot
+import com.nearai.admin.feature.orders.domain.ApprovalPolicyConfig
+import com.nearai.admin.feature.orders.domain.ApprovalStatus
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderDetails
 import com.nearai.admin.feature.orders.domain.OrderItem
 import com.nearai.admin.feature.orders.domain.OrderStatus
 import com.nearai.admin.feature.orders.domain.OrderSummary
 import com.nearai.admin.feature.orders.domain.PaginatedOrders
+import com.nearai.admin.feature.orders.domain.PaginatedReviewQueue
+import com.nearai.admin.feature.orders.domain.ReviewQueueOrder
 import com.nearai.admin.feature.orders.domain.StatusHistoryEntry
 
 /**
@@ -81,5 +86,55 @@ object OrderMapper {
         size = dto.size,
         totalPages = dto.totalPages,
         totalItems = dto.total
+    )
+
+    // =============================================================================
+    // Approval Mappings
+    // =============================================================================
+
+    fun mapApprovalDecision(dto: ApprovalDecisionDto): ApprovalDecisionSnapshot =
+        ApprovalDecisionSnapshot(
+            decision = ApprovalStatus.fromString(dto.decision),
+            evaluatedAmount = dto.evaluatedAmount,
+            currency = dto.currency,
+            decisionReason = dto.decisionReason,
+            policyVersion = dto.policyVersion,
+            evaluatedAt = dto.evaluatedAt,
+            approvedBy = dto.approvedBy,
+            approvedAt = dto.approvedAt
+        )
+
+    fun mapReviewQueueOrder(dto: ReviewQueueOrderDto): ReviewQueueOrder = ReviewQueueOrder(
+        id = dto.id,
+        createdAt = dto.createdAt,
+        status = OrderStatus.fromString(dto.status),
+        fulfillmentStatus = FulfillmentStatus.fromString(dto.fulfillmentStatus),
+        approvalStatus = ApprovalStatus.fromString(dto.approvalStatus),
+        totalAmount = dto.totalAmount,
+        currency = dto.currency,
+        items = dto.items.map { mapOrderItem(it) },
+        deliveryRecipientName = dto.deliveryRecipientName,
+        deliveryPhone = dto.deliveryPhone,
+        approvalDecision = dto.approvalDecision?.let { mapApprovalDecision(it) },
+        isMandatory = dto.isMandatory
+    )
+
+    fun mapPaginatedReviewQueue(dto: ReviewQueueResponse): PaginatedReviewQueue =
+        PaginatedReviewQueue(
+            orders = dto.items.map { mapReviewQueueOrder(it) },
+            page = dto.page,
+            size = dto.size,
+            totalPages = dto.totalPages,
+            totalItems = dto.total
+        )
+
+    fun mapApprovalPolicy(dto: ApprovalPolicyDto): ApprovalPolicyConfig = ApprovalPolicyConfig(
+        autoApprovalLimit = dto.autoApprovalLimit,
+        mandatoryReviewThreshold = dto.mandatoryReviewThreshold,
+        currency = dto.currency,
+        enabled = dto.enabled,
+        version = dto.version,
+        updatedAt = dto.updatedAt,
+        updatedBy = dto.updatedBy
     )
 }

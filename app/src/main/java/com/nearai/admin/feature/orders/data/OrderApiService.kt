@@ -4,6 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PUT
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -54,6 +55,32 @@ interface OrderApiService {
 
     @POST("api/v1/orders/admin/{order_id}/cancel")
     suspend fun cancelOrder(@Path("order_id") orderId: String)
+
+    // =============================================================================
+    // Approval Endpoints
+    // =============================================================================
+
+    @GET("api/v1/orders/admin/review-queue")
+    suspend fun listReviewQueue(
+        @Query("page") page: Int,
+        @Query("size") size: Int,
+        @Query("mandatory_only") mandatoryOnly: Boolean? = null
+    ): ReviewQueueResponse
+
+    @POST("api/v1/orders/admin/{order_id}/approve")
+    suspend fun approveOrder(@Path("order_id") orderId: String)
+
+    @POST("api/v1/orders/admin/{order_id}/reject-for-approval")
+    suspend fun rejectForApproval(
+        @Path("order_id") orderId: String,
+        @Body request: RejectApprovalRequest
+    )
+
+    @GET("api/v1/admin/approval-policy")
+    suspend fun getApprovalPolicy(): ApprovalPolicyDto
+
+    @PUT("api/v1/admin/approval-policy")
+    suspend fun updateApprovalPolicy(@Body request: UpdatePolicyRequest): ApprovalPolicyDto
 }
 
 // =============================================================================
@@ -66,6 +93,23 @@ interface OrderApiService {
  */
 @Serializable
 data class RejectRequest(val reason: String)
+
+/**
+ * Reject for approval request body.
+ * Backend expects: { "reason": "..." }
+ */
+@Serializable
+data class RejectApprovalRequest(@SerialName("reason") val reason: String)
+
+/**
+ * Update approval policy request body.
+ */
+@Serializable
+data class UpdatePolicyRequest(
+    @SerialName("auto_approval_limit") val autoApprovalLimit: Double,
+    @SerialName("mandatory_review_threshold") val mandatoryReviewThreshold: Double,
+    @SerialName("enabled") val enabled: Boolean
+)
 
 // =============================================================================
 // Response DTOs
@@ -177,4 +221,68 @@ data class StatusHistoryEntryDto(
     @SerialName("actor_role") val actorRole: String? = null,
     @SerialName("reason") val reason: String? = null,
     @SerialName("timestamp") val timestamp: String
+)
+
+// =============================================================================
+// Approval DTOs
+// =============================================================================
+
+/**
+ * Approval decision snapshot DTO.
+ */
+@Serializable
+data class ApprovalDecisionDto(
+    @SerialName("decision") val decision: String,
+    @SerialName("evaluated_amount") val evaluatedAmount: Double,
+    @SerialName("currency") val currency: String,
+    @SerialName("decision_reason") val decisionReason: String? = null,
+    @SerialName("policy_version") val policyVersion: Int? = null,
+    @SerialName("evaluated_at") val evaluatedAt: String,
+    @SerialName("approved_by") val approvedBy: String? = null,
+    @SerialName("approved_at") val approvedAt: String? = null
+)
+
+/**
+ * Approval policy configuration DTO.
+ */
+@Serializable
+data class ApprovalPolicyDto(
+    @SerialName("auto_approval_limit") val autoApprovalLimit: Double,
+    @SerialName("mandatory_review_threshold") val mandatoryReviewThreshold: Double,
+    @SerialName("currency") val currency: String,
+    @SerialName("enabled") val enabled: Boolean,
+    @SerialName("version") val version: Int? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: String? = null
+)
+
+/**
+ * Review queue order DTO.
+ */
+@Serializable
+data class ReviewQueueOrderDto(
+    @SerialName("id") val id: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("status") val status: String,
+    @SerialName("fulfillment_status") val fulfillmentStatus: String,
+    @SerialName("approval_status") val approvalStatus: String,
+    @SerialName("total_amount") val totalAmount: Double,
+    @SerialName("currency") val currency: String,
+    @SerialName("items") val items: List<OrderItemDto>,
+    @SerialName("delivery_recipient_name") val deliveryRecipientName: String? = null,
+    @SerialName("delivery_phone") val deliveryPhone: String? = null,
+    @SerialName("approval_decision") val approvalDecision: ApprovalDecisionDto? = null,
+    @SerialName("is_mandatory") val isMandatory: Boolean
+)
+
+/**
+ * Paginated review queue response.
+ */
+@Serializable
+data class ReviewQueueResponse(
+    @SerialName("items") val items: List<ReviewQueueOrderDto>,
+    @SerialName("total") val total: Int,
+    @SerialName("page") val page: Int,
+    @SerialName("size") val size: Int,
+    @SerialName("total_pages") val totalPages: Int
 )

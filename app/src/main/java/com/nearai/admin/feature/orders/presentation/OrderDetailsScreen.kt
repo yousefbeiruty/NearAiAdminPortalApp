@@ -59,6 +59,17 @@ fun OrderDetailsScreen(
         )
     }
 
+    // Reject approval dialog — for orders awaiting approval review
+    if (uiState.showRejectApprovalDialog) {
+        RejectApprovalDialog(
+            reason = uiState.rejectApprovalReason,
+            onReasonChanged = { viewModel.onRejectApprovalReasonChanged(it) },
+            onDismiss = { viewModel.dismissRejectApprovalDialog() },
+            onConfirm = { viewModel.rejectForApproval() },
+            isLoading = uiState.isActionLoading
+        )
+    }
+
     // Collect cash confirmation dialog
     if (uiState.showCollectCashDialog) {
         val payment = uiState.paymentInfo
@@ -161,6 +172,8 @@ fun OrderDetailsScreen(
         uiState = uiState,
         onNavigateBack = onNavigateBack,
         onRetry = { viewModel.onRetry() },
+        onApproveForReview = { viewModel.approveForReview() },
+        onRejectApproval = { viewModel.showRejectApprovalDialog() },
         onConfirm = { viewModel.showConfirmDialog(confirmLabel) },
         onReject = { viewModel.showRejectDialog() },
         onProcess = { viewModel.showConfirmDialog(processLabel) },
@@ -192,6 +205,8 @@ fun OrderDetailsScreenContent(
     uiState: OrderDetailsUiState,
     onNavigateBack: () -> Unit,
     onRetry: () -> Unit,
+    onApproveForReview: () -> Unit = {},
+    onRejectApproval: () -> Unit = {},
     onConfirm: () -> Unit = {},
     onReject: () -> Unit = {},
     onProcess: () -> Unit = {},
@@ -288,6 +303,15 @@ fun OrderDetailsScreenContent(
                         PaymentSummaryCard(order)
                     }
 
+                    // Approval info
+                    item {
+                        ApprovalInfoCard(
+                            approvalStatus = uiState.approvalStatus,
+                            approvalDecision = uiState.approvalDecision,
+                            currency = order.currency
+                        )
+                    }
+
                     // Payment status & COD collection
                     item {
                         PaymentStatusCard(
@@ -306,15 +330,17 @@ fun OrderDetailsScreenContent(
                         }
                     }
 
-                    // Action buttons
+                    // Contextual action
                     item {
-                        OrderActionButtons(
+                        ContextualActionCard(
                             order = order,
+                            approvalStatus = uiState.approvalStatus,
                             paymentInfo = uiState.paymentInfo,
                             isActionLoading = uiState.isActionLoading,
                             isCollectingCash = uiState.isCollectingCash,
+                            onApproveForReview = onApproveForReview,
+                            onRejectApproval = onRejectApproval,
                             onConfirm = onConfirm,
-                            onReject = onReject,
                             onProcess = onProcess,
                             onDispatch = onDispatch,
                             onDeliver = onDeliver,
@@ -548,71 +574,276 @@ private fun StatusTimelineItem(entry: StatusHistoryEntry) {
 }
 
 /**
- * Order action buttons based on current status.
+ * Approval information card showing the automation decision details.
  */
 @Composable
-private fun OrderActionButtons(
+private fun ApprovalInfoCard(
+    approvalStatus: ApprovalStatus?,
+    approvalDecision: ApprovalDecisionSnapshot?,
+    currency: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                stringResource(R.string.approval_info_title),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (approvalStatus != null) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        stringResource(R.string.approval_label),
+                        style = MaterialTheme.typography.labelSmall.copy(color = TextSecondaryLight, fontWeight = FontWeight.SemiBold)
+                    )
+                    StatusBadge(
+                        label = approvalStatus.displayLabel,
+                        tint = approvalStatus.badgeTint
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (approvalDecision != null) {
+                InfoRow(
+                    label = stringResource(R.string.approval_info_evaluated_amount),
+                    value = stringResource(R.string.order_currency_format, approvalDecision.currency, approvalDecision.evaluatedAmount)
+                )
+                if (!approvalDecision.decisionReason.isNullOrBlank()) {
+                    InfoRow(
+                        label = stringResource(R.string.approval_info_reason),
+                        value = approvalDecision.decisionReason
+                    )
+                }
+                approvalDecision.policyVersion?.let { version ->
+                    InfoRow(
+                        label = stringResource(R.string.approval_info_policy_version),
+                        value = version.toString()
+                    )
+                }
+                InfoRow(
+                    label = stringResource(R.string.approval_info_evaluated_at),
+                    value = approvalDecision.evaluatedAt.take(16)
+                )
+                if (!approvalDecision.approvedBy.isNullOrBlank()) {
+                    InfoRow(
+                        label = stringResource(R.string.approval_info_approved_by),
+                        value = approvalDecision.approvedBy
+                    )
+                }
+                if (!approvalDecision.approvedAt.isNullOrBlank()) {
+                    InfoRow(
+                        label = stringResource(R.string.approval_info_approved_at),
+                        value = approvalDecision.approvedAt.take(16)
+                    )
+                }
+            } else if (approvalStatus == null) {
+                Text(
+                    stringResource(R.string.approval_info_no_decision),
+                    style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Contextual action card that shows one primary action based on approval, order,
+ * fulfillment, and payment state. Replaces the old four-button layout.
+ */
+@Composable
+private fun ContextualActionCard(
     order: OrderDetails,
+    approvalStatus: ApprovalStatus?,
     paymentInfo: com.nearai.admin.feature.orders.domain.PaymentInfo?,
     isActionLoading: Boolean,
     isCollectingCash: Boolean,
+    onApproveForReview: () -> Unit,
+    onRejectApproval: () -> Unit,
     onConfirm: () -> Unit,
-    onReject: () -> Unit,
     onProcess: () -> Unit,
     onDispatch: () -> Unit,
     onDeliver: () -> Unit,
     onCollectCash: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.order_details_actions), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
+            Text(
+                stringResource(R.string.order_details_actions),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy)
+            )
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Collect COD cash: available when payment is COD and pending
-            if (paymentInfo?.status == "pending" && paymentInfo.paymentMethod == "cash_on_delivery") {
-                ActionButton(
-                    label = stringResource(R.string.order_action_collect_cash),
-                    icon = Icons.Outlined.MonetizationOn,
-                    onClick = onCollectCash,
-                    isLoading = isCollectingCash,
-                    isDestructive = false
-                )
+            when {
+                // 1. Order is cancelled, rejected, or expired — no actions
+                order.status == OrderStatus.CANCELLED || order.status == OrderStatus.REJECTED -> {
+                    Text(
+                        stringResource(R.string.order_details_no_actions, order.status.displayLabel.lowercase()),
+                        style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight)
+                    )
+                }
+
+                // 2. Approval rejected — no processing actions
+                approvalStatus == ApprovalStatus.REJECTED -> {
+                    Text(
+                        stringResource(R.string.order_details_no_actions, "rejected"),
+                        style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight)
+                    )
+                }
+
+                // 3. Awaiting standard or mandatory approval review
+                approvalStatus == ApprovalStatus.AWAITING_STANDARD_REVIEW ||
+                        approvalStatus == ApprovalStatus.AWAITING_MANDATORY_APPROVAL -> {
+                    // Primary: Review and Approve
+                    ActionButton(
+                        label = stringResource(R.string.order_action_review_and_approve),
+                        icon = Icons.Outlined.CheckCircle,
+                        onClick = onApproveForReview,
+                        isLoading = isActionLoading,
+                        isDestructive = false
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Secondary: Reject
+                    ActionButton(
+                        label = stringResource(R.string.order_action_reject_approval),
+                        icon = Icons.Outlined.Block,
+                        onClick = onRejectApproval,
+                        isLoading = isActionLoading,
+                        isDestructive = true
+                    )
+                }
+
+                // 4. Order is approved (auto or manual) — show fulfillment actions
+                //    Awaiting confirmation from backend
+                order.status == OrderStatus.PENDING &&
+                        order.fulfillmentStatus == FulfillmentStatus.AWAITING_CONFIRMATION -> {
+                    ActionButton(
+                        label = stringResource(R.string.order_action_confirm_order),
+                        icon = Icons.Outlined.CheckCircle,
+                        onClick = onConfirm,
+                        isLoading = isActionLoading
+                    )
+                }
+
+                // 5. Order confirmed, ready to process (start preparing)
+                order.status == OrderStatus.PENDING &&
+                        order.fulfillmentStatus == FulfillmentStatus.CONFIRMED -> {
+                    ActionButton(
+                        label = stringResource(R.string.order_action_start_preparing),
+                        icon = Icons.Outlined.Build,
+                        onClick = onProcess,
+                        isLoading = isActionLoading
+                    )
+                }
+
+                // 6. Order is being processed — mark ready for delivery
+                order.fulfillmentStatus == FulfillmentStatus.PROCESSING -> {
+                    ActionButton(
+                        label = stringResource(R.string.order_action_mark_ready),
+                        icon = Icons.Outlined.LocalShipping,
+                        onClick = onDispatch,
+                        isLoading = isActionLoading
+                    )
+                }
+
+                // 7. Out for delivery — confirm delivery
+                order.fulfillmentStatus == FulfillmentStatus.OUT_FOR_DELIVERY -> {
+                    ActionButton(
+                        label = stringResource(R.string.order_action_confirm_delivery),
+                        icon = Icons.Outlined.CheckCircle,
+                        onClick = onDeliver,
+                        isLoading = isActionLoading
+                    )
+                }
+
+                // 8. Delivered with COD payment pending — collect cash
+                order.fulfillmentStatus == FulfillmentStatus.DELIVERED &&
+                        paymentInfo?.status == "pending" &&
+                        paymentInfo.paymentMethod == "cash_on_delivery" -> {
+                    ActionButton(
+                        label = stringResource(R.string.order_action_record_cash_collection),
+                        icon = Icons.Outlined.MonetizationOn,
+                        onClick = onCollectCash,
+                        isLoading = isCollectingCash,
+                        isDestructive = false
+                    )
+                }
+
+                // 9. Payment already collected — show confirmation info
+                paymentInfo?.status == "collected" -> {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            Icons.Outlined.CheckCircle,
+                            contentDescription = null,
+                            tint = EmeraldSuccess,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val collectedAt = paymentInfo.collectedAt?.take(16) ?: stringResource(R.string.order_payment_collected)
+                        Text(
+                            stringResource(R.string.order_details_payment_collected_info, collectedAt),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = EmeraldSuccess,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        )
+                    }
+                }
+
+                // 10. Default: no specific action available
+                else -> {
+                    Text(
+                        stringResource(R.string.order_details_no_actions, order.status.displayLabel.lowercase()),
+                        style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight)
+                    )
+                }
+            }
+
+            // Secondary actions section (Cancel where permitted)
+            if (order.status == OrderStatus.PENDING && approvalStatus != ApprovalStatus.REJECTED) {
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            // Confirm: available when order is pending and fulfillment is awaiting confirmation
-            if (order.status == OrderStatus.PENDING && order.fulfillmentStatus == FulfillmentStatus.AWAITING_CONFIRMATION) {
-                ActionButton(label = stringResource(R.string.order_action_confirm_order), icon = Icons.Outlined.CheckCircle, onClick = onConfirm, isLoading = isActionLoading)
-                Spacer(modifier = Modifier.height(8.dp))
-                ActionButton(label = stringResource(R.string.order_action_reject_order), icon = Icons.Outlined.Block, onClick = onReject, isLoading = isActionLoading, isDestructive = true)
-                Spacer(modifier = Modifier.height(8.dp))
-                ActionButton(label = stringResource(R.string.order_action_cancel_order), icon = Icons.Outlined.Cancel, onClick = onCancel, isLoading = isActionLoading, isDestructive = true)
-            }
-
-            // Cancel: available for pending orders
-            if (order.status == OrderStatus.PENDING && order.fulfillmentStatus != FulfillmentStatus.AWAITING_CONFIRMATION) {
-                ActionButton(label = stringResource(R.string.order_action_cancel_order), icon = Icons.Outlined.Cancel, onClick = onCancel, isLoading = isActionLoading, isDestructive = true)
-            }
-
-            // Process: available when order is pending and fulfillment is confirmed
-            if (order.status == OrderStatus.PENDING && order.fulfillmentStatus == FulfillmentStatus.CONFIRMED) {
-                ActionButton(label = stringResource(R.string.order_action_process_order), icon = Icons.Outlined.Build, onClick = onProcess, isLoading = isActionLoading)
-            }
-
-            // Dispatch: available when fulfillment is processing
-            if (order.fulfillmentStatus == FulfillmentStatus.PROCESSING) {
-                ActionButton(label = stringResource(R.string.order_action_dispatch_order), icon = Icons.Outlined.LocalShipping, onClick = onDispatch, isLoading = isActionLoading)
-            }
-
-            // Deliver: available when fulfillment is out for delivery
-            if (order.fulfillmentStatus == FulfillmentStatus.OUT_FOR_DELIVERY) {
-                ActionButton(label = stringResource(R.string.order_action_mark_delivered), icon = Icons.Outlined.CheckCircle, onClick = onDeliver, isLoading = isActionLoading)
-            }
-
-            // No actions available
-            if (order.status == OrderStatus.COMPLETED || order.status == OrderStatus.CANCELLED || order.status == OrderStatus.REJECTED) {
-                Text(stringResource(R.string.order_details_no_actions, order.status.displayLabel.lowercase()), style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
+                TextButton(
+                    onClick = onCancel,
+                    enabled = !isActionLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Outlined.Cancel,
+                            contentDescription = null,
+                            tint = RoseError,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            stringResource(R.string.order_action_cancel_order),
+                            color = RoseError,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
     }
@@ -651,7 +882,7 @@ private fun ActionButton(
 }
 
 /**
- * Rejection dialog with mandatory reason input.
+ * Rejection dialog with mandatory reason input (for order rejection).
  */
 @Composable
 private fun RejectDialog(
@@ -687,6 +918,54 @@ private fun RejectDialog(
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
                     Text(stringResource(R.string.order_reject_button), color = Color.White)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.order_details_cancel), color = TextSecondaryLight)
+            }
+        }
+    )
+}
+
+/**
+ * Reject approval dialog with mandatory reason input (for approval review rejection).
+ */
+@Composable
+private fun RejectApprovalDialog(
+    reason: String,
+    onReasonChanged: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    isLoading: Boolean
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.review_queue_reject_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.review_queue_reject_description), style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight))
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = onReasonChanged,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.review_queue_reject_reason_hint)) },
+                    minLines = 3,
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = reason.trim().isNotEmpty() && !isLoading,
+                colors = ButtonDefaults.buttonColors(containerColor = RoseError)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text(stringResource(R.string.review_queue_reject_confirm), color = Color.White)
                 }
             }
         },
@@ -860,13 +1139,22 @@ fun OrderDetailsScreenPreview() {
                 item { PaymentSummaryCard(sampleOrder) }
                 item { StatusHistoryCard(sampleHistory) }
                 item {
-                    OrderActionButtons(
+                    ApprovalInfoCard(
+                        approvalStatus = com.nearai.admin.feature.orders.domain.ApprovalStatus.AWAITING_STANDARD_REVIEW,
+                        approvalDecision = null,
+                        currency = "JOD"
+                    )
+                }
+                item {
+                    ContextualActionCard(
                         order = sampleOrder,
+                        approvalStatus = com.nearai.admin.feature.orders.domain.ApprovalStatus.AWAITING_STANDARD_REVIEW,
                         paymentInfo = null,
                         isActionLoading = false,
                         isCollectingCash = false,
+                        onApproveForReview = {},
+                        onRejectApproval = {},
                         onConfirm = {},
-                        onReject = {},
                         onProcess = {},
                         onDispatch = {},
                         onDeliver = {},

@@ -22,6 +22,7 @@ import com.nearai.admin.feature.inventory.presentation.ProductEditScreen
 import com.nearai.admin.feature.inventory.presentation.ProductEditViewModel
 import com.nearai.admin.feature.orders.presentation.OrderDetailsScreen
 import com.nearai.admin.feature.orders.presentation.OrdersListScreen
+import com.nearai.admin.feature.orders.presentation.ReviewQueueScreen
 import com.nearai.admin.feature.settings.presentation.SettingsScreen
 import com.nearai.admin.feature.systemhealth.presentation.SystemHealthScreen
 import com.nearai.admin.feature.systemhealth.presentation.SystemHealthViewModel
@@ -119,6 +120,9 @@ fun AppNavHost(
                 onNavigateToOrders = {
                     navController.navigate(OrdersRoute)
                 },
+                onNavigateToReviewQueue = {
+                    navController.navigate(ReviewQueueRoute)
+                },
                 onNavigateToCategories = {
                     navController.navigate(CategoriesRoute)
                 },
@@ -157,6 +161,16 @@ fun AppNavHost(
         composable<OrderDetailsRoute> {
             OrderDetailsScreen(
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Review Queue
+        composable<ReviewQueueRoute> {
+            ReviewQueueScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToOrder = { orderId ->
+                    navController.navigate(OrderDetailsRoute(orderId))
+                }
             )
         }
 

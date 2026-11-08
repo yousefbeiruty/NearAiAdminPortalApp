@@ -26,6 +26,35 @@ enum class OrderStatus {
 }
 
 /**
+ * Approval status enum matching the backend's approval_status field.
+ *
+ * Backend values: auto_approved, awaiting_standard_review, awaiting_mandatory_approval,
+ * manually_approved, rejected
+ *
+ * This is separate from [OrderStatus] and [FulfillmentStatus] to avoid coupling
+ * approval state with fulfillment or payment state.
+ */
+enum class ApprovalStatus {
+    AUTO_APPROVED,
+    AWAITING_STANDARD_REVIEW,
+    AWAITING_MANDATORY_APPROVAL,
+    MANUALLY_APPROVED,
+    REJECTED;
+
+    companion object {
+        /**
+         * Safely parses a backend string value to [ApprovalStatus].
+         * Falls back to [AWAITING_STANDARD_REVIEW] for unknown values so new backend statuses don't crash the app.
+         */
+        fun fromString(value: String): ApprovalStatus {
+            return values().find { it.name.lowercase() == value.lowercase() }
+                ?: values().find { it.name == value.uppercase() }
+                ?: AWAITING_STANDARD_REVIEW
+        }
+    }
+}
+
+/**
  * Fulfillment status enum matching the backend's fulfillment_status field.
  *
  * Backend values: unfulfilled, awaiting_confirmation, confirmed, processing, out_for_delivery, delivered

@@ -123,4 +123,96 @@
     <string name="order_reject_description">Provide a reason for rejecting this order.</string>
     <string name="order_reject_reason_hint">Rejection reason (required)</string>
     <string name="order_reject_button">Reject</string>
+
+    <!-- Approval Status Labels -->
+    <string name="approval_auto_approved">Auto Approved</string>
+    <string name="approval_awaiting_standard_review">Manual Review</string>
+    <string name="approval_awaiting_mandatory">Mandatory Approval</string>
+    <string name="approval_manually_approved">Manually Approved</string>
+    <string name="approval_rejected">Rejected</string>
+    <string name="approval_label">Approval: %1$s</string>
+
+    <!-- Review Queue -->
+    <string name="review_queue_title">Needs Review</string>
+    <string name="review_queue_empty">No orders awaiting review</string>
+    <string name="review_queue_empty_message">All orders have been processed.</string>
+    <string name="review_queue_filter_all">All</string>
+    <string name="review_queue_filter_standard">Standard</string>
+    <string name="review_queue_filter_mandatory">Mandatory</string>
+    <string name="review_queue_loading_error">Error loading review queue</string>
+    <string name="review_queue_retry">Retry</string>
+    <string name="review_queue_approve">Approve</string>
+    <string name="review_queue_reject">Reject</string>
+    <string name="review_queue_mandatory_badge">Mandatory</string>
+    <string name="review_queue_standard_badge">Standard</string>
+    <string name="review_queue_created">Created %1$s</string>
+    <string name="review_queue_customer">Customer: %1$s</string>
+    <string name="review_queue_reason">Reason: %1$s</string>
+    <string name="review_queue_approve_title">Approve Order</string>
+    <string name="review_queue_approve_description">Are you sure you want to approve this order?</string>
+    <string name="review_queue_approve_confirm">Approve</string>
+    <string name="review_queue_reject_title">Reject Order</string>
+    <string name="review_queue_reject_description">Provide a reason for rejecting this order.</string>
+    <string name="review_queue_reject_reason_hint">Rejection reason (required)</string>
+    <string name="review_queue_reject_confirm">Reject</string>
+    <string name="review_queue_cancel">Cancel</string>
+    <string name="review_queue_approve_error">Error approving order</string>
+    <string name="review_queue_reject_error">Error rejecting order</string>
+    <string name="review_queue_dismiss">Dismiss</string>
+
+    <!-- Approval Info Card -->
+    <string name="approval_info_title">Approval Decision</string>
+    <string name="approval_info_evaluated_amount">Evaluated Amount</string>
+    <string name="approval_info_reason">Decision Reason</string>
+    <string name="approval_info_policy_version">Policy Version</string>
+    <string name="approval_info_evaluated_at">Evaluated At</string>
+    <string name="approval_info_approved_by">Approved By</string>
+    <string name="approval_info_approved_at">Approved At</string>
+    <string name="approval_info_no_decision">No approval decision recorded</string>
+
+    <!-- Contextual Actions -->
+    <string name="order_action_review_and_approve">Review and Approve</string>
+    <string name="order_action_start_preparing">Start Preparing</string>
+    <string name="order_action_mark_ready">Mark Ready for Delivery</string>
+    <string name="order_action_confirm_delivery">Confirm Delivery</string>
+    <string name="order_action_record_cash_collection">Record Cash Collection</string>
+    <string name="order_action_reject_approval">Reject</string>
+    <string name="order_details_payment_collected_info">Payment collected on %1$s</string>
+
+    <!-- Automation Settings -->
+    <string name="automation_settings_title">Order Automation</string>
+    <string name="automation_settings_description">Configure approval thresholds for COD orders.</string>
+    <string name="automation_settings_auto_approval">Auto Approval Limit</string>
+    <string name="automation_settings_auto_approval_description">Orders up to this amount are automatically approved.</string>
+    <string name="automation_settings_mandatory_threshold">Mandatory Review Threshold</string>
+    <string name="automation_settings_mandatory_description">Orders above this amount require mandatory manual approval.</string>
+    <string name="automation_settings_standard_review">Standard Review Range</string>
+    <string name="automation_settings_standard_description">Orders between the auto approval limit and mandatory threshold enter standard manual review.</string>
+    <string name="automation_settings_enabled">Enable Automation</string>
+    <string name="automation_settings_enabled_description">When disabled, all orders require manual review.</string>
+    <string name="automation_settings_save">Save Changes</string>
+    <string name="automation_settings_saving">Saving…</string>
+    <string name="automation_settings_saved">Settings saved successfully</string>
+    <string name="automation_settings_save_error">Error saving settings</string>
+    <string name="automation_settings_load_error">Error loading settings</string>
+    <string name="automation_settings_validation_negative">Thresholds must be non-negative.</string>
+    <string name="automation_settings_validation_order">Auto approval limit must not exceed mandatory threshold.</string>
+    <string name="automation_settings_confirm_title">Save Automation Settings</string>
+    <string name="automation_settings_confirm_message">Are you sure you want to update the approval thresholds?</string>
+    <string name="automation_settings_confirm_yes">Save</string>
+    <string name="automation_settings_cancel">Cancel</string>
+    <string name="automation_settings_not_configured">Automation settings not configured</string>
+    <string name="automation_settings_currency">Currency</string>
+    <string name="automation_settings_version">Version</string>
+    <string name="automation_settings_updated_by">Updated By</string>
+    <string name="automation_settings_updated_at">Updated At</string>
+
+    <!-- Dashboard Approval Metrics -->
+    <string name="dashboard_awaiting_review">Awaiting Review</string>
+    <string name="dashboard_mandatory_approvals">Mandatory Approvals</string>
+    <string name="dashboard_auto_approved_today">Auto Approved Today</string>
+
+    <!-- Orders List Approval Filter -->
+    <string name="orders_filter_approval">Approval Status</string>
+    <string name="orders_filter_approval_all">All</string>
 </resources>
