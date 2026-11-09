@@ -108,7 +108,7 @@ object NetworkModule {
         json: Json
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL)
+            .baseUrl(BuildConfig.BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory(JSON_CONTENT_TYPE.toMediaType()))
             .build()

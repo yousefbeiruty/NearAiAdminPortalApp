@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -5,6 +8,15 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.screenshot)
+}
+
+fun getFlavorProperties(flavorName: String): Properties {
+    val props = Properties()
+    val file = rootProject.file("gradle/wrapper/$flavorName.properties")
+    if (file.exists()) {
+        FileInputStream(file).use { props.load(it) }
+    }
+    return props
 }
 
 android {
@@ -24,8 +36,25 @@ android {
 
         testInstrumentationRunner = "com.nearai.admin.CustomTestRunner"
         testInstrumentationRunnerArguments["androidx.compose.ui.test.failure.isScreenshotCaptureEnabled"] = "true"
+    }
 
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8081/\"")
+    flavorDimensions.add("default")
+    productFlavors {
+        create("dev") {
+            dimension = "default"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            resValue("string", "app_name", "NearAI Admin Dev")
+        }
+        create("production") {
+            dimension = "default"
+            resValue("string", "app_name", "NearAI Admin")
+        }
+    }
+
+    productFlavors.all {
+        val flavorProperties = getFlavorProperties(name)
+        buildConfigField("String", "BASE_URL", "\"${flavorProperties["BASE_URL"]}\"")
     }
 
     buildTypes {
@@ -35,11 +64,9 @@ android {
             // OrderApiService already start with "api/v1/...". Retrofit concatenates
             // baseUrl + endpoint path, so the final URL is:
             //   http://10.0.2.2:8081/api/v1/auth/login
-            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8081/\"")
         }
         release {
             // Production backend — same rule: no "/api/v1/" in base URL.
-            buildConfigField("String", "API_BASE_URL", "\"https://api.nearai.dev/\"")
             optimization {
                 enable = true
                 packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
@@ -52,6 +79,7 @@ android {
     }
     buildFeatures {
         compose = true
+        resValues = true
         buildConfig = true
     }
     packaging {
