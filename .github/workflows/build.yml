@@ -44,17 +44,20 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Compile debug sources
-        run: ./gradlew compileDebugKotlin
+      - name: Compile debug sources (dev and production)
+        run: ./gradlew :app:compileDevDebugKotlin :app:compileProductionDebugKotlin
 
-      - name: Run unit tests
-        run: ./gradlew testDebugUnitTest
+      - name: Run unit tests (dev and production)
+        run: ./gradlew :app:testDevDebugUnitTest :app:testProductionDebugUnitTest
 
-      - name: Validate screenshot baselines
-        run: ./gradlew validateDebugScreenshotTest
+      - name: Validate screenshot baselines (dev and production)
+        run: ./gradlew :app:validateDevDebugScreenshotTest :app:validateProductionDebugScreenshotTest
 
-      - name: Run lint
-        run: ./gradlew lintDebug
+      - name: Run lint (dev and production)
+        run: ./gradlew :app:lintDevDebug :app:lintProductionDebug
+
+      - name: Assemble debug APKs (dev and production)
+        run: ./gradlew :app:assembleDevDebug :app:assembleProductionDebug
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -69,3 +72,9 @@ jobs:
         with:
           name: lint-report
           path: app/build/reports/lint/
+
+      - name: Upload debug APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apks
+          path: app/build/outputs/apk/debug/
