@@ -105,7 +105,8 @@ dependencies {
     // Security
     implementation(libs.androidx.security.crypto)
 
-    // Image Loading
+    // Image Loading — coil-core includes OkHttp network fetcher; coil-compose provides AsyncImage
+    implementation(libs.coil.core)
     implementation(libs.coil.compose)
 
     // Testing — Unit (local JVM)
