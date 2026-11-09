@@ -34,8 +34,65 @@
 
     <!-- Product Details -->
     <string name="product_image_primary">Primary</string>
+    <string name="product_image_load_failed">Failed to load image</string>
     <string name="catalog_loading">Loading…</string>
     <string name="catalog_empty">No data found</string>
     <string name="catalog_error">Failed to load data</string>
     <string name="catalog_close">Close</string>
+
+    <!-- Variant Management -->
+    <string name="variant_add">Add Variant</string>
+    <string name="variant_add_title">Add Variant</string>
+    <string name="variant_edit_title">Edit Variant</string>
+    <string name="variant_sku_label">SKU</string>
+    <string name="variant_sku_hint">e.g. IPHONE-15-128-BLK</string>
+    <string name="variant_sku_required">SKU is required</string>
+    <string name="variant_sku_duplicate">This SKU already exists</string>
+    <string name="variant_attributes_title">Attributes</string>
+    <string name="variant_attribute_key_label">Attribute</string>
+    <string name="variant_attribute_key_hint">e.g. Color, RAM, Storage</string>
+    <string name="variant_attribute_value_label">Value</string>
+    <string name="variant_attribute_value_hint">e.g. Black, 8GB, 128GB</string>
+    <string name="variant_add_attribute">Add Attribute</string>
+    <string name="variant_remove_attribute">Remove attribute</string>
+    <string name="variant_status_active">Active</string>
+    <string name="variant_status_inactive">Inactive</string>
+    <string name="variant_save">Save</string>
+    <string name="variant_cancel">Cancel</string>
+    <string name="variant_saving">Saving…</string>
+    <string name="variant_saved">Variant saved successfully</string>
+    <string name="variant_save_failed">Failed to save variant</string>
+    <string name="variant_deactivate">Deactivate</string>
+    <string name="variant_activate">Activate</string>
+    <string name="variant_edit">Edit</string>
+    <string name="variant_deactivate_title">Deactivate Variant</string>
+    <string name="variant_deactivate_message">Deactivating \"%1$s\" will make it unavailable for new orders. Existing orders referencing this variant will not be affected.</string>
+    <string name="variant_deactivate_confirm">Deactivate</string>
+    <string name="variant_activate_title">Activate Variant</string>
+    <string name="variant_activate_message">Activate \"%1$s\" to make it available for new orders.</string>
+    <string name="variant_activate_confirm">Activate</string>
+    <string name="variant_status_changed">Variant status updated</string>
+    <string name="variant_status_change_failed">Failed to update variant status</string>
+    <string name="variant_no_variants_yet">No variants yet. Tap \"Add Variant\" to create one.</string>
+    <string name="variant_section_title">Variants (%1$d)</string>
+    <string name="variant_stock_available">%1$d available</string>
+    <string name="variant_out_of_stock">Out of stock</string>
+
+    <!-- Product Images -->
+    <string name="product_delete_image_title">Delete Image</string>
+    <string name="product_delete_image_message">Are you sure you want to delete this image? This action cannot be undone.</string>
+    <string name="product_delete_image_confirm">Delete</string>
+    <string name="product_delete_image_cancel">Cancel</string>
+
+    <!-- Inventory Stock Dialogs (references strings_inventory.xml for titles) -->
+    <string name="inventory_receive_stock_quantity_label">Quantity</string>
+    <string name="inventory_receive_stock_quantity_hint">e.g. 50</string>
+    <string name="inventory_receive_stock_reason_label">Reason (optional)</string>
+    <string name="inventory_receive_stock_reason_hint">e.g. Shipment received</string>
+    <string name="inventory_receive_stock_confirm">Confirm</string>
+    <string name="inventory_adjust_stock_delta_label">Delta (positive or negative)</string>
+    <string name="inventory_adjust_stock_delta_hint">e.g. +10 or -5</string>
+    <string name="inventory_adjust_stock_reason_label">Reason *</string>
+    <string name="inventory_adjust_stock_reason_hint">e.g. Inventory correction</string>
+    <string name="inventory_adjust_stock_confirm">Confirm</string>
 </resources>

@@ -254,6 +254,17 @@ interface CatalogRepository {
         attributes: Map<String, String> = emptyMap()
     ): Result<ProductVariant>
 
+    suspend fun updateVariant(
+        variantId: String,
+        sku: String? = null,
+        attributes: Map<String, String>? = null
+    ): Result<ProductVariant>
+
+    suspend fun updateVariantStatus(
+        variantId: String,
+        status: VariantStatus
+    ): Result<ProductVariant>
+
     // === Stock ===
 
     suspend fun getStockAvailability(variantId: String): Result<StockBalance>

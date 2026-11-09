@@ -245,6 +245,35 @@ class CatalogRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateVariant(
+        variantId: String,
+        sku: String?,
+        attributes: Map<String, String>?
+    ): Result<com.nearai.admin.feature.catalog.domain.ProductVariant> {
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                val response = apiService.updateVariant(variantId, VariantUpdateRequest(sku, attributes))
+                Result.Success(CatalogMapper.mapVariant(response))
+            } catch (e: Exception) {
+                handleException(e)
+            }
+        }
+    }
+
+    override suspend fun updateVariantStatus(
+        variantId: String,
+        status: VariantStatus
+    ): Result<com.nearai.admin.feature.catalog.domain.ProductVariant> {
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                val response = apiService.updateVariantStatus(variantId, VariantStatusUpdateRequest(status.name.lowercase()))
+                Result.Success(CatalogMapper.mapVariant(response))
+            } catch (e: Exception) {
+                handleException(e)
+            }
+        }
+    }
+
     // === Stock ===
 
     override suspend fun getStockAvailability(variantId: String): Result<com.nearai.admin.feature.catalog.domain.StockBalance> {

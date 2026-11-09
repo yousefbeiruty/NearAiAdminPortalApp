@@ -273,16 +273,18 @@ fun ProductCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Image placeholder or first image
+            // Product image — backend returns full URLs in product.images.
+            // Falls back to placeholder when no images are available.
             Box(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                if (product.images.isNotEmpty() && product.images[0].isNotBlank()) {
+                val firstImage = product.images.firstOrNull()
+                if (firstImage != null && firstImage.isNotBlank()) {
                     AsyncImage(
-                        model = product.images[0],
+                        model = firstImage,
                         contentDescription = product.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()

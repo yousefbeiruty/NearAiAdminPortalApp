@@ -3,6 +3,7 @@ package com.nearai.admin.feature.catalog.presentation
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -11,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,7 +33,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -55,16 +56,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import coil.compose.AsyncImage
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,6 +92,8 @@ import okhttp3.RequestBody
 import java.io.File
 import javax.inject.Inject
 import com.nearai.admin.R
+import com.nearai.admin.core.designsystem.components.NearAiAlertType
+import com.nearai.admin.core.designsystem.components.NearAiAlertDialog
 import com.nearai.admin.core.designsystem.components.StatusPill
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.catalog.domain.*
@@ -107,7 +115,14 @@ data class ProductDetailsUiState(
     val isImageUploading: Boolean = false,
     val imageUploadError: String? = null,
     val showDeleteImageConfirm: Boolean = false,
-    val selectedImageId: String? = null
+    val selectedImageId: String? = null,
+    // Variant management
+    val showAddVariantDialog: Boolean = false,
+    val showEditVariantDialog: Boolean = false,
+    val editingVariant: ProductVariant? = null,
+    val showVariantStatusDialog: Boolean = false,
+    val variantActionError: String? = null,
+    val isVariantActionLoading: Boolean = false
 )
 
 sealed interface ProductDetailsEvent {
@@ -147,7 +162,29 @@ class ProductDetailsViewModel @Inject constructor(
                     }
                     catalogRepository.listProductImages(productId).let { imageResult ->
                         if (imageResult is com.nearai.admin.core.common.Result.Success) {
-                            _uiState.update { it.copy(images = imageResult.data) }
+                            val images = imageResult.data
+                            // If the dedicated images endpoint returns empty, fall back to
+                            // product.images URLs from the product detail response so that
+                            // the hero image and carousel still display.
+                            val finalImages = if (images.isNotEmpty()) {
+                                images
+                            } else {
+                                result.data.images.filter { it.isNotBlank() && it.startsWith("http", ignoreCase = true) }
+                                    .map { url ->
+                                        ProductImage(
+                                            id = "",
+                                            productId = productId,
+                                            url = url,
+                                            fileName = url.substringAfterLast('/'),
+                                            mimeType = "image/jpeg",
+                                            fileSizeBytes = 0,
+                                            displayOrder = 0,
+                                            isPrimary = false,
+                                            uploadedAt = ""
+                                        )
+                                    }
+                            }
+                            _uiState.update { it.copy(images = finalImages) }
                         }
                     }
                 }
@@ -459,6 +496,131 @@ class ProductDetailsViewModel @Inject constructor(
     fun onClearImageUploadError() {
         _uiState.update { it.copy(imageUploadError = null) }
     }
+
+    // === Variant Management ===
+
+    fun onShowAddVariantDialog() {
+        _uiState.update {
+            it.copy(
+                showAddVariantDialog = true,
+                editingVariant = null,
+                variantActionError = null
+            )
+        }
+    }
+
+    fun onShowEditVariantDialog(variant: ProductVariant) {
+        _uiState.update {
+            it.copy(
+                showEditVariantDialog = true,
+                editingVariant = variant,
+                variantActionError = null
+            )
+        }
+    }
+
+    fun onHideVariantDialog() {
+        _uiState.update {
+            it.copy(
+                showAddVariantDialog = false,
+                showEditVariantDialog = false,
+                editingVariant = null,
+                variantActionError = null
+            )
+        }
+    }
+
+    fun onCreateVariant(sku: String, attributes: Map<String, String>) {
+        if (sku.isBlank()) {
+            _uiState.update { it.copy(variantActionError = "SKU is required") }
+            return
+        }
+        val productId = _uiState.value.product?.id ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isVariantActionLoading = true, variantActionError = null) }
+            when (val result = catalogRepository.createVariant(productId, sku, attributes)) {
+                is com.nearai.admin.core.common.Result.Success -> {
+                    _uiState.update { it.copy(isVariantActionLoading = false, showAddVariantDialog = false) }
+                    refreshVariants()
+                }
+                is com.nearai.admin.core.common.Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isVariantActionLoading = false,
+                            variantActionError = result.exception.message ?: "Failed to create variant"
+                        )
+                    }
+                }
+                is com.nearai.admin.core.common.Result.Loading -> { /* no-op */ }
+            }
+        }
+    }
+
+    fun onUpdateVariant(variantId: String, sku: String, attributes: Map<String, String>) {
+        if (sku.isBlank()) {
+            _uiState.update { it.copy(variantActionError = "SKU is required") }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isVariantActionLoading = true, variantActionError = null) }
+            when (val result = catalogRepository.updateVariant(variantId, sku, attributes)) {
+                is com.nearai.admin.core.common.Result.Success -> {
+                    _uiState.update { it.copy(isVariantActionLoading = false, showEditVariantDialog = false) }
+                    refreshVariants()
+                }
+                is com.nearai.admin.core.common.Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isVariantActionLoading = false,
+                            variantActionError = result.exception.message ?: "Failed to update variant"
+                        )
+                    }
+                }
+                is com.nearai.admin.core.common.Result.Loading -> { /* no-op */ }
+            }
+        }
+    }
+
+    fun onShowVariantStatusDialog(variant: ProductVariant) {
+        _uiState.update {
+            it.copy(
+                showVariantStatusDialog = true,
+                editingVariant = variant,
+                variantActionError = null
+            )
+        }
+    }
+
+    fun onHideVariantStatusDialog() {
+        _uiState.update {
+            it.copy(
+                showVariantStatusDialog = false,
+                editingVariant = null,
+                variantActionError = null
+            )
+        }
+    }
+
+    fun onToggleVariantStatus(variantId: String, newStatus: VariantStatus) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isVariantActionLoading = true, variantActionError = null) }
+            when (val result = catalogRepository.updateVariantStatus(variantId, newStatus)) {
+                is com.nearai.admin.core.common.Result.Success -> {
+                    _uiState.update { it.copy(isVariantActionLoading = false, showVariantStatusDialog = false) }
+                    refreshVariants()
+                }
+                is com.nearai.admin.core.common.Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isVariantActionLoading = false,
+                            variantActionError = result.exception.message ?: "Failed to update status"
+                        )
+                    }
+                }
+                is com.nearai.admin.core.common.Result.Loading -> { /* no-op */ }
+            }
+        }
+    }
 }
 
 /**
@@ -646,10 +808,26 @@ fun ProductDetailsScreen(
 
                     // Variants section
                     item {
-                        SectionHeaderWithIcon(
-                            title = "Variants (${uiState.variants.size})",
-                            icon = Icons.Default.Tune
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SectionHeaderWithIcon(
+                                title = stringResource(R.string.variant_section_title, uiState.variants.size),
+                                icon = Icons.Default.Tune,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            Button(
+                                onClick = { viewModel.onShowAddVariantDialog() },
+                                colors = ButtonDefaults.buttonColors(containerColor = Indigo),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(stringResource(R.string.variant_add), color = Color.White, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
                     }
 
                     if (uiState.variants.isEmpty()) {
@@ -661,7 +839,9 @@ fun ProductDetailsScreen(
                             VariantCard(
                                 variant = variant,
                                 onReceiveStock = { viewModel.onShowReceiveStockDialog(variant.id) },
-                                onAdjustStock = { viewModel.onShowAdjustStockDialog(variant.id) }
+                                onAdjustStock = { viewModel.onShowAdjustStockDialog(variant.id) },
+                                onEdit = { viewModel.onShowEditVariantDialog(variant) },
+                                onToggleStatus = { viewModel.onShowVariantStatusDialog(variant) }
                             )
                         }
                     }
@@ -701,39 +881,74 @@ fun ProductDetailsScreen(
         )
     }
 
-    // Delete image confirmation dialog
+    // Delete image confirmation dialog — using NearAiAlertDialog
     if (uiState.showDeleteImageConfirm) {
-        AlertDialog(
-            onDismissRequest = viewModel::onHideDeleteImageConfirm,
-            title = { Text("Delete Image", fontWeight = FontWeight.Bold, color = Navy) },
-            text = {
-                Text(
-                    "Are you sure you want to delete this image? This action cannot be undone.",
-                    color = TextSecondaryLight
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        uiState.selectedImageId?.let { imageId ->
-                            viewModel.onDeleteImage(productId, imageId)
-                        }
-                    },
-                    enabled = !uiState.isImageUploading,
-                    colors = ButtonDefaults.buttonColors(containerColor = RoseError)
-                ) {
-                    if (uiState.isImageUploading) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                    } else {
-                        Text("Delete", color = Color.White)
-                    }
+        NearAiAlertDialog(
+            isVisible = true,
+            title = stringResource(R.string.product_delete_image_title),
+            message = stringResource(R.string.product_delete_image_message),
+            confirmText = stringResource(R.string.product_delete_image_confirm),
+            dismissText = stringResource(R.string.product_delete_image_cancel),
+            type = NearAiAlertType.ErrorType,
+            onConfirm = {
+                uiState.selectedImageId?.let { imageId ->
+                    viewModel.onDeleteImage(productId, imageId)
                 }
             },
-            dismissButton = {
-                TextButton(onClick = viewModel::onHideDeleteImageConfirm) {
-                    Text("Cancel", color = TextSecondaryLight)
-                }
-            }
+            onDismiss = viewModel::onHideDeleteImageConfirm,
+            isLoading = uiState.isImageUploading
+        )
+    }
+
+    // Add Variant dialog
+    if (uiState.showAddVariantDialog) {
+        AddVariantDialog(
+            onDismiss = viewModel::onHideVariantDialog,
+            onConfirm = { sku, attributes ->
+                viewModel.onCreateVariant(sku, attributes)
+            },
+            isLoading = uiState.isVariantActionLoading,
+            error = uiState.variantActionError
+        )
+    }
+
+    // Edit Variant dialog
+    if (uiState.showEditVariantDialog && uiState.editingVariant != null) {
+        val editingV = uiState.editingVariant!!
+        AddVariantDialog(
+            onDismiss = viewModel::onHideVariantDialog,
+            onConfirm = { sku, attrs ->
+                viewModel.onUpdateVariant(editingV.id, sku, attrs)
+            },
+            isLoading = uiState.isVariantActionLoading,
+            error = uiState.variantActionError,
+            initialSku = editingV.sku,
+            initialAttributes = editingV.attributes,
+            title = stringResource(R.string.variant_edit_title)
+        )
+    }
+
+    // Variant status toggle dialog
+    if (uiState.showVariantStatusDialog && uiState.editingVariant != null) {
+        val variant = uiState.editingVariant!!
+        val isDeactivating = variant.status == VariantStatus.ACTIVE
+        NearAiAlertDialog(
+            isVisible = true,
+            title = if (isDeactivating) stringResource(R.string.variant_deactivate_title) else stringResource(R.string.variant_activate_title),
+            message = if (isDeactivating) {
+                stringResource(R.string.variant_deactivate_message, variant.sku)
+            } else {
+                stringResource(R.string.variant_activate_message, variant.sku)
+            },
+            confirmText = if (isDeactivating) stringResource(R.string.variant_deactivate_confirm) else stringResource(R.string.variant_activate_confirm),
+            dismissText = stringResource(R.string.variant_cancel),
+            type = if (isDeactivating) NearAiAlertType.WarningType else NearAiAlertType.InfoType,
+            onConfirm = {
+                val newStatus = if (isDeactivating) VariantStatus.INACTIVE else VariantStatus.ACTIVE
+                viewModel.onToggleVariantStatus(variant.id, newStatus)
+            },
+            onDismiss = viewModel::onHideVariantStatusDialog,
+            isLoading = uiState.isVariantActionLoading
         )
     }
 }
@@ -853,7 +1068,8 @@ fun ImageCarousel(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(80.dp)
+                                .height(80.dp),
+                            contentAlignment = Alignment.Center
                         ) {
                             if (image.url.isNotBlank()) {
                                 AsyncImage(
@@ -869,9 +1085,7 @@ fun ImageCarousel(
                                     Icons.Default.Image,
                                     contentDescription = image.fileName,
                                     tint = TextSecondaryLight,
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .align(Alignment.Center)
+                                    modifier = Modifier.size(32.dp)
                                 )
                             }
                         }
@@ -978,19 +1192,21 @@ fun EmptyImagesState(modifier: Modifier = Modifier) {
 }
 
 /**
- * Variant card with SKU, attributes, and stock actions.
+ * Variant card with SKU, attributes, stock actions, edit and status toggle.
  */
 @Composable
 fun VariantCard(
     variant: ProductVariant,
     onReceiveStock: () -> Unit,
     onAdjustStock: () -> Unit,
+    onEdit: () -> Unit,
+    onToggleStatus: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = SurfaceLight),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -1006,7 +1222,7 @@ fun VariantCard(
                     )
                 )
                 StatusPill(
-                    label = if (variant.status == VariantStatus.ACTIVE) "Active" else "Inactive",
+                    label = if (variant.status == VariantStatus.ACTIVE) stringResource(R.string.variant_status_active) else stringResource(R.string.variant_status_inactive),
                     dotColor = if (variant.status == VariantStatus.ACTIVE) EmeraldSuccess else TextSecondaryLight
                 )
             }
@@ -1033,10 +1249,23 @@ fun VariantCard(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = if (variant.availableQuantity > 0) {
+                    stringResource(R.string.variant_stock_available, variant.availableQuantity)
+                } else {
+                    stringResource(R.string.variant_out_of_stock)
+                },
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = if (variant.availableQuantity > 0) EmeraldSuccess else RoseError,
+                    fontWeight = FontWeight.Medium
+                )
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            // Row 1: Stock actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 OutlinedButton(
                     onClick = onReceiveStock,
@@ -1044,9 +1273,9 @@ fun VariantCard(
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Navy)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Receive", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.inventory_receive_stock), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                 }
                 OutlinedButton(
                     onClick = onAdjustStock,
@@ -1054,9 +1283,38 @@ fun VariantCard(
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Navy)
                 ) {
-                    Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Adjust", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.inventory_adjust_stock), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                }
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            // Row 2: Variant actions
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onEdit,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Indigo)
+                ) {
+                    Text(stringResource(R.string.variant_edit), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                }
+                OutlinedButton(
+                    onClick = onToggleStatus,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = if (variant.status == VariantStatus.ACTIVE) RoseError else EmeraldSuccess
+                    )
+                ) {
+                    Text(
+                        text = if (variant.status == VariantStatus.ACTIVE) stringResource(R.string.variant_deactivate) else stringResource(R.string.variant_activate),
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp
+                    )
                 }
             }
         }
@@ -1082,9 +1340,294 @@ fun EmptyVariantsState(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "No variants yet",
+            text = stringResource(R.string.variant_no_variants_yet),
             style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight)
         )
+    }
+}
+
+/**
+ * Add/Edit Variant dialog styled to match the NearAiAlertDialog architecture.
+ * Uses the same visual design: 24dp rounded corners, 16dp shadow, custom icon,
+ * consistent typography and button styling as NearAiAlertDialog.
+ */
+@Composable
+fun AddVariantDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, Map<String, String>) -> Unit,
+    isLoading: Boolean,
+    error: String?,
+    initialSku: String = "",
+    initialAttributes: Map<String, String> = emptyMap(),
+    title: String = stringResource(R.string.variant_add_title),
+    modifier: Modifier = Modifier
+) {
+    var sku by remember { mutableStateOf(initialSku) }
+    val attributes = remember {
+        mutableStateListOf<Pair<String, String>?>().apply {
+            if (initialAttributes.isNotEmpty()) {
+                clear()
+                addAll(initialAttributes.map { (k, v) -> k to v })
+            } else {
+                add(null)
+            }
+        }
+    }
+
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        // Dialog card with shadow — matching NearAiAlertDialog style
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .wrapContentHeight()
+                .clip(RoundedCornerShape(24.dp))
+                .shadow(
+                    elevation = 16.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.08f),
+                    spotColor = Color.Black.copy(alpha = 0.06f)
+                )
+                .background(SurfaceLight, RoundedCornerShape(24.dp))
+        ) {
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, top = 28.dp, end = 24.dp, bottom = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Icon — Tune icon matching NearAiAlertDialog 56dp style
+                Canvas(modifier = Modifier.size(56.dp)) {
+                    val diameter = size.minDimension
+                    val radius = diameter / 2f
+                    // Background circle
+                    drawCircle(
+                        color = PrimaryContainerLight,
+                        radius = radius,
+                        center = Offset(radius, radius)
+                    )
+                    // Tune icon (slider lines)
+                    val iconSize = diameter * 0.35f
+                    val lineSpacing = iconSize * 0.35f
+                    val startY = radius - iconSize * 0.5f
+                    repeat(3) { i ->
+                        val y = startY + i * lineSpacing
+                        drawLine(
+                            color = Indigo,
+                            start = Offset(radius - iconSize * 0.5f, y),
+                            end = Offset(radius + iconSize * 0.5f, y),
+                            strokeWidth = 3.5f,
+                            cap = StrokeCap.Round
+                        )
+                        // Small knob on each line
+                        drawCircle(
+                            color = Indigo,
+                            radius = 3f,
+                            center = Offset(radius - iconSize * 0.15f + i * iconSize * 0.2f, y)
+                        )
+                    }
+                }
+
+                // Title — matching NearAiAlertDialog typography
+                Text(
+                    text = title,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimaryLight,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = (-0.2).sp,
+                    lineHeight = 26.sp
+                )
+
+                // Scrollable form content
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // SKU field
+                    OutlinedTextField(
+                        value = sku,
+                        onValueChange = { sku = it.trim() },
+                        label = { Text(stringResource(R.string.variant_sku_label)) },
+                        placeholder = { Text(stringResource(R.string.variant_sku_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = TextPrimaryLight)
+                    )
+
+                    // Attributes section header
+                    Text(
+                        text = stringResource(R.string.variant_attributes_title),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextSecondaryLight,
+                        letterSpacing = (0.5).sp
+                    )
+
+                    // Attribute rows in scrollable column
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 180.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        repeat(attributes.size) { index ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = attributes[index]?.first ?: "",
+                                    onValueChange = { key ->
+                                        val pair = attributes[index]
+                                        attributes[index] = if (pair != null) {
+                                            Pair(key, pair.second)
+                                        } else {
+                                            Pair(key, "")
+                                        }
+                                    },
+                                    label = { Text(stringResource(R.string.variant_attribute_key_label)) },
+                                    placeholder = { Text(stringResource(R.string.variant_attribute_key_hint)) },
+                                    modifier = Modifier.weight(2f),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp),
+                                    textStyle = MaterialTheme.typography.bodySmall
+                                )
+                                OutlinedTextField(
+                                    value = attributes[index]?.second ?: "",
+                                    onValueChange = { value ->
+                                        val pair = attributes[index]
+                                        attributes[index] = if (pair != null) {
+                                            Pair(pair.first, value)
+                                        } else {
+                                            Pair("", value)
+                                        }
+                                    },
+                                    label = { Text(stringResource(R.string.variant_attribute_value_label)) },
+                                    placeholder = { Text(stringResource(R.string.variant_attribute_value_hint)) },
+                                    modifier = Modifier.weight(2f),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp),
+                                    textStyle = MaterialTheme.typography.bodySmall
+                                )
+                                IconButton(
+                                    onClick = {
+                                        if (attributes.size > 1) {
+                                            attributes.removeAt(index)
+                                        }
+                                    },
+                                    enabled = attributes.size > 1,
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = stringResource(R.string.variant_remove_attribute),
+                                        tint = if (attributes.size > 1) RoseError else TextSecondaryLight.copy(alpha = 0.3f),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                        // Add attribute button
+                        TextButton(
+                            onClick = { attributes.add(null) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                stringResource(R.string.variant_add_attribute),
+                                color = Indigo,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                }
+
+                // Error message
+                error?.let { err ->
+                    Text(
+                        text = err,
+                        fontSize = 12.sp,
+                        color = RoseError,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                // Action buttons — matching NearAiAlertDialog style
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = TextSecondaryLight
+                        ),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
+                            width = androidx.compose.ui.unit.Dp.Hairline
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.variant_cancel),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            val attrMap = attributes
+                                .filter { it != null && it.first.isNotBlank() && it.second.isNotBlank() }
+                                .mapNotNull { it }
+                                .associate { it.first.trim() to it.second.trim() }
+                            onConfirm(sku.trim(), attrMap)
+                        },
+                        enabled = !isLoading && sku.isNotBlank(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Indigo,
+                            contentColor = Color.White
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 2.dp,
+                            pressedElevation = 4.dp,
+                            focusedElevation = 4.dp
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.variant_save),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1115,7 +1658,9 @@ fun SectionHeaderWithIcon(title: String, icon: androidx.compose.ui.graphics.vect
 }
 
 /**
- * Dialog for receiving stock.
+ * Dialog for receiving stock, styled to match the NearAiAlertDialog architecture.
+ * Uses the same visual design: 24dp rounded corners, 16dp shadow, custom icon,
+ * consistent typography and button styling as NearAiAlertDialog.
  */
 @Composable
 fun ReceiveStockDialog(
@@ -1128,56 +1673,152 @@ fun ReceiveStockDialog(
     var quantity by remember { mutableStateOf("") }
     var reason by remember { mutableStateOf("") }
 
-    AlertDialog(
+    androidx.compose.ui.window.Dialog(
         onDismissRequest = onDismiss,
-        title = { Text("Receive Stock", fontWeight = FontWeight.Bold, color = Navy) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = quantity,
-                    onValueChange = { quantity = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Quantity") },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number
-                    ),
-                    singleLine = true,
-                    shape = RoundedCornerShape(8.dp)
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .wrapContentHeight()
+                .clip(RoundedCornerShape(24.dp))
+                .shadow(
+                    elevation = 16.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.08f),
+                    spotColor = Color.Black.copy(alpha = 0.06f)
                 )
-                OutlinedTextField(
-                    value = reason,
-                    onValueChange = { reason = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Reason (optional)") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(8.dp)
+                .background(SurfaceLight, RoundedCornerShape(24.dp))
+        ) {
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, top = 28.dp, end = 24.dp, bottom = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Icon — Package icon matching NearAiAlertDialog 56dp style
+                Canvas(modifier = Modifier.size(56.dp)) {
+                    val diameter = size.minDimension
+                    val radius = diameter / 2f
+                    drawCircle(
+                        color = PrimaryContainerLight,
+                        radius = radius,
+                        center = Offset(radius, radius)
+                    )
+                    // Package icon
+                    val box = diameter * 0.25f
+                    drawLine(
+                        color = Indigo,
+                        start = Offset(radius - box, radius - box * 0.5f),
+                        end = Offset(radius + box, radius - box * 0.5f),
+                        strokeWidth = 3.5f,
+                        cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color = Indigo,
+                        start = Offset(radius - box, radius + box * 0.5f),
+                        end = Offset(radius + box, radius + box * 0.5f),
+                        strokeWidth = 3.5f,
+                        cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color = Indigo,
+                        start = Offset(radius - box, radius),
+                        end = Offset(radius + box, radius),
+                        strokeWidth = 3.5f,
+                        cap = StrokeCap.Round
+                    )
+                }
+
+                Text(
+                    text = stringResource(R.string.inventory_receive_stock_title),
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimaryLight,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = (-0.2).sp,
+                    lineHeight = 26.sp
                 )
-                if (error != null) {
-                    Text(text = error, color = RoseError, style = MaterialTheme.typography.bodySmall)
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = quantity,
+                        onValueChange = { quantity = it },
+                        label = { Text(stringResource(R.string.inventory_receive_stock_quantity_label)) },
+                        placeholder = { Text(stringResource(R.string.inventory_receive_stock_quantity_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = TextPrimaryLight)
+                    )
+                    OutlinedTextField(
+                        value = reason,
+                        onValueChange = { reason = it },
+                        label = { Text(stringResource(R.string.inventory_receive_stock_reason_label)) },
+                        placeholder = { Text(stringResource(R.string.inventory_receive_stock_reason_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = TextPrimaryLight)
+                    )
+                    error?.let { err ->
+                        Text(
+                            text = err,
+                            fontSize = 12.sp,
+                            color = RoseError,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondaryLight),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
+                            width = androidx.compose.ui.unit.Dp.Hairline
+                        ),
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Text(text = stringResource(R.string.variant_cancel), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    }
+                    Button(
+                        onClick = {
+                            val qty = quantity.toIntOrNull() ?: 0
+                            onConfirm(qty, reason)
+                        },
+                        enabled = !isLoading && quantity.isNotBlank(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Indigo, contentColor = Color.White),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp, pressedElevation = 4.dp, focusedElevation = 4.dp),
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                        } else {
+                            Text(text = stringResource(R.string.inventory_receive_stock_confirm), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
                 }
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val qty = quantity.toIntOrNull() ?: 0
-                    onConfirm(qty, reason)
-                },
-                enabled = !isLoading && quantity.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = Navy)
-            ) {
-                if (isLoading) CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White)
-                else Text("Confirm", color = Color.White)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondaryLight) }
         }
-    )
+    }
 }
 
 /**
- * Dialog for adjusting stock.
+ * Dialog for adjusting stock, styled to match the NearAiAlertDialog architecture.
+ * Uses the same visual design: 24dp rounded corners, 16dp shadow, custom icon,
+ * consistent typography and button styling as NearAiAlertDialog.
  */
 @Composable
 fun AdjustStockDialog(
@@ -1190,52 +1831,148 @@ fun AdjustStockDialog(
     var delta by remember { mutableStateOf("") }
     var reason by remember { mutableStateOf("") }
 
-    AlertDialog(
+    androidx.compose.ui.window.Dialog(
         onDismissRequest = onDismiss,
-        title = { Text("Adjust Stock", fontWeight = FontWeight.Bold, color = Navy) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = delta,
-                    onValueChange = { delta = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Delta (positive or negative)") },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number
-                    ),
-                    singleLine = true,
-                    shape = RoundedCornerShape(8.dp)
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .wrapContentHeight()
+                .clip(RoundedCornerShape(24.dp))
+                .shadow(
+                    elevation = 16.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.08f),
+                    spotColor = Color.Black.copy(alpha = 0.06f)
                 )
-                OutlinedTextField(
-                    value = reason,
-                    onValueChange = { reason = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Reason *") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(8.dp)
+                .background(SurfaceLight, RoundedCornerShape(24.dp))
+        ) {
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, top = 28.dp, end = 24.dp, bottom = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Icon — Adjust icon matching NearAiAlertDialog 56dp style
+                Canvas(modifier = Modifier.size(56.dp)) {
+                    val diameter = size.minDimension
+                    val radius = diameter / 2f
+                    drawCircle(
+                        color = PrimaryContainerLight,
+                        radius = radius,
+                        center = Offset(radius, radius)
+                    )
+                    // Plus/minus icon
+                    val half = diameter * 0.12f
+                    // Plus
+                    drawLine(
+                        color = Indigo,
+                        start = Offset(radius - half, radius - half * 0.6f),
+                        end = Offset(radius + half, radius - half * 0.6f),
+                        strokeWidth = 3.5f,
+                        cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color = Indigo,
+                        start = Offset(radius, radius - half * 1.2f),
+                        end = Offset(radius, radius),
+                        strokeWidth = 3.5f,
+                        cap = StrokeCap.Round
+                    )
+                    // Minus
+                    drawLine(
+                        color = Indigo,
+                        start = Offset(radius - half, radius + half * 0.8f),
+                        end = Offset(radius + half, radius + half * 0.8f),
+                        strokeWidth = 3.5f,
+                        cap = StrokeCap.Round
+                    )
+                }
+
+                Text(
+                    text = stringResource(R.string.inventory_adjust_stock_title),
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimaryLight,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = (-0.2).sp,
+                    lineHeight = 26.sp
                 )
-                if (error != null) {
-                    Text(text = error, color = RoseError, style = MaterialTheme.typography.bodySmall)
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = delta,
+                        onValueChange = { delta = it },
+                        label = { Text(stringResource(R.string.inventory_adjust_stock_delta_label)) },
+                        placeholder = { Text(stringResource(R.string.inventory_adjust_stock_delta_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = TextPrimaryLight)
+                    )
+                    OutlinedTextField(
+                        value = reason,
+                        onValueChange = { reason = it },
+                        label = { Text(stringResource(R.string.inventory_adjust_stock_reason_label)) },
+                        placeholder = { Text(stringResource(R.string.inventory_adjust_stock_reason_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = TextPrimaryLight)
+                    )
+                    error?.let { err ->
+                        Text(
+                            text = err,
+                            fontSize = 12.sp,
+                            color = RoseError,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondaryLight),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
+                            width = androidx.compose.ui.unit.Dp.Hairline
+                        ),
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Text(text = stringResource(R.string.variant_cancel), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    }
+                    Button(
+                        onClick = {
+                            val d = delta.toIntOrNull() ?: 0
+                            onConfirm(d, reason)
+                        },
+                        enabled = !isLoading && delta.isNotBlank() && reason.isNotBlank(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Indigo, contentColor = Color.White),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp, pressedElevation = 4.dp, focusedElevation = 4.dp),
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                        } else {
+                            Text(text = stringResource(R.string.inventory_adjust_stock_confirm), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
                 }
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val d = delta.toIntOrNull() ?: 0
-                    onConfirm(d, reason)
-                },
-                enabled = !isLoading && delta.isNotBlank() && reason.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = Navy)
-            ) {
-                if (isLoading) CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White)
-                else Text("Confirm", color = Color.White)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondaryLight) }
         }
-    )
+    }
 }
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)

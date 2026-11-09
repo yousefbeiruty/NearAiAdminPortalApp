@@ -145,6 +145,18 @@ interface CatalogApiService {
         @Body request: VariantCreateRequest
     ): VariantResponseDto
 
+    @PATCH("api/v1/variants/{variant_id}")
+    suspend fun updateVariant(
+        @Path("variant_id") variantId: String,
+        @Body request: VariantUpdateRequest
+    ): VariantResponseDto
+
+    @PATCH("api/v1/variants/{variant_id}/status")
+    suspend fun updateVariantStatus(
+        @Path("variant_id") variantId: String,
+        @Body request: VariantStatusUpdateRequest
+    ): VariantResponseDto
+
     // === Stock ===
 
     @GET("api/v1/variants/{variant_id}/stock")
@@ -221,6 +233,18 @@ data class ReorderImagesRequest(
 data class VariantCreateRequest(
     val sku: String,
     val attributes: Map<String, String> = emptyMap()
+)
+
+@Serializable
+data class VariantUpdateRequest(
+    val sku: String? = null,
+    val attributes: Map<String, String>? = null,
+    val status: String? = null
+)
+
+@Serializable
+data class VariantStatusUpdateRequest(
+    val status: String
 )
 
 @Serializable
