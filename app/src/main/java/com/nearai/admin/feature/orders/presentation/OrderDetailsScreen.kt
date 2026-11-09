@@ -78,6 +78,19 @@ fun OrderDetailsScreen(
         )
     }
 
+    // Dispatch dialog — for entering delivery notes
+    if (uiState.showDispatchDialog) {
+        DispatchDialog(
+            deliveryNotes = uiState.dispatchDeliveryNotes,
+            customerDeliveryNote = uiState.dispatchCustomerDeliveryNote,
+            onDeliveryNotesChanged = { viewModel.onDispatchDeliveryNotesChanged(it) },
+            onCustomerDeliveryNoteChanged = { viewModel.onDispatchCustomerDeliveryNoteChanged(it) },
+            onDismiss = { viewModel.dismissDispatchDialog() },
+            onConfirm = { viewModel.dispatchOrder() },
+            isLoading = uiState.isActionLoading
+        )
+    }
+
     // Collect cash confirmation dialog
     NearAiAlertDialog(
         isVisible = uiState.showCollectCashDialog,
@@ -126,7 +139,6 @@ fun OrderDetailsScreen(
             dismissText = stringResource(R.string.order_details_cancel),
             type = NearAiAlertType.NoneType,
             onConfirm = {
-                viewModel.dismissConfirmDialog()
                 viewModel.executeConfirmedAction()
             },
             onDismiss = { viewModel.dismissConfirmDialog() },
@@ -149,7 +161,7 @@ fun OrderDetailsScreen(
         onConfirm = { viewModel.showConfirmDialog(confirmLabel) },
         onReject = { viewModel.showRejectDialog() },
         onProcess = { viewModel.showConfirmDialog(processLabel) },
-        onDispatch = { viewModel.showConfirmDialog(dispatchLabel) },
+        onDispatch = { viewModel.showDispatchDialog() },
         onDeliver = { viewModel.showConfirmDialog(deliverLabel) },
         onCollectCash = { viewModel.showCollectCashDialog() },
         onCancel = { viewModel.showCancelDialog() },
@@ -283,6 +295,13 @@ fun OrderDetailsScreenContent(
                             approvalDecision = uiState.approvalDecision,
                             currency = order.currency
                         )
+                    }
+
+                    // Shipment info (only if dispatched)
+                    if (order.shipmentInfo != null) {
+                        item {
+                            ShipmentInfoCard(order.shipmentInfo!!)
+                        }
                     }
 
                     // Payment status & COD collection
@@ -1338,6 +1357,207 @@ private fun PaymentStatusCard(
                         label = stringResource(R.string.order_label_collected_at),
                         value = paymentInfo.collectedAt.take(16)
                     )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Shipment information card showing delivery notes, tracking, and dispatch details.
+ */
+@Composable
+private fun ShipmentInfoCard(shipment: ShipmentInfo) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                stringResource(R.string.order_details_shipment_info),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            shipment.deliveryNotes?.let { notes ->
+                InfoRow(
+                    label = stringResource(R.string.order_label_delivery_notes),
+                    value = notes
+                )
+            }
+            shipment.customerDeliveryNote?.let { note ->
+                InfoRow(
+                    label = stringResource(R.string.order_label_customer_delivery_note),
+                    value = note
+                )
+            }
+            shipment.trackingNumber?.let { tracking ->
+                InfoRow(
+                    label = stringResource(R.string.order_label_tracking_number),
+                    value = tracking
+                )
+            }
+            shipment.carrier?.let { carrier ->
+                InfoRow(
+                    label = stringResource(R.string.order_label_carrier),
+                    value = carrier
+                )
+            }
+            shipment.dispatchedAt?.let { dispatchedAt ->
+                InfoRow(
+                    label = stringResource(R.string.order_label_dispatched_at),
+                    value = dispatchedAt.take(16)
+                )
+            }
+            shipment.dispatchedBy?.let { dispatchedBy ->
+                InfoRow(
+                    label = stringResource(R.string.order_label_dispatched_by),
+                    value = dispatchedBy
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Dispatch dialog with delivery notes input fields.
+ * Uses NearAiAlertDialog styling with text input fields.
+ */
+@Composable
+private fun DispatchDialog(
+    deliveryNotes: String,
+    customerDeliveryNote: String,
+    onDeliveryNotesChanged: (String) -> Unit,
+    onCustomerDeliveryNoteChanged: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    isLoading: Boolean
+) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .wrapContentHeight()
+                .clip(RoundedCornerShape(24.dp))
+                .shadow(
+                    elevation = 16.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.08f),
+                    spotColor = Color.Black.copy(alpha = 0.06f),
+                )
+                .background(SurfaceLight, RoundedCornerShape(24.dp)),
+        ) {
+            Column(
+                modifier = Modifier.padding(start = 24.dp, top = 28.dp, end = 24.dp, bottom = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Info icon
+                AlertIconInline(NearAiAlertType.InfoType)
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = stringResource(R.string.order_dispatch_title),
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimaryLight,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = (-0.2).sp,
+                    lineHeight = 26.sp,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = stringResource(R.string.order_dispatch_description),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = TextSecondaryLight,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 21.sp,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = deliveryNotes,
+                    onValueChange = onDeliveryNotesChanged,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.order_dispatch_delivery_notes_hint)) },
+                    minLines = 2,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = customerDeliveryNote,
+                    onValueChange = onCustomerDeliveryNoteChanged,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.order_dispatch_customer_note_hint)) },
+                    minLines = 2,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = TextSecondaryLight,
+                        ),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
+                            width = androidx.compose.ui.unit.Dp.Hairline,
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.order_details_cancel),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+
+                    Button(
+                        onClick = onConfirm,
+                        enabled = !isLoading,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Navy,
+                            contentColor = Color.White,
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 2.dp,
+                            pressedElevation = 4.dp,
+                            focusedElevation = 4.dp,
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.order_dispatch_button),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
                 }
             }
         }

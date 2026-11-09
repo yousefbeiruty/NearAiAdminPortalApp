@@ -35,7 +35,11 @@ data class OrderDetailsUiState(
     val approvalStatus: ApprovalStatus? = null,
     val approvalDecision: ApprovalDecisionSnapshot? = null,
     val showRejectApprovalDialog: Boolean = false,
-    val rejectApprovalReason: String = ""
+    val rejectApprovalReason: String = "",
+    // Dispatch with delivery notes
+    val showDispatchDialog: Boolean = false,
+    val dispatchDeliveryNotes: String = "",
+    val dispatchCustomerDeliveryNote: String = ""
 )
 
 /**
@@ -184,13 +188,43 @@ class OrderDetailsViewModel @Inject constructor(
     }
 
     /**
-     * Dispatches an order for delivery.
+     * Shows the dispatch dialog for entering delivery notes.
+     */
+    fun showDispatchDialog() {
+        _uiState.update { it.copy(showDispatchDialog = true, dispatchDeliveryNotes = "", dispatchCustomerDeliveryNote = "") }
+    }
+
+    /**
+     * Dismisses the dispatch dialog.
+     */
+    fun dismissDispatchDialog() {
+        _uiState.update { it.copy(showDispatchDialog = false, dispatchDeliveryNotes = "", dispatchCustomerDeliveryNote = "") }
+    }
+
+    /**
+     * Updates the delivery notes text for dispatch.
+     */
+    fun onDispatchDeliveryNotesChanged(notes: String) {
+        _uiState.update { it.copy(dispatchDeliveryNotes = notes) }
+    }
+
+    /**
+     * Updates the customer delivery note text for dispatch.
+     */
+    fun onDispatchCustomerDeliveryNoteChanged(note: String) {
+        _uiState.update { it.copy(dispatchCustomerDeliveryNote = note) }
+    }
+
+    /**
+     * Dispatches an order for delivery with optional delivery notes.
      */
     fun dispatchOrder() {
         if (_uiState.value.isActionLoading) return
+        val deliveryNotes = _uiState.value.dispatchDeliveryNotes.ifBlank { null }
+        val customerDeliveryNote = _uiState.value.dispatchCustomerDeliveryNote.ifBlank { null }
         viewModelScope.launch {
-            _uiState.update { it.copy(isActionLoading = true, actionError = null) }
-            when (val result = orderRepository.dispatchOrder(orderId)) {
+            _uiState.update { it.copy(isActionLoading = true, actionError = null, showDispatchDialog = false) }
+            when (val result = orderRepository.dispatchOrder(orderId, deliveryNotes, customerDeliveryNote)) {
                 is Result.Success -> {
                     _uiState.update { it.copy(isActionLoading = false) }
                     loadOrder()
@@ -263,7 +297,7 @@ class OrderDetailsViewModel @Inject constructor(
     }
 
     /**
-     * Executes the confirmed action.
+     * Executes the confirmed action and dismisses the dialog.
      */
     fun executeConfirmedAction() {
         val action = _uiState.value.showConfirmDialog

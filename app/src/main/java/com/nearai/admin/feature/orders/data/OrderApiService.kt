@@ -48,7 +48,7 @@ interface OrderApiService {
     suspend fun processOrder(@Path("order_id") orderId: String)
 
     @POST("api/v1/orders/{order_id}/dispatch")
-    suspend fun dispatchOrder(@Path("order_id") orderId: String)
+    suspend fun dispatchOrder(@Path("order_id") orderId: String, @Body request: DispatchOrderRequest?)
 
     @POST("api/v1/orders/{order_id}/deliver")
     suspend fun deliverOrder(@Path("order_id") orderId: String)
@@ -185,7 +185,8 @@ data class OrderDetailsResponse(
     @SerialName("delivery_apartment") val deliveryApartment: String? = null,
     @SerialName("delivery_instructions") val deliveryInstructions: String? = null,
     @SerialName("approval_status") val approvalStatus: String? = null,
-    @SerialName("approval_decision") val approvalDecision: ApprovalDecisionDto? = null
+    @SerialName("approval_decision") val approvalDecision: ApprovalDecisionDto? = null,
+    @SerialName("shipment_info") val shipmentInfo: ShipmentDto? = null
 )
 
 /**
@@ -289,4 +290,35 @@ data class ReviewQueueResponse(
     @SerialName("page") val page: Int,
     @SerialName("size") val size: Int,
     @SerialName("total_pages") val totalPages: Int
+)
+
+// =============================================================================
+// Shipment DTOs
+// =============================================================================
+
+/**
+ * Shipment information DTO.
+ * Backend fields: delivery_notes (admin-only), customer_delivery_note,
+ * dispatched_at, dispatched_by, tracking_number, carrier
+ */
+@Serializable
+data class ShipmentDto(
+    @SerialName("id") val id: String? = null,
+    @SerialName("order_id") val orderId: String? = null,
+    @SerialName("delivery_notes") val deliveryNotes: String? = null,
+    @SerialName("customer_delivery_note") val customerDeliveryNote: String? = null,
+    @SerialName("dispatched_at") val dispatchedAt: String? = null,
+    @SerialName("dispatched_by") val dispatchedBy: String? = null,
+    @SerialName("tracking_number") val trackingNumber: String? = null,
+    @SerialName("carrier") val carrier: String? = null
+)
+
+/**
+ * Dispatch order request body.
+ * Backend expects: { "delivery_notes": "...", "customer_delivery_note": "..." }
+ */
+@Serializable
+data class DispatchOrderRequest(
+    @SerialName("delivery_notes") val deliveryNotes: String? = null,
+    @SerialName("customer_delivery_note") val customerDeliveryNote: String? = null
 )

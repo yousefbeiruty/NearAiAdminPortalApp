@@ -215,4 +215,21 @@
     <!-- Orders List Approval Filter -->
     <string name="orders_filter_approval">Approval Status</string>
     <string name="orders_filter_approval_all">All</string>
+
+    <!-- Shipment Info -->
+    <string name="order_details_shipment_info">Shipment Information</string>
+    <string name="order_label_delivery_notes">Delivery Notes</string>
+    <string name="order_label_customer_delivery_note">Customer Note</string>
+    <string name="order_label_tracking_number">Tracking Number</string>
+    <string name="order_label_carrier">Carrier</string>
+    <string name="order_label_dispatched_at">Dispatched At</string>
+    <string name="order_label_dispatched_by">Dispatched By</string>
+    <string name="order_shipment_not_dispatched">This order has not been dispatched yet.</string>
+
+    <!-- Dispatch Dialog -->
+    <string name="order_dispatch_title">Dispatch Order</string>
+    <string name="order_dispatch_description">Add delivery notes for this shipment. Internal notes are visible only to admins.</string>
+    <string name="order_dispatch_delivery_notes_hint">Internal delivery notes (admin only)</string>
+    <string name="order_dispatch_customer_note_hint">Customer-facing note</string>
+    <string name="order_dispatch_button">Dispatch</string>
 </resources>

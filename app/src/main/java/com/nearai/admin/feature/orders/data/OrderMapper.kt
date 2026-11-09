@@ -11,6 +11,7 @@ import com.nearai.admin.feature.orders.domain.OrderSummary
 import com.nearai.admin.feature.orders.domain.PaginatedOrders
 import com.nearai.admin.feature.orders.domain.PaginatedReviewQueue
 import com.nearai.admin.feature.orders.domain.ReviewQueueOrder
+import com.nearai.admin.feature.orders.domain.ShipmentInfo
 import com.nearai.admin.feature.orders.domain.StatusHistoryEntry
 
 /**
@@ -62,7 +63,8 @@ object OrderMapper {
         deliveryApartment = dto.deliveryApartment,
         deliveryInstructions = dto.deliveryInstructions,
         approvalStatus = dto.approvalStatus?.let { ApprovalStatus.fromString(it) },
-        approvalDecision = dto.approvalDecision?.let { mapApprovalDecision(it) }
+        approvalDecision = dto.approvalDecision?.let { mapApprovalDecision(it) },
+        shipmentInfo = dto.shipmentInfo?.let { mapShipmentInfo(it) }
     )
 
     fun mapOrderItem(dto: OrderItemDto): OrderItem = OrderItem(
@@ -140,5 +142,20 @@ object OrderMapper {
         version = dto.version,
         updatedAt = dto.updatedAt,
         updatedBy = dto.updatedBy
+    )
+
+    // =============================================================================
+    // Shipment Mappings
+    // =============================================================================
+
+    fun mapShipmentInfo(dto: ShipmentDto): ShipmentInfo = ShipmentInfo(
+        id = dto.id,
+        orderId = dto.orderId,
+        deliveryNotes = dto.deliveryNotes,
+        customerDeliveryNote = dto.customerDeliveryNote,
+        dispatchedAt = dto.dispatchedAt,
+        dispatchedBy = dto.dispatchedBy,
+        trackingNumber = dto.trackingNumber,
+        carrier = dto.carrier
     )
 }

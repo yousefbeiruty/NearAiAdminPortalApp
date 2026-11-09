@@ -107,10 +107,18 @@ class OrderRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun dispatchOrder(orderId: String): Result<Unit> {
+    override suspend fun dispatchOrder(
+        orderId: String,
+        deliveryNotes: String?,
+        customerDeliveryNote: String?
+    ): Result<Unit> {
         return tokenRefreshManager.refreshAndRetry {
             try {
-                apiService.dispatchOrder(orderId)
+                val request = DispatchOrderRequest(
+                    deliveryNotes = deliveryNotes,
+                    customerDeliveryNote = customerDeliveryNote
+                )
+                apiService.dispatchOrder(orderId, request)
                 Result.Success(Unit)
             } catch (e: Exception) {
                 handleOrderException(e)

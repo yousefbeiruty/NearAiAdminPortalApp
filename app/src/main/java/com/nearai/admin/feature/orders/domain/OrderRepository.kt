@@ -64,7 +64,8 @@ data class OrderDetails(
     val deliveryApartment: String?,
     val deliveryInstructions: String?,
     val approvalStatus: ApprovalStatus? = null,
-    val approvalDecision: ApprovalDecisionSnapshot? = null
+    val approvalDecision: ApprovalDecisionSnapshot? = null,
+    val shipmentInfo: ShipmentInfo? = null
 )
 
 /**
@@ -169,6 +170,21 @@ data class PaginatedReviewQueue(
 )
 
 /**
+ * Shipment information for an order.
+ * Contains delivery notes (admin-only and customer-facing), tracking info, etc.
+ */
+data class ShipmentInfo(
+    val id: String?,
+    val orderId: String?,
+    val deliveryNotes: String?,
+    val customerDeliveryNote: String?,
+    val dispatchedAt: String?,
+    val dispatchedBy: String?,
+    val trackingNumber: String?,
+    val carrier: String?
+)
+
+/**
  * Repository interface for order management operations.
  * Belongs in the domain layer so the presentation layer depends on an abstraction.
  */
@@ -210,9 +226,13 @@ interface OrderRepository {
     suspend fun processOrder(orderId: String): Result<Unit>
 
     /**
-     * Dispatches a processed order for delivery.
+     * Dispatches a processed order for delivery with optional delivery notes.
      */
-    suspend fun dispatchOrder(orderId: String): Result<Unit>
+    suspend fun dispatchOrder(
+        orderId: String,
+        deliveryNotes: String? = null,
+        customerDeliveryNote: String? = null
+    ): Result<Unit>
 
     /**
      * Marks an order as delivered.
