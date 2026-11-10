@@ -49,7 +49,7 @@ fun DashboardScreenPopulatedPreview() {
                 com.nearai.admin.feature.dashboard.presentation.RevenueItem(
                     currency = rev.currency,
                     amount = rev.amount,
-                    formattedAmount = String.format(Locale.US, "%.2f %s", rev.amount, rev.currency)
+                    formattedAmount = formatCurrency(rev.amount, rev.currency)
                 )
             },
             recentOrders = data.recentOrders.map { order ->
@@ -60,7 +60,7 @@ fun DashboardScreenPopulatedPreview() {
                     status = order.status,
                     total = order.total,
                     currency = order.currency,
-                    formattedTotal = String.format(Locale.US, "%.2f %s", order.total, order.currency)
+                    formattedTotal = formatCurrency(order.total, order.currency)
                 )
             },
             recentRegistrations = data.recentRegistrations.map { reg ->
@@ -113,5 +113,16 @@ fun DashboardScreenEmptyPreview() {
             onRetry = {},
             onRefresh = {}
         )
+    }
+}
+
+private fun formatCurrency(amount: Double, currencyCode: String): String {
+    return try {
+        val format = java.text.NumberFormat.getCurrencyInstance(Locale.US).apply {
+            currency = java.util.Currency.getInstance(currencyCode.ifBlank { "USD" })
+        }
+        format.format(amount)
+    } catch (_: Exception) {
+        String.format(Locale.US, "%.2f %s", amount, currencyCode)
     }
 }
