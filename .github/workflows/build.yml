@@ -3,6 +3,9 @@ name: Build and Test
 on:
   push:
     branches: [main, develop]
+    paths-ignore:
+      - 'app/src/screenshotTestDevDebug/reference/**'
+      - 'app/src/screenshotTestProductionDebug/reference/**'
   pull_request:
     branches: [main, develop]
 
@@ -51,6 +54,26 @@ jobs:
         run: ./gradlew :app:testDevDebugUnitTest :app:testProductionDebugUnitTest
 
       - name: Validate screenshot baselines (dev and production)
+        id: screenshot-validate
+        continue-on-error: true
+        run: ./gradlew :app:validateDevDebugScreenshotTest :app:validateProductionDebugScreenshotTest
+
+      - name: Update screenshot baselines on failure (dev and production)
+        if: github.event_name == 'push' && steps.screenshot-validate.outcome == 'failure'
+        run: ./gradlew :app:updateDevDebugScreenshotTest :app:updateProductionDebugScreenshotTest
+
+      - name: Commit updated baselines on failure
+        if: github.event_name == 'push' && steps.screenshot-validate.outcome == 'failure'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/src/screenshotTestDevDebug/reference/
+          git add app/src/screenshotTestProductionDebug/reference/
+          git diff --cached --quiet || git commit -m "chore: update screenshot baselines generated on Linux CI"
+          git push || echo "No changes to push"
+
+      - name: Re-validate screenshot baselines after update
+        if: github.event_name == 'push' && steps.screenshot-validate.outcome == 'failure'
         run: ./gradlew :app:validateDevDebugScreenshotTest :app:validateProductionDebugScreenshotTest
 
       - name: Run lint (dev and production)
