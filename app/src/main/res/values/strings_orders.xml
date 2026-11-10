@@ -67,8 +67,8 @@
     <string name="order_action_dispatch">Dispatch</string>
     <string name="order_action_deliver">Deliver</string>
 
-    <!-- Order Currency Format -->
-    <string name="order_currency_format">%1$s %2$.2f</string>
+    <!-- Order Currency Format — amount is pre-formatted with Locale.US for cross-platform consistency -->
+    <string name="order_currency_format">%1$s %2$s</string>
     <string name="order_id_format">#%1$s</string>
 
     <!-- Order Details UI -->
@@ -81,7 +81,7 @@
     <string name="order_details_created">Created</string>
     <string name="order_details_customer_delivery">Customer &amp; Delivery</string>
     <string name="order_details_items_count">Order Items (%1$d)</string>
-    <string name="order_details_quantity">Qty: %1$d × %2$s %3$.2f</string>
+    <string name="order_details_quantity">Qty: %1$d × %2$s %3$s</string>
     <string name="order_details_payment_summary">Payment Summary</string>
     <string name="order_details_status_history">Status History</string>
     <string name="order_details_from">from: %1$s</string>

@@ -37,6 +37,12 @@ import com.nearai.admin.core.designsystem.components.NearAiAlertDialog
 import com.nearai.admin.core.designsystem.components.NearAiAlertType
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.orders.domain.*
+import java.util.Locale
+
+/**
+ * Formats a currency amount with Locale.US for cross-platform consistency.
+ */
+private fun formatAmount(amount: Double): String = String.format(Locale.US, "%.2f", amount)
 
 /**
  * Order details screen with order info, delivery, items, payment, status history, and actions.
@@ -99,7 +105,7 @@ fun OrderDetailsScreen(
             append(stringResource(R.string.order_collect_cash_description))
             uiState.paymentInfo?.let { payment ->
                 append("\n")
-                append(stringResource(R.string.order_currency_format, payment.currency, payment.amount))
+                append(stringResource(R.string.order_currency_format, payment.currency, formatAmount(payment.amount)))
             }
         },
         confirmText = stringResource(R.string.order_collect_cash_confirm),
@@ -487,9 +493,9 @@ private fun OrderItemsCard(order: OrderDetails) {
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                     Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                         Text(item.productName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, color = Navy), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        Text(stringResource(R.string.order_details_quantity, item.quantity, order.currency, item.unitPriceAmount), style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
+                        Text(stringResource(R.string.order_details_quantity, item.quantity, order.currency, formatAmount(item.unitPriceAmount)), style = MaterialTheme.typography.bodySmall.copy(color = TextSecondaryLight))
                     }
-                    Text(stringResource(R.string.order_currency_format, order.currency, item.subtotalAmount ?: (item.unitPriceAmount * item.quantity)), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Navy), modifier = Modifier.align(Alignment.Top))
+                    Text(stringResource(R.string.order_currency_format, order.currency, formatAmount(item.subtotalAmount ?: (item.unitPriceAmount * item.quantity))), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Navy), modifier = Modifier.align(Alignment.Top))
                 }
                 if (index < order.items.size - 1) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
@@ -515,22 +521,22 @@ private fun PaymentSummaryCard(order: OrderDetails) {
             Text(stringResource(R.string.order_details_payment_summary), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
             Spacer(modifier = Modifier.height(12.dp))
             order.subtotalAmount?.let {
-                InfoRow(label = stringResource(R.string.order_label_subtotal), value = stringResource(R.string.order_currency_format, order.currency, it))
+                InfoRow(label = stringResource(R.string.order_label_subtotal), value = stringResource(R.string.order_currency_format, order.currency, formatAmount(it)))
             }
             order.deliveryFeeAmount?.let { fee ->
                 if (fee > 0) {
-                    InfoRow(label = stringResource(R.string.order_label_delivery_fee), value = stringResource(R.string.order_currency_format, order.currency, fee))
+                    InfoRow(label = stringResource(R.string.order_label_delivery_fee), value = stringResource(R.string.order_currency_format, order.currency, formatAmount(fee)))
                 }
             }
             order.discountAmount?.let { discount ->
                 if (discount > 0) {
-                    InfoRow(label = stringResource(R.string.order_label_discount), value = "-${stringResource(R.string.order_currency_format, order.currency, discount)}")
+                    InfoRow(label = stringResource(R.string.order_label_discount), value = "-${stringResource(R.string.order_currency_format, order.currency, formatAmount(discount))}")
                 }
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.order_label_total), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
-                Text(stringResource(R.string.order_currency_format, order.currency, order.totalAmount), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Navy))
+                Text(stringResource(R.string.order_currency_format, order.currency, formatAmount(order.totalAmount)), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Navy))
             }
         }
     }
@@ -636,7 +642,7 @@ private fun ApprovalInfoCard(
             if (approvalDecision != null) {
                 InfoRow(
                     label = stringResource(R.string.approval_info_evaluated_amount),
-                    value = stringResource(R.string.order_currency_format, approvalDecision.currency, approvalDecision.evaluatedAmount)
+                    value = stringResource(R.string.order_currency_format, approvalDecision.currency, formatAmount(approvalDecision.evaluatedAmount))
                 )
                 if (!approvalDecision.decisionReason.isNullOrBlank()) {
                     InfoRow(
@@ -1350,7 +1356,7 @@ private fun PaymentStatusCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 InfoRow(
                     label = stringResource(R.string.order_label_payment_amount),
-                    value = stringResource(R.string.order_currency_format, paymentInfo.currency, paymentInfo.amount)
+                    value = stringResource(R.string.order_currency_format, paymentInfo.currency, formatAmount(paymentInfo.amount))
                 )
                 if (!paymentInfo.collectedAt.isNullOrBlank()) {
                     InfoRow(

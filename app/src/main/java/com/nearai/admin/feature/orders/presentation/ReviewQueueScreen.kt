@@ -35,6 +35,12 @@ import com.nearai.admin.core.designsystem.components.NearAiAlertType
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.orders.domain.ApprovalStatus
 import com.nearai.admin.feature.orders.domain.ReviewQueueOrder
+import java.util.Locale
+
+/**
+ * Formats a currency amount with Locale.US for cross-platform consistency.
+ */
+private fun formatAmount(amount: Double): String = String.format(Locale.US, "%.2f", amount)
 
 /**
  * Review queue screen showing orders awaiting manual approval.
@@ -390,7 +396,7 @@ private fun ReviewQueueOrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    stringResource(R.string.order_currency_format, order.currency, order.totalAmount),
+                    stringResource(R.string.order_currency_format, order.currency, formatAmount(order.totalAmount)),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = Navy

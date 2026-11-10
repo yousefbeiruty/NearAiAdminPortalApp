@@ -711,7 +711,7 @@ fun InventoryItem.toSkuItem(): SkuItem {
         id = product.id,
         title = product.name,
         skuCode = variant?.variant?.sku ?: product.slug,
-        price = "$${String.format("%.2f", product.priceAmount)}",
+        price = "$${String.format(Locale.US, "%.2f", product.priceAmount)}",
         billingCycle = "per unit",
         status = status,
         leadingIcon = product.status.toLeadingIcon(),

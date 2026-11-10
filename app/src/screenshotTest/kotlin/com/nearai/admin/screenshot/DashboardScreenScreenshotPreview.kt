@@ -7,6 +7,7 @@ import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
 import com.nearai.admin.feature.dashboard.presentation.DashboardScreenContent
 import com.nearai.admin.feature.dashboard.presentation.DashboardUiState
 import com.nearai.admin.test.TestDataFactory
+import java.util.Locale
 
 /**
  * Screenshot previews for the Dashboard screen.
@@ -48,7 +49,7 @@ fun DashboardScreenPopulatedPreview() {
                 com.nearai.admin.feature.dashboard.presentation.RevenueItem(
                     currency = rev.currency,
                     amount = rev.amount,
-                    formattedAmount = String.format("%.2f %s", rev.amount, rev.currency)
+                    formattedAmount = String.format(Locale.US, "%.2f %s", rev.amount, rev.currency)
                 )
             },
             recentOrders = data.recentOrders.map { order ->
@@ -59,7 +60,7 @@ fun DashboardScreenPopulatedPreview() {
                     status = order.status,
                     total = order.total,
                     currency = order.currency,
-                    formattedTotal = String.format("%.2f %s", order.total, order.currency)
+                    formattedTotal = String.format(Locale.US, "%.2f %s", order.total, order.currency)
                 )
             },
             recentRegistrations = data.recentRegistrations.map { reg ->

@@ -193,17 +193,18 @@ class DashboardViewModel @Inject constructor(
     }
 
     /**
-     * Formats a currency amount using the locale-aware formatter.
+     * Formats a currency amount using a consistent US locale formatter
+     * for cross-platform consistency (macOS, Linux, Android).
      */
     private fun formatCurrency(amount: Double, currencyCode: String): String {
         return try {
-            val format = NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
+            val format = NumberFormat.getCurrencyInstance(Locale.US).apply {
                 currency = java.util.Currency.getInstance(currencyCode.ifBlank { "USD" })
             }
             format.format(amount)
         } catch (_: Exception) {
             // Fallback if currency code is invalid
-            String.format(Locale.getDefault(), "%.2f %s", amount, currencyCode)
+            String.format(Locale.US, "%.2f %s", amount, currencyCode)
         }
     }
 

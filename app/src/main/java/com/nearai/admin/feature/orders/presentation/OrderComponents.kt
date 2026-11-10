@@ -17,6 +17,7 @@ import com.nearai.admin.feature.orders.domain.ApprovalStatus
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderStatus
 import com.nearai.admin.feature.orders.domain.OrderSummary
+import java.util.Locale
 
 /**
  * Compact card for a single order in the orders list.
@@ -93,7 +94,7 @@ fun OrderSummaryCard(
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "${order.currency} ${"%.2f".format(order.totalAmount)}",
+                        text = "${order.currency} ${String.format(Locale.US, "%.2f", order.totalAmount)}",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
