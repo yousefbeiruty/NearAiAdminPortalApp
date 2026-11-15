@@ -56,6 +56,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -438,7 +439,8 @@ private fun MfaCard(
                         Text(
                             text = uiState.error ?: stringResource(R.string.auth_error_email_not_verified),
                             style = MaterialTheme.typography.bodySmall,
-                            color = AmberDark
+                            color = AmberDark,
+                            modifier = Modifier.testTag("signInError")
                         )
                     }
                 }
@@ -446,7 +448,8 @@ private fun MfaCard(
                 Text(
                     text = uiState.error,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.testTag("signInError")
                 )
             }
 
@@ -456,7 +459,8 @@ private fun MfaCard(
                 enabled = !uiState.isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(52.dp)
+                    .testTag("signInButton"),
                 shape = RoundedCornerShape(12.dp),
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                     containerColor = Navy
@@ -464,7 +468,9 @@ private fun MfaCard(
             ) {
                 if (uiState.isLoading) {
                     androidx.compose.material3.CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier
+                            .size(24.dp)
+                            .testTag("signInLoading"),
                         color = Color.White,
                         strokeWidth = 2.dp
                     )
@@ -591,7 +597,9 @@ private fun EmailField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("signInEmailField"),
             placeholder = {
                 Text(
                     text = stringResource(R.string.auth_email_placeholder),
@@ -673,7 +681,9 @@ private fun PasswordField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("signInPasswordField"),
             placeholder = {
                 Text(
                     text = stringResource(R.string.auth_password_placeholder),

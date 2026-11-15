@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.testTag
+
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -743,7 +744,8 @@ private fun ContextualActionCard(
                         icon = Icons.Outlined.CheckCircle,
                         onClick = onApproveForReview,
                         isLoading = isActionLoading,
-                        isDestructive = false
+                        isDestructive = false,
+                        testTag = "approveOrderButton"
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     // Secondary: Reject
@@ -752,7 +754,8 @@ private fun ContextualActionCard(
                         icon = Icons.Outlined.Block,
                         onClick = onRejectApproval,
                         isLoading = isActionLoading,
-                        isDestructive = true
+                        isDestructive = true,
+                        testTag = "rejectApprovalButton"
                     )
                 }
 
@@ -768,7 +771,8 @@ private fun ContextualActionCard(
                         label = stringResource(R.string.order_action_start_preparing),
                         icon = Icons.Outlined.Build,
                         onClick = onProcess,
-                        isLoading = isActionLoading
+                        isLoading = isActionLoading,
+                        testTag = "processOrderButton"
                     )
                 }
 
@@ -783,7 +787,8 @@ private fun ContextualActionCard(
                         label = stringResource(R.string.order_action_confirm_order),
                         icon = Icons.Outlined.CheckCircle,
                         onClick = onConfirm,
-                        isLoading = isActionLoading
+                        isLoading = isActionLoading,
+                        testTag = "confirmOrderButton"
                     )
                 }
 
@@ -795,7 +800,8 @@ private fun ContextualActionCard(
                         label = stringResource(R.string.order_action_start_preparing),
                         icon = Icons.Outlined.Build,
                         onClick = onProcess,
-                        isLoading = isActionLoading
+                        isLoading = isActionLoading,
+                        testTag = "processOrderButton"
                     )
                 }
 
@@ -805,7 +811,8 @@ private fun ContextualActionCard(
                         label = stringResource(R.string.order_action_mark_ready),
                         icon = Icons.Outlined.LocalShipping,
                         onClick = onDispatch,
-                        isLoading = isActionLoading
+                        isLoading = isActionLoading,
+                        testTag = "dispatchOrderButton"
                     )
                 }
 
@@ -815,7 +822,8 @@ private fun ContextualActionCard(
                         label = stringResource(R.string.order_action_confirm_delivery),
                         icon = Icons.Outlined.CheckCircle,
                         onClick = onDeliver,
-                        isLoading = isActionLoading
+                        isLoading = isActionLoading,
+                        testTag = "deliverOrderButton"
                     )
                 }
 
@@ -828,7 +836,8 @@ private fun ContextualActionCard(
                         icon = Icons.Outlined.MonetizationOn,
                         onClick = onCollectCash,
                         isLoading = isCollectingCash,
-                        isDestructive = false
+                        isDestructive = false,
+                        testTag = "collectCashButton"
                     )
                 }
 
@@ -908,12 +917,15 @@ private fun ActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,
     isLoading: Boolean,
-    isDestructive: Boolean = false
+    isDestructive: Boolean = false,
+    testTag: String? = null
 ) {
     Button(
         onClick = onClick,
         enabled = !isLoading,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(testTag?.let { Modifier.testTag(it) } ?: Modifier),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (isDestructive) RoseError else Navy,
@@ -1495,7 +1507,9 @@ private fun DispatchDialog(
                 OutlinedTextField(
                     value = deliveryNotes,
                     onValueChange = onDeliveryNotesChanged,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("dispatchDeliveryNotesField"),
                     placeholder = { Text(stringResource(R.string.order_dispatch_delivery_notes_hint)) },
                     minLines = 2,
                     shape = RoundedCornerShape(12.dp)
@@ -1505,7 +1519,9 @@ private fun DispatchDialog(
                 OutlinedTextField(
                     value = customerDeliveryNote,
                     onValueChange = onCustomerDeliveryNoteChanged,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("dispatchCustomerNoteField"),
                     placeholder = { Text(stringResource(R.string.order_dispatch_customer_note_hint)) },
                     minLines = 2,
                     shape = RoundedCornerShape(12.dp)
@@ -1528,7 +1544,8 @@ private fun DispatchDialog(
                         ),
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp),
+                            .height(48.dp)
+                            .testTag("dispatchDialogCancelButton"),
                     ) {
                         Text(
                             text = stringResource(R.string.order_details_cancel),
@@ -1552,7 +1569,8 @@ private fun DispatchDialog(
                         ),
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp),
+                            .height(48.dp)
+                            .testTag("dispatchDialogConfirmButton"),
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(

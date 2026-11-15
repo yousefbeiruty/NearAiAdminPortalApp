@@ -133,6 +133,8 @@ feature/<name>/
 - This rule applies to all four NearAI projects: Admin Android, Customer Android, FastAPI Backend, and Web Admin.
 - Language-specific conventions still apply (lowerCamelCase for Kotlin, snake_case for Python, camelCase for TypeScript).
 
+**Cross-project reference:** The authoritative naming standard for all four NearAI repositories is documented in `docs/architecture/NEARAI_CROSS_PROJECT_NAMING_STANDARD.md` (FastAPI Backend repository).
+
 ---
 
 ## 3. Admin Android-Specific Rules

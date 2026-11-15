@@ -28,6 +28,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -129,6 +132,7 @@ fun NearAiBottomNavBar(
             val isSelected = currentRoute?.endsWith(routeSimpleName) == true
 
             NavigationBarItem(
+                modifier = Modifier.semantics { testTag = "bottomNav_${routeSimpleName}" },
                 selected = isSelected,
                 onClick = {
                     if (!isSelected) {

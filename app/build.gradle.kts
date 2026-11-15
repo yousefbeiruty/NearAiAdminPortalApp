@@ -50,6 +50,12 @@ android {
             dimension = "default"
             resValue("string", "app_name", "NearAI Admin")
         }
+        create("e2e") {
+            dimension = "default"
+            applicationIdSuffix = ".e2e"
+            versionNameSuffix = "-e2e"
+            resValue("string", "app_name", "NearAI Admin E2E")
+        }
     }
 
     productFlavors.all {

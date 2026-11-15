@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -299,7 +300,8 @@ fun NearAiAlertDialog(
                             ),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(48.dp),
+                                .height(48.dp)
+                                .testTag("alertDialogDismissButton"),
                         ) {
                             Text(
                                 text = dismissText,
@@ -323,7 +325,8 @@ fun NearAiAlertDialog(
                             ),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(48.dp),
+                                .height(48.dp)
+                                .testTag("alertDialogConfirmButton"),
                         ) {
                             if (isLoading) {
                                 androidx.compose.material3.CircularProgressIndicator(
