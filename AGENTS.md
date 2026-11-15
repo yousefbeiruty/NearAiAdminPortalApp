@@ -110,6 +110,29 @@ feature/<name>/
 - Avoid broad exception handling that hides failures.
 - Never use fake production data to make a feature appear functional.
 
+### Naming Conventions
+
+- Follow existing naming and formatting conventions.
+- **Do not use `fromX` naming patterns for parsing, conversion, mapping, or object creation methods.** Names such as `fromBackendValue()`, `fromString()`, `fromApiValue()`, `fromDto()`, `fromJson()`, `fromResponse()`, and `fromEntity()` are unacceptable for new or existing internal methods.
+- **Use descriptive operation-based names** that communicate what the function does, not where its input originates:
+  - **Parsing with fallback:** `parseOrPending()`, `parseOrActive()`, `parseOrNull()`
+  - **Parsing (strict):** `parsePaymentStatus()`
+  - **DTO mapping:** `mapOrderSummary()`, `mapProductResponse()`
+  - **Domain mapping:** `mapToDomain()` or a more descriptive name
+  - **Validation:** `validatePaymentStatus()`
+  - **Normalization:** `normalizeStatus()`
+  - **Object creation:** `createPaymentInfo()`, `buildPaymentSummary()`
+  - **Lookup:** `findPaymentStatus()`
+  - **Resolution:** `resolvePaymentStatus()`
+- Every identifier must communicate:
+  1. What operation it performs.
+  2. What responsibility it owns.
+  3. What kind of result it produces.
+  4. Whether it can fail or use a fallback, where relevant.
+- Do not accept ambiguous names, generic names when a meaningful name is available, or names based on the origin of input rather than function behavior.
+- This rule applies to all four NearAI projects: Admin Android, Customer Android, FastAPI Backend, and Web Admin.
+- Language-specific conventions still apply (lowerCamelCase for Kotlin, snake_case for Python, camelCase for TypeScript).
+
 ---
 
 ## 3. Admin Android-Specific Rules
