@@ -304,66 +304,66 @@ class OrderMapperTest {
     }
 
     @Test
-    fun `OrderStatus fromString handles lowercase`() {
-        assertEquals(OrderStatus.PENDING, OrderStatus.fromString("pending"))
-        assertEquals(OrderStatus.COMPLETED, OrderStatus.fromString("completed"))
-        assertEquals(OrderStatus.CANCELLED, OrderStatus.fromString("cancelled"))
-        assertEquals(OrderStatus.REJECTED, OrderStatus.fromString("rejected"))
+    fun `OrderStatus parseOrPending handles lowercase`() {
+        assertEquals(OrderStatus.PENDING, OrderStatus.parseOrPending("pending"))
+        assertEquals(OrderStatus.COMPLETED, OrderStatus.parseOrPending("completed"))
+        assertEquals(OrderStatus.CANCELLED, OrderStatus.parseOrPending("cancelled"))
+        assertEquals(OrderStatus.REJECTED, OrderStatus.parseOrPending("rejected"))
     }
 
     @Test
-    fun `OrderStatus fromString handles uppercase`() {
-        assertEquals(OrderStatus.PENDING, OrderStatus.fromString("PENDING"))
-        assertEquals(OrderStatus.COMPLETED, OrderStatus.fromString("COMPLETED"))
+    fun `OrderStatus parseOrPending handles uppercase`() {
+        assertEquals(OrderStatus.PENDING, OrderStatus.parseOrPending("PENDING"))
+        assertEquals(OrderStatus.COMPLETED, OrderStatus.parseOrPending("COMPLETED"))
     }
 
     @Test
-    fun `OrderStatus fromString falls back to PENDING for unknown`() {
-        assertEquals(OrderStatus.PENDING, OrderStatus.fromString("unknown_status"))
+    fun `OrderStatus parseOrPending falls back to PENDING for unknown`() {
+        assertEquals(OrderStatus.PENDING, OrderStatus.parseOrPending("unknown_status"))
     }
 
     @Test
-    fun `FulfillmentStatus fromString handles snake_case`() {
-        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("awaiting_confirmation"))
-        assertEquals(FulfillmentStatus.CONFIRMED, FulfillmentStatus.fromString("confirmed"))
-        assertEquals(FulfillmentStatus.PROCESSING, FulfillmentStatus.fromString("processing"))
-        assertEquals(FulfillmentStatus.OUT_FOR_DELIVERY, FulfillmentStatus.fromString("out_for_delivery"))
-        assertEquals(FulfillmentStatus.DELIVERED, FulfillmentStatus.fromString("delivered"))
+    fun `FulfillmentStatus parseOrAwaitingConfirmation handles snake_case`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.parseOrAwaitingConfirmation("awaiting_confirmation"))
+        assertEquals(FulfillmentStatus.CONFIRMED, FulfillmentStatus.parseOrAwaitingConfirmation("confirmed"))
+        assertEquals(FulfillmentStatus.PROCESSING, FulfillmentStatus.parseOrAwaitingConfirmation("processing"))
+        assertEquals(FulfillmentStatus.OUT_FOR_DELIVERY, FulfillmentStatus.parseOrAwaitingConfirmation("out_for_delivery"))
+        assertEquals(FulfillmentStatus.DELIVERED, FulfillmentStatus.parseOrAwaitingConfirmation("delivered"))
     }
 
     @Test
-    fun `FulfillmentStatus fromString falls back to AWAITING_CONFIRMATION for unknown`() {
-        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("unknown_status"))
+    fun `FulfillmentStatus parseOrAwaitingConfirmation falls back to AWAITING_CONFIRMATION for unknown`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.parseOrAwaitingConfirmation("unknown_status"))
     }
 
     @Test
-    fun `FulfillmentStatus fromString falls back for blank string`() {
-        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString(""))
+    fun `FulfillmentStatus parseOrAwaitingConfirmation falls back for blank string`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.parseOrAwaitingConfirmation(""))
     }
 
     @Test
-    fun `FulfillmentStatus fromString falls back for whitespace`() {
-        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("  "))
+    fun `FulfillmentStatus parseOrAwaitingConfirmation falls back for whitespace`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.parseOrAwaitingConfirmation("  "))
     }
 
     @Test
-    fun `FulfillmentStatus fromString handles uppercase`() {
-        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("AWAITING_CONFIRMATION"))
-        assertEquals(FulfillmentStatus.CONFIRMED, FulfillmentStatus.fromString("CONFIRMED"))
-        assertEquals(FulfillmentStatus.PROCESSING, FulfillmentStatus.fromString("PROCESSING"))
-        assertEquals(FulfillmentStatus.OUT_FOR_DELIVERY, FulfillmentStatus.fromString("OUT_FOR_DELIVERY"))
-        assertEquals(FulfillmentStatus.DELIVERED, FulfillmentStatus.fromString("DELIVERED"))
+    fun `FulfillmentStatus parseOrAwaitingConfirmation handles uppercase`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.parseOrAwaitingConfirmation("AWAITING_CONFIRMATION"))
+        assertEquals(FulfillmentStatus.CONFIRMED, FulfillmentStatus.parseOrAwaitingConfirmation("CONFIRMED"))
+        assertEquals(FulfillmentStatus.PROCESSING, FulfillmentStatus.parseOrAwaitingConfirmation("PROCESSING"))
+        assertEquals(FulfillmentStatus.OUT_FOR_DELIVERY, FulfillmentStatus.parseOrAwaitingConfirmation("OUT_FOR_DELIVERY"))
+        assertEquals(FulfillmentStatus.DELIVERED, FulfillmentStatus.parseOrAwaitingConfirmation("DELIVERED"))
     }
 
     @Test
-    fun `FulfillmentStatus fromString falls back for legacy unfulfilled`() {
-        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("unfulfilled"))
+    fun `FulfillmentStatus parseOrAwaitingConfirmation falls back for legacy unfulfilled`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.parseOrAwaitingConfirmation("unfulfilled"))
     }
 
     @Test
-    fun `FulfillmentStatus fromString falls back for unknown future value`() {
-        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("returned"))
-        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("refunded"))
+    fun `FulfillmentStatus parseOrAwaitingConfirmation falls back for unknown future value`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.parseOrAwaitingConfirmation("returned"))
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.parseOrAwaitingConfirmation("refunded"))
     }
 
     // =============================================================================
@@ -373,7 +373,7 @@ class OrderMapperTest {
     @Test
     fun `unknown fulfillment value maps to AWAITING_CONFIRMATION and does not match other actions`() {
         // Simulate the backend returning an unknown future fulfillment value
-        val unknown = FulfillmentStatus.fromString("returned")
+        val unknown = FulfillmentStatus.parseOrAwaitingConfirmation("returned")
 
         // The fallback is AWAITING_CONFIRMATION
         assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, unknown)
@@ -387,7 +387,7 @@ class OrderMapperTest {
 
     @Test
     fun `legacy unfulfilled maps to AWAITING_CONFIRMATION and does not match other actions`() {
-        val legacy = FulfillmentStatus.fromString("unfulfilled")
+        val legacy = FulfillmentStatus.parseOrAwaitingConfirmation("unfulfilled")
 
         assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, legacy)
         assertNotEquals(FulfillmentStatus.CONFIRMED, legacy)
@@ -398,7 +398,7 @@ class OrderMapperTest {
 
     @Test
     fun `blank fulfillment value maps to AWAITING_CONFIRMATION and does not match other actions`() {
-        val blank = FulfillmentStatus.fromString("")
+        val blank = FulfillmentStatus.parseOrAwaitingConfirmation("")
 
         assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, blank)
         assertNotEquals(FulfillmentStatus.CONFIRMED, blank)
@@ -411,11 +411,11 @@ class OrderMapperTest {
     fun `all five canonical fulfillment statuses parse to distinct enum values`() {
         // Verify no two canonical values map to the same enum entry
         val statuses = listOf(
-            FulfillmentStatus.fromString("awaiting_confirmation"),
-            FulfillmentStatus.fromString("confirmed"),
-            FulfillmentStatus.fromString("processing"),
-            FulfillmentStatus.fromString("out_for_delivery"),
-            FulfillmentStatus.fromString("delivered")
+            FulfillmentStatus.parseOrAwaitingConfirmation("awaiting_confirmation"),
+            FulfillmentStatus.parseOrAwaitingConfirmation("confirmed"),
+            FulfillmentStatus.parseOrAwaitingConfirmation("processing"),
+            FulfillmentStatus.parseOrAwaitingConfirmation("out_for_delivery"),
+            FulfillmentStatus.parseOrAwaitingConfirmation("delivered")
         )
 
         assertEquals(5, statuses.toSet().size)
@@ -448,23 +448,23 @@ class OrderMapperTest {
     // =============================================================================
 
     @Test
-    fun `ApprovalStatus fromString handles snake_case`() {
-        assertEquals(ApprovalStatus.AUTO_APPROVED, ApprovalStatus.fromString("auto_approved"))
-        assertEquals(ApprovalStatus.AWAITING_STANDARD_REVIEW, ApprovalStatus.fromString("awaiting_standard_review"))
-        assertEquals(ApprovalStatus.AWAITING_MANDATORY_APPROVAL, ApprovalStatus.fromString("awaiting_mandatory_approval"))
-        assertEquals(ApprovalStatus.MANUALLY_APPROVED, ApprovalStatus.fromString("manually_approved"))
-        assertEquals(ApprovalStatus.REJECTED, ApprovalStatus.fromString("rejected"))
+    fun `ApprovalStatus parseOrAwaitingReview handles snake_case`() {
+        assertEquals(ApprovalStatus.AUTO_APPROVED, ApprovalStatus.parseOrAwaitingReview("auto_approved"))
+        assertEquals(ApprovalStatus.AWAITING_STANDARD_REVIEW, ApprovalStatus.parseOrAwaitingReview("awaiting_standard_review"))
+        assertEquals(ApprovalStatus.AWAITING_MANDATORY_APPROVAL, ApprovalStatus.parseOrAwaitingReview("awaiting_mandatory_approval"))
+        assertEquals(ApprovalStatus.MANUALLY_APPROVED, ApprovalStatus.parseOrAwaitingReview("manually_approved"))
+        assertEquals(ApprovalStatus.REJECTED, ApprovalStatus.parseOrAwaitingReview("rejected"))
     }
 
     @Test
-    fun `ApprovalStatus fromString handles uppercase`() {
-        assertEquals(ApprovalStatus.AUTO_APPROVED, ApprovalStatus.fromString("AUTO_APPROVED"))
-        assertEquals(ApprovalStatus.MANUALLY_APPROVED, ApprovalStatus.fromString("MANUALLY_APPROVED"))
+    fun `ApprovalStatus parseOrAwaitingReview handles uppercase`() {
+        assertEquals(ApprovalStatus.AUTO_APPROVED, ApprovalStatus.parseOrAwaitingReview("AUTO_APPROVED"))
+        assertEquals(ApprovalStatus.MANUALLY_APPROVED, ApprovalStatus.parseOrAwaitingReview("MANUALLY_APPROVED"))
     }
 
     @Test
-    fun `ApprovalStatus fromString falls back for unknown`() {
-        assertEquals(ApprovalStatus.AWAITING_STANDARD_REVIEW, ApprovalStatus.fromString("unknown_approval"))
+    fun `ApprovalStatus parseOrAwaitingReview falls back for unknown`() {
+        assertEquals(ApprovalStatus.AWAITING_STANDARD_REVIEW, ApprovalStatus.parseOrAwaitingReview("unknown_approval"))
     }
 
     // =============================================================================
@@ -640,38 +640,38 @@ class OrderMapperTest {
     // =============================================================================
 
     @Test
-    fun `PaymentStatus fromString handles all six backend values`() {
-        assertEquals(PaymentStatus.PENDING, PaymentStatus.fromString("pending"))
-        assertEquals(PaymentStatus.COMPLETED, PaymentStatus.fromString("completed"))
-        assertEquals(PaymentStatus.COLLECTED, PaymentStatus.fromString("collected"))
-        assertEquals(PaymentStatus.FAILED, PaymentStatus.fromString("failed"))
-        assertEquals(PaymentStatus.CANCELLED, PaymentStatus.fromString("cancelled"))
-        assertEquals(PaymentStatus.REFUNDED, PaymentStatus.fromString("refunded"))
+    fun `PaymentStatus parseOrPending handles all six backend values`() {
+        assertEquals(PaymentStatus.PENDING, PaymentStatus.parseOrPending("pending"))
+        assertEquals(PaymentStatus.COMPLETED, PaymentStatus.parseOrPending("completed"))
+        assertEquals(PaymentStatus.COLLECTED, PaymentStatus.parseOrPending("collected"))
+        assertEquals(PaymentStatus.FAILED, PaymentStatus.parseOrPending("failed"))
+        assertEquals(PaymentStatus.CANCELLED, PaymentStatus.parseOrPending("cancelled"))
+        assertEquals(PaymentStatus.REFUNDED, PaymentStatus.parseOrPending("refunded"))
     }
 
     @Test
-    fun `PaymentStatus fromString handles uppercase`() {
-        assertEquals(PaymentStatus.PENDING, PaymentStatus.fromString("PENDING"))
-        assertEquals(PaymentStatus.COMPLETED, PaymentStatus.fromString("COMPLETED"))
-        assertEquals(PaymentStatus.COLLECTED, PaymentStatus.fromString("COLLECTED"))
-        assertEquals(PaymentStatus.FAILED, PaymentStatus.fromString("FAILED"))
-        assertEquals(PaymentStatus.CANCELLED, PaymentStatus.fromString("CANCELLED"))
-        assertEquals(PaymentStatus.REFUNDED, PaymentStatus.fromString("REFUNDED"))
+    fun `PaymentStatus parseOrPending handles uppercase`() {
+        assertEquals(PaymentStatus.PENDING, PaymentStatus.parseOrPending("PENDING"))
+        assertEquals(PaymentStatus.COMPLETED, PaymentStatus.parseOrPending("COMPLETED"))
+        assertEquals(PaymentStatus.COLLECTED, PaymentStatus.parseOrPending("COLLECTED"))
+        assertEquals(PaymentStatus.FAILED, PaymentStatus.parseOrPending("FAILED"))
+        assertEquals(PaymentStatus.CANCELLED, PaymentStatus.parseOrPending("CANCELLED"))
+        assertEquals(PaymentStatus.REFUNDED, PaymentStatus.parseOrPending("REFUNDED"))
     }
 
     @Test
-    fun `PaymentStatus fromString falls back to PENDING for unknown`() {
-        assertEquals(PaymentStatus.PENDING, PaymentStatus.fromString("unknown_payment"))
+    fun `PaymentStatus parseOrPending falls back to PENDING for unknown`() {
+        assertEquals(PaymentStatus.PENDING, PaymentStatus.parseOrPending("unknown_payment"))
     }
 
     @Test
-    fun `PaymentStatus fromString falls back for blank string`() {
-        assertEquals(PaymentStatus.PENDING, PaymentStatus.fromString(""))
+    fun `PaymentStatus parseOrPending falls back for blank string`() {
+        assertEquals(PaymentStatus.PENDING, PaymentStatus.parseOrPending(""))
     }
 
     @Test
-    fun `PaymentStatus fromString falls back for whitespace`() {
-        assertEquals(PaymentStatus.PENDING, PaymentStatus.fromString("  "))
+    fun `PaymentStatus parseOrPending falls back for whitespace`() {
+        assertEquals(PaymentStatus.PENDING, PaymentStatus.parseOrPending("  "))
     }
 
     // =============================================================================
@@ -680,7 +680,7 @@ class OrderMapperTest {
 
     @Test
     fun `unknown payment value maps to PENDING and does not match other actions`() {
-        val unknown = PaymentStatus.fromString("returned")
+        val unknown = PaymentStatus.parseOrPending("returned")
 
         assertEquals(PaymentStatus.PENDING, unknown)
         assertNotEquals(PaymentStatus.COMPLETED, unknown)
@@ -692,7 +692,7 @@ class OrderMapperTest {
 
     @Test
     fun `blank payment value maps to PENDING and does not match other actions`() {
-        val blank = PaymentStatus.fromString("")
+        val blank = PaymentStatus.parseOrPending("")
 
         assertEquals(PaymentStatus.PENDING, blank)
         assertNotEquals(PaymentStatus.COMPLETED, blank)
@@ -705,12 +705,12 @@ class OrderMapperTest {
     @Test
     fun `all six canonical payment statuses parse to distinct enum values`() {
         val statuses = listOf(
-            PaymentStatus.fromString("pending"),
-            PaymentStatus.fromString("completed"),
-            PaymentStatus.fromString("collected"),
-            PaymentStatus.fromString("failed"),
-            PaymentStatus.fromString("cancelled"),
-            PaymentStatus.fromString("refunded")
+            PaymentStatus.parseOrPending("pending"),
+            PaymentStatus.parseOrPending("completed"),
+            PaymentStatus.parseOrPending("collected"),
+            PaymentStatus.parseOrPending("failed"),
+            PaymentStatus.parseOrPending("cancelled"),
+            PaymentStatus.parseOrPending("refunded")
         )
 
         assertEquals(6, statuses.toSet().size)

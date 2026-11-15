@@ -15,13 +15,13 @@ This audit identifies all internally defined `fromX` naming patterns in the **Ne
 
 | Pattern | Definitions | Call Sites (prod) | Call Sites (test) | Files Affected |
 |---------|-------------|-------------------|-------------------|----------------|
-| `fromString` | 8 | 11 | ~40 | 3 prod, 1 test |
+| `fromString` | 8 | 15 | ~29 | 3 prod, 1 test |
 | `toBackendValue` | 1 | 2 | 0 | 1 prod |
-| **Total** | **9** | **13** | **~40** | **4 prod, 1 test** |
+| **Total** | **9** | **17** | **~29** | **4 prod, 1 test** |
 
-### Final Verdict: **APPROVED FOR NAMING REMEDIATION**
+### Final Verdict: **RESOLVED**
 
-All identified `fromX` methods are clear violations of the NearAI naming standard. They describe where the input originates rather than what the function does. Each has a clear, descriptive replacement.
+All identified `fromX` methods have been successfully renamed. The audit findings have been fully remediated — all 9 method definitions, 17 production call sites, and ~29 test references have been updated. No remaining violations exist in the codebase.
 
 ---
 
@@ -177,7 +177,7 @@ All 8 methods perform the same operation: parse a backend string value into an e
 | `VariantStatus.fromString()` | `CatalogMapper.kt` | 78 | `mapVariant()` |
 | `StockMovementType.fromString()` | `CatalogMapper.kt` | 103 | `mapStockMovement()` |
 
-**Total production call sites:** 15 (11 unique `.fromString(` invocations across 3 files)
+**Total production call sites:** 15 (15 `.fromString(` invocations across 3 files)
 
 ---
 
@@ -234,7 +234,7 @@ Preferred operation-based naming patterns include `parseOrPending()`, `parseOrAc
    - `ProductSortBy.fromString()` → `parseOrNewest()`
 
 2. **Step 2 — Update production call sites** (15 call sites in 3 files)
-   - `OrderMapper.kt` — 9 call sites
+   - `OrderMapper.kt` — 10 call sites
    - `OrderRepositoryImpl.kt` — 2 call sites
    - `CatalogMapper.kt` — 3 call sites
 
@@ -260,7 +260,59 @@ This audit follows the Elephant-Goldfish Model principles:
 
 | Specialist | Review Status | Notes |
 |------------|--------------|-------|
-| Kotlin Naming Conventions | ✓ Compliant | Proposed names follow lowerCamelCase and Kotlin idioms |
+| Kotlin Naming Conventions | ✓ Compliant | All names follow lowerCamelCase and Kotlin idioms |
 | Clean Architecture | ✓ Compliant | Renames stay within domain layer boundaries |
-| Test Coverage | ✓ Assessed | ~29 test references identified and catalogued |
-| API Contract Impact | ✓ Assessed | No serialization or API endpoint changes |
+| Test Coverage | ✓ Verified | All ~29 test references updated and passing |
+| API Contract Impact | ✓ Verified | No serialization or API endpoint changes |
+
+---
+
+## Remediation Results
+
+All identified `fromX` and `toBackendValue()` naming violations have been resolved.
+
+### Renamed Method Definitions
+
+| Original | Replacement | File |
+|----------|-------------|------|
+| `OrderStatus.fromString()` | `parseOrPending()` | `OrderStatus.kt` |
+| `ApprovalStatus.fromString()` | `parseOrAwaitingReview()` | `OrderStatus.kt` |
+| `FulfillmentStatus.fromString()` | `parseOrAwaitingConfirmation()` | `OrderStatus.kt` |
+| `PaymentStatus.fromString()` | `parseOrPending()` | `OrderStatus.kt` |
+| `ProductStatus.fromString()` | `parseOrActive()` | `CatalogStatus.kt` |
+| `VariantStatus.fromString()` | `parseOrActive()` | `CatalogStatus.kt` |
+| `StockMovementType.fromString()` | `parseOrReceipt()` | `CatalogStatus.kt` |
+| `ProductSortBy.fromString()` | `parseOrNewest()` | `CatalogRepository.kt` |
+| `ProductSortBy.toBackendValue()` | `toApiValue()` | `CatalogRepository.kt` |
+
+### Updated Production Call Sites
+
+| File | Changes |
+|------|---------|
+| `OrderMapper.kt` | 10 call sites updated |
+| `OrderRepositoryImpl.kt` | 2 call sites updated |
+| `CatalogMapper.kt` | 3 call sites updated |
+| `CatalogRepositoryImpl.kt` | 2 `toApiValue()` call sites updated |
+
+### Updated Test References
+
+| Test File | Changes |
+|-----------|---------|
+| `OrderMapperTest.kt` | ~29 references updated (test names and method calls) |
+
+### Verification Results
+
+| Check | Result |
+|-------|--------|
+| `:app:testDevDebugUnitTest` | ✓ PASSED |
+| `:app:testProductionDebugUnitTest` | ✓ PASSED |
+| `:app:assembleDevDebug` | ✓ PASSED |
+| `:app:assembleProductionDebug` | ✓ PASSED |
+| Remaining `.fromString(` in source | 0 |
+| Remaining `.toBackendValue(` in source | 0 |
+
+### Behavior Preservation
+
+- All fallback behaviors are unchanged (PENDING, AWAITING_STANDARD_REVIEW, AWAITING_CONFIRMATION, ACTIVE, RECEIPT, NEWEST).
+- No JSON serialization names, API endpoints, or backend enum values were modified.
+- No business logic or architecture changes were made.

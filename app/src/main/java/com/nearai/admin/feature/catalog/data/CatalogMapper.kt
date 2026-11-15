@@ -44,7 +44,7 @@ object CatalogMapper {
         priceAmount = dto.priceAmount,
         priceCurrency = dto.priceCurrency,
         images = dto.images,
-        status = ProductStatus.fromString(dto.status),
+        status = ProductStatus.parseOrActive(dto.status),
         categoryId = dto.categoryId,
         createdAt = dto.createdAt,
         updatedAt = dto.updatedAt
@@ -75,7 +75,7 @@ object CatalogMapper {
         productId = dto.productId,
         sku = dto.sku,
         attributes = dto.attributes,
-        status = VariantStatus.fromString(dto.status),
+        status = VariantStatus.parseOrActive(dto.status),
         availableQuantity = dto.availableQuantity,
         createdAt = dto.createdAt,
         updatedAt = dto.updatedAt
@@ -100,7 +100,7 @@ object CatalogMapper {
         id = dto.id,
         variantId = dto.variantId,
         quantityDelta = dto.quantityDelta,
-        movementType = StockMovementType.fromString(dto.movementType),
+        movementType = StockMovementType.parseOrReceipt(dto.movementType),
         reason = dto.reason,
         createdAt = dto.createdAt
     )

@@ -159,7 +159,7 @@ class OrderRepositoryImpl @Inject constructor(
                     paymentMethod = response.paymentMethod,
                     amount = response.amount,
                     currency = response.currency,
-                    status = PaymentStatus.fromString(response.status),
+                    status = PaymentStatus.parseOrPending(response.status),
                     collectedAt = response.collectedAt,
                     collectedBy = response.collectedBy
                 ))
@@ -179,7 +179,7 @@ class OrderRepositoryImpl @Inject constructor(
                     paymentMethod = response.paymentMethod,
                     amount = response.amount,
                     currency = response.currency,
-                    status = PaymentStatus.fromString(response.status),
+                    status = PaymentStatus.parseOrPending(response.status),
                     collectedAt = response.collectedAt,
                     collectedBy = response.collectedBy
                 ))

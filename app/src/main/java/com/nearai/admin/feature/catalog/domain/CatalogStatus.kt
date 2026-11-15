@@ -15,7 +15,7 @@ enum class ProductStatus {
          * Safely parses a backend string value to [ProductStatus].
          * Falls back to [ACTIVE] for unknown values so new backend statuses don't crash the app.
          */
-        fun fromString(value: String): ProductStatus {
+        fun parseOrActive(value: String): ProductStatus {
             return values().find { it.name.lowercase() == value.lowercase() }
                 ?: ACTIVE
         }
@@ -36,7 +36,7 @@ enum class VariantStatus {
          * Safely parses a backend string value to [VariantStatus].
          * Falls back to [ACTIVE] for unknown values.
          */
-        fun fromString(value: String): VariantStatus {
+        fun parseOrActive(value: String): VariantStatus {
             return values().find { it.name.lowercase() == value.lowercase() }
                 ?: ACTIVE
         }
@@ -57,7 +57,7 @@ enum class StockMovementType {
     RESERVATION_RELEASE;
 
     companion object {
-        fun fromString(value: String): StockMovementType {
+        fun parseOrReceipt(value: String): StockMovementType {
             val normalized = value.lowercase().replace("_", "_")
             return values().find { it.name.lowercase() == normalized }
                 ?: RECEIPT

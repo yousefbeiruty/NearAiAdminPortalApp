@@ -132,15 +132,15 @@ data class PaginatedStockMovements(
 enum class ProductSortBy {
     NEWEST, PRICE_ASC, PRICE_DESC;
 
-    fun toBackendValue(): String = when (this) {
+    fun toApiValue(): String = when (this) {
         NEWEST -> "newest"
         PRICE_ASC -> "price_asc"
         PRICE_DESC -> "price_desc"
     }
 
     companion object {
-        fun fromString(value: String): ProductSortBy {
-            return values().find { it.toBackendValue() == value.lowercase() }
+        fun parseOrNewest(value: String): ProductSortBy {
+            return values().find { it.toApiValue() == value.lowercase() }
                 ?: NEWEST
         }
     }

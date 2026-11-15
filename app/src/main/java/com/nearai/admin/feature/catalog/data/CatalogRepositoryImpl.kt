@@ -70,7 +70,7 @@ class CatalogRepositoryImpl @Inject constructor(
     ): Result<PaginatedProducts> {
         return tokenRefreshManager.refreshAndRetry {
             try {
-                val response = apiService.listProducts(page, size, categoryId, status?.name?.lowercase(), search, minPrice, maxPrice, sortBy.toBackendValue())
+                val response = apiService.listProducts(page, size, categoryId, status?.name?.lowercase(), search, minPrice, maxPrice, sortBy.toApiValue())
                 Result.Success(CatalogMapper.mapPaginatedProducts(response))
             } catch (e: Exception) {
                 handleException(e)
@@ -84,7 +84,7 @@ class CatalogRepositoryImpl @Inject constructor(
     ): Result<PaginatedProducts> {
         return tokenRefreshManager.refreshAndRetry {
             try {
-                val response = apiService.searchProducts(query, page, size, categoryId, status?.name?.lowercase(), minPrice, maxPrice, sortBy.toBackendValue())
+                val response = apiService.searchProducts(query, page, size, categoryId, status?.name?.lowercase(), minPrice, maxPrice, sortBy.toApiValue())
                 Result.Success(CatalogMapper.mapPaginatedProducts(response))
             } catch (e: Exception) {
                 handleException(e)

@@ -23,8 +23,8 @@ object OrderMapper {
     fun mapOrderSummary(dto: OrderSummaryDto): OrderSummary = OrderSummary(
         id = dto.id,
         createdAt = dto.createdAt,
-        status = OrderStatus.fromString(dto.status),
-        fulfillmentStatus = FulfillmentStatus.fromString(dto.fulfillmentStatus),
+        status = OrderStatus.parseOrPending(dto.status),
+        fulfillmentStatus = FulfillmentStatus.parseOrAwaitingConfirmation(dto.fulfillmentStatus),
         totalAmount = dto.totalAmount,
         subtotalAmount = dto.subtotalAmount,
         deliveryFeeAmount = dto.deliveryFeeAmount,
@@ -39,15 +39,15 @@ object OrderMapper {
         deliveryBuildingNumber = dto.deliveryBuildingNumber,
         deliveryApartment = dto.deliveryApartment,
         deliveryInstructions = dto.deliveryInstructions,
-        approvalStatus = dto.approvalStatus?.let { ApprovalStatus.fromString(it) },
+        approvalStatus = dto.approvalStatus?.let { ApprovalStatus.parseOrAwaitingReview(it) },
         approvalDecision = dto.approvalDecision?.let { mapApprovalDecision(it) }
     )
 
     fun mapOrderDetails(dto: OrderDetailsResponse): OrderDetails = OrderDetails(
         id = dto.id,
         createdAt = dto.createdAt,
-        status = OrderStatus.fromString(dto.status),
-        fulfillmentStatus = FulfillmentStatus.fromString(dto.fulfillmentStatus),
+        status = OrderStatus.parseOrPending(dto.status),
+        fulfillmentStatus = FulfillmentStatus.parseOrAwaitingConfirmation(dto.fulfillmentStatus),
         items = dto.items.map { mapOrderItem(it) },
         subtotalAmount = dto.subtotalAmount,
         deliveryFeeAmount = dto.deliveryFeeAmount,
@@ -62,7 +62,7 @@ object OrderMapper {
         deliveryBuildingNumber = dto.deliveryBuildingNumber,
         deliveryApartment = dto.deliveryApartment,
         deliveryInstructions = dto.deliveryInstructions,
-        approvalStatus = dto.approvalStatus?.let { ApprovalStatus.fromString(it) },
+        approvalStatus = dto.approvalStatus?.let { ApprovalStatus.parseOrAwaitingReview(it) },
         approvalDecision = dto.approvalDecision?.let { mapApprovalDecision(it) },
         shipmentInfo = dto.shipmentInfo?.let { mapShipmentInfo(it) }
     )
@@ -100,7 +100,7 @@ object OrderMapper {
 
     fun mapApprovalDecision(dto: ApprovalDecisionDto): ApprovalDecisionSnapshot =
         ApprovalDecisionSnapshot(
-            decision = ApprovalStatus.fromString(dto.decision),
+            decision = ApprovalStatus.parseOrAwaitingReview(dto.decision),
             evaluatedAmount = dto.evaluatedAmount,
             currency = dto.currency,
             decisionReason = dto.decisionReason,
@@ -113,9 +113,9 @@ object OrderMapper {
     fun mapReviewQueueOrder(dto: ReviewQueueOrderDto): ReviewQueueOrder = ReviewQueueOrder(
         id = dto.id,
         createdAt = dto.createdAt,
-        status = OrderStatus.fromString(dto.status),
-        fulfillmentStatus = FulfillmentStatus.fromString(dto.fulfillmentStatus),
-        approvalStatus = ApprovalStatus.fromString(dto.approvalStatus),
+        status = OrderStatus.parseOrPending(dto.status),
+        fulfillmentStatus = FulfillmentStatus.parseOrAwaitingConfirmation(dto.fulfillmentStatus),
+        approvalStatus = ApprovalStatus.parseOrAwaitingReview(dto.approvalStatus),
         totalAmount = dto.totalAmount,
         currency = dto.currency,
         items = dto.items.map { mapOrderItem(it) },

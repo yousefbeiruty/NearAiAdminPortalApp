@@ -305,3 +305,48 @@ Add explicit `fromX` naming prohibition to the Code Quality section of `AGENTS.m
 - Include the four naming quality requirements (operation, responsibility, result type, fallback behavior).
 - Note that the rule applies across all four NearAI projects.
 - Preserve existing Code Quality content; this is an additive change only.
+
+# Remediation Steps
+
+### ✓ Step 3: Rename all fromX method definitions
+Rename 8 `fromString()` and 1 `toBackendValue()` method definitions across 3 files.
+
+- `OrderStatus.fromString()` → `parseOrPending()`
+- `ApprovalStatus.fromString()` → `parseOrAwaitingReview()`
+- `FulfillmentStatus.fromString()` → `parseOrAwaitingConfirmation()`
+- `PaymentStatus.fromString()` → `parseOrPending()`
+- `ProductStatus.fromString()` → `parseOrActive()`
+- `VariantStatus.fromString()` → `parseOrActive()`
+- `StockMovementType.fromString()` → `parseOrReceipt()`
+- `ProductSortBy.fromString()` → `parseOrNewest()`
+- `ProductSortBy.toBackendValue()` → `toApiValue()`
+
+### ✓ Step 4: Update all production call sites
+Update 17 production call sites across 4 files.
+
+- `OrderMapper.kt` — 10 call sites
+- `OrderRepositoryImpl.kt` — 2 call sites
+- `CatalogMapper.kt` — 3 call sites
+- `CatalogRepositoryImpl.kt` — 2 `toApiValue()` call sites
+
+### ✓ Step 5: Update all test references
+Update ~29 test references in `OrderMapperTest.kt`.
+
+- Rename test function names from `fromString` to the new method names.
+- Update all method call sites in test bodies.
+
+### ✓ Step 6: Verify and validate
+Run tests and builds to confirm correctness.
+
+- `:app:testDevDebugUnitTest` — PASSED
+- `:app:testProductionDebugUnitTest` — PASSED
+- `:app:assembleDevDebug` — PASSED
+- `:app:assembleProductionDebug` — PASSED
+- Grep for remaining `.fromString(` — 0 results
+- Grep for remaining `.toBackendValue(` — 0 results
+
+### ✓ Step 7: Update audit report
+Update `NEARAI_FROMX_NAMING_AUDIT.md` with remediation results.
+
+- Change verdict to RESOLVED.
+- Add remediation results section with renamed methods, updated call sites, and verification results.
