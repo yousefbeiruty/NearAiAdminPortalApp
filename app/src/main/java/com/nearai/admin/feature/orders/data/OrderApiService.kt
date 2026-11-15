@@ -298,19 +298,21 @@ data class ReviewQueueResponse(
 
 /**
  * Shipment information DTO.
- * Backend fields: delivery_notes (admin-only), customer_delivery_note,
- * dispatched_at, dispatched_by, tracking_number, carrier
+ * Backend fields: courier_name, tracking_number, tracking_url, dispatched_at,
+ * delivery_notes (admin-only), customer_delivery_note, estimated_delivery_date
  */
 @Serializable
 data class ShipmentDto(
     @SerialName("id") val id: String? = null,
     @SerialName("order_id") val orderId: String? = null,
-    @SerialName("delivery_notes") val deliveryNotes: String? = null,
-    @SerialName("customer_delivery_note") val customerDeliveryNote: String? = null,
+    @SerialName("courier_name") val courierName: String? = null,
+    @SerialName("tracking_number") val trackingNumber: String? = null,
+    @SerialName("tracking_url") val trackingUrl: String? = null,
     @SerialName("dispatched_at") val dispatchedAt: String? = null,
     @SerialName("dispatched_by") val dispatchedBy: String? = null,
-    @SerialName("tracking_number") val trackingNumber: String? = null,
-    @SerialName("carrier") val carrier: String? = null
+    @SerialName("delivery_notes") val deliveryNotes: String? = null,
+    @SerialName("customer_delivery_note") val customerDeliveryNote: String? = null,
+    @SerialName("estimated_delivery_date") val estimatedDeliveryDate: String? = null
 )
 
 /**

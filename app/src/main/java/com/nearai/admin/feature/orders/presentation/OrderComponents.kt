@@ -153,7 +153,6 @@ val OrderStatus.badgeTint: Color
 
 val FulfillmentStatus.displayLabel: String
     get() = when (this) {
-        FulfillmentStatus.UNFULFILLED -> "Unfulfilled"
         FulfillmentStatus.AWAITING_CONFIRMATION -> "Awaiting"
         FulfillmentStatus.CONFIRMED -> "Confirmed"
         FulfillmentStatus.PROCESSING -> "Processing"
@@ -163,7 +162,6 @@ val FulfillmentStatus.displayLabel: String
 
 val FulfillmentStatus.badgeTint: Color
     get() = when (this) {
-        FulfillmentStatus.UNFULFILLED -> Indigo
         FulfillmentStatus.AWAITING_CONFIRMATION -> Indigo
         FulfillmentStatus.CONFIRMED -> EmeraldSuccess
         FulfillmentStatus.PROCESSING -> Indigo

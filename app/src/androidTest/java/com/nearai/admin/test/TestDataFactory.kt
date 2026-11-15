@@ -75,7 +75,7 @@ object TestDataFactory {
             orderSummary(
                 id = "ord-002",
                 status = OrderStatus.PENDING,
-                fulfillmentStatus = FulfillmentStatus.UNFULFILLED,
+                fulfillmentStatus = FulfillmentStatus.AWAITING_CONFIRMATION,
                 totalAmount = 85.50,
                 currency = "USD",
                 recipientName = "Bob Smith",
@@ -191,7 +191,7 @@ object TestDataFactory {
 
     fun statusHistoryPopulated(): List<StatusHistoryEntry> = listOf(
         StatusHistoryEntry(null, "pending", "order", "system", null, "2026-11-03T14:30:00Z"),
-        StatusHistoryEntry("unfulfilled", "confirmed", "fulfillment", "admin", null, "2026-11-03T15:00:00Z"),
+        StatusHistoryEntry("awaiting_confirmation", "confirmed", "fulfillment", "admin", null, "2026-11-03T15:00:00Z"),
         StatusHistoryEntry("confirmed", "processing", "fulfillment", "admin", null, "2026-11-03T16:00:00Z"),
         StatusHistoryEntry("processing", "out_for_delivery", "fulfillment", "driver", null, "2026-11-04T08:00:00Z")
     )

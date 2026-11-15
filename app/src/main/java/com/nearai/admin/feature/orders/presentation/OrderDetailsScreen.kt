@@ -821,7 +821,7 @@ private fun ContextualActionCard(
 
                 // 9. Delivered with COD payment pending — collect cash
                 order.fulfillmentStatus == FulfillmentStatus.DELIVERED &&
-                        paymentInfo?.status == "pending" &&
+                        paymentInfo?.status == PaymentStatus.PENDING &&
                         paymentInfo.paymentMethod == "cash_on_delivery" -> {
                     ActionButton(
                         label = stringResource(R.string.order_action_record_cash_collection),
@@ -833,7 +833,7 @@ private fun ContextualActionCard(
                 }
 
                 // 10. Payment already collected — show confirmation info
-                paymentInfo?.status == "collected" -> {
+                paymentInfo?.status == PaymentStatus.COLLECTED -> {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -1335,16 +1335,20 @@ private fun PaymentStatusCard(
                     value = if (paymentInfo.paymentMethod == "cash_on_delivery") stringResource(R.string.order_payment_cod) else paymentInfo.paymentMethod
                 )
                 val statusColor = when (paymentInfo.status) {
-                    "collected" -> EmeraldSuccess
-                    "pending" -> AmberWarning
-                    "cancelled" -> TextSecondaryLight
-                    else -> Indigo
+                    PaymentStatus.COLLECTED -> EmeraldSuccess
+                    PaymentStatus.COMPLETED -> EmeraldSuccess
+                    PaymentStatus.PENDING -> AmberWarning
+                    PaymentStatus.CANCELLED -> TextSecondaryLight
+                    PaymentStatus.FAILED -> RoseError
+                    PaymentStatus.REFUNDED -> Indigo
                 }
                 val statusLabel = when (paymentInfo.status) {
-                    "collected" -> stringResource(R.string.order_payment_collected)
-                    "pending" -> stringResource(R.string.order_payment_pending)
-                    "cancelled" -> stringResource(R.string.order_payment_cancelled)
-                    else -> paymentInfo.status
+                    PaymentStatus.COLLECTED -> stringResource(R.string.order_payment_collected)
+                    PaymentStatus.COMPLETED -> stringResource(R.string.order_payment_completed)
+                    PaymentStatus.PENDING -> stringResource(R.string.order_payment_pending)
+                    PaymentStatus.CANCELLED -> stringResource(R.string.order_payment_cancelled)
+                    PaymentStatus.FAILED -> stringResource(R.string.order_payment_failed)
+                    PaymentStatus.REFUNDED -> stringResource(R.string.order_payment_refunded)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
@@ -1388,6 +1392,18 @@ private fun ShipmentInfoCard(shipment: ShipmentInfo) {
             )
             Spacer(modifier = Modifier.height(12.dp))
 
+            shipment.courierName?.let { courierName ->
+                InfoRow(
+                    label = stringResource(R.string.order_label_carrier),
+                    value = courierName
+                )
+            }
+            shipment.trackingNumber?.let { tracking ->
+                InfoRow(
+                    label = stringResource(R.string.order_label_tracking_number),
+                    value = tracking
+                )
+            }
             shipment.deliveryNotes?.let { notes ->
                 InfoRow(
                     label = stringResource(R.string.order_label_delivery_notes),
@@ -1398,18 +1414,6 @@ private fun ShipmentInfoCard(shipment: ShipmentInfo) {
                 InfoRow(
                     label = stringResource(R.string.order_label_customer_delivery_note),
                     value = note
-                )
-            }
-            shipment.trackingNumber?.let { tracking ->
-                InfoRow(
-                    label = stringResource(R.string.order_label_tracking_number),
-                    value = tracking
-                )
-            }
-            shipment.carrier?.let { carrier ->
-                InfoRow(
-                    label = stringResource(R.string.order_label_carrier),
-                    value = carrier
                 )
             }
             shipment.dispatchedAt?.let { dispatchedAt ->

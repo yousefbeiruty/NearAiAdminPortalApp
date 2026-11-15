@@ -12,6 +12,7 @@ import com.nearai.admin.feature.orders.domain.OrderStatus
 import com.nearai.admin.feature.orders.domain.PaginatedOrders
 import com.nearai.admin.feature.orders.domain.PaginatedReviewQueue
 import com.nearai.admin.feature.orders.domain.PaymentInfo
+import com.nearai.admin.feature.orders.domain.PaymentStatus
 import com.nearai.admin.feature.orders.domain.StatusHistoryEntry
 import retrofit2.HttpException
 import java.io.IOException
@@ -158,7 +159,7 @@ class OrderRepositoryImpl @Inject constructor(
                     paymentMethod = response.paymentMethod,
                     amount = response.amount,
                     currency = response.currency,
-                    status = response.status,
+                    status = PaymentStatus.fromString(response.status),
                     collectedAt = response.collectedAt,
                     collectedBy = response.collectedBy
                 ))
@@ -178,7 +179,7 @@ class OrderRepositoryImpl @Inject constructor(
                     paymentMethod = response.paymentMethod,
                     amount = response.amount,
                     currency = response.currency,
-                    status = response.status,
+                    status = PaymentStatus.fromString(response.status),
                     collectedAt = response.collectedAt,
                     collectedBy = response.collectedBy
                 ))

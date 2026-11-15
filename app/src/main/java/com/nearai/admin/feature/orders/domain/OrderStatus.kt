@@ -57,10 +57,9 @@ enum class ApprovalStatus {
 /**
  * Fulfillment status enum matching the backend's fulfillment_status field.
  *
- * Backend values: unfulfilled, awaiting_confirmation, confirmed, processing, out_for_delivery, delivered
+ * Backend values: awaiting_confirmation, confirmed, processing, out_for_delivery, delivered
  */
 enum class FulfillmentStatus {
-    UNFULFILLED,
     AWAITING_CONFIRMATION,
     CONFIRMED,
     PROCESSING,
@@ -70,13 +69,43 @@ enum class FulfillmentStatus {
     companion object {
         /**
          * Safely parses a backend string value to [FulfillmentStatus].
-         * Falls back to [UNFULFILLED] for unknown values so new backend statuses don't crash the app.
+         * Falls back to [AWAITING_CONFIRMATION] for unknown values so new backend statuses don't crash the app.
          */
         fun fromString(value: String): FulfillmentStatus {
-            // Backend uses snake_case; convert to UPPER_SNAKE_CASE for matching
-            val normalized = value.lowercase().replace("_", "_")
-            return values().find { it.name.lowercase() == normalized }
-                ?: UNFULFILLED
+            // Backend uses snake_case (e.g. "awaiting_confirmation"); enum names are UPPER_SNAKE_CASE.
+            // Lowercasing both sides produces an exact match.
+            return values().find { it.name.lowercase() == value.lowercase() }
+                ?: AWAITING_CONFIRMATION
+        }
+    }
+}
+
+/**
+ * Payment status enum matching the backend's PaymentStatus enum.
+ *
+ * Backend values: pending, completed, collected, failed, cancelled, refunded
+ *
+ * This is separate from [OrderStatus] and [FulfillmentStatus] to preserve
+ * the independence of payment lifecycle from order and fulfillment lifecycles.
+ */
+enum class PaymentStatus {
+    PENDING,
+    COMPLETED,
+    COLLECTED,
+    FAILED,
+    CANCELLED,
+    REFUNDED;
+
+    companion object {
+        /**
+         * Safely parses a backend string value to [PaymentStatus].
+         * Falls back to [PENDING] for unknown values so new backend statuses don't crash the app.
+         */
+        fun fromString(value: String): PaymentStatus {
+            // Backend uses lowercase (e.g. "pending", "collected"); enum names are UPPER_SNAKE_CASE.
+            // Lowercasing both sides produces an exact match.
+            return values().find { it.name.lowercase() == value.lowercase() }
+                ?: PENDING
         }
     }
 }

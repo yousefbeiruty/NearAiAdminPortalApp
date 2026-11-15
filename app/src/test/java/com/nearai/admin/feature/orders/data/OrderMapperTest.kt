@@ -4,6 +4,7 @@ import com.nearai.admin.feature.orders.domain.ApprovalDecisionSnapshot
 import com.nearai.admin.feature.orders.domain.ApprovalStatus
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderStatus
+import com.nearai.admin.feature.orders.domain.PaymentStatus
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -323,7 +324,6 @@ class OrderMapperTest {
 
     @Test
     fun `FulfillmentStatus fromString handles snake_case`() {
-        assertEquals(FulfillmentStatus.UNFULFILLED, FulfillmentStatus.fromString("unfulfilled"))
         assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("awaiting_confirmation"))
         assertEquals(FulfillmentStatus.CONFIRMED, FulfillmentStatus.fromString("confirmed"))
         assertEquals(FulfillmentStatus.PROCESSING, FulfillmentStatus.fromString("processing"))
@@ -332,8 +332,98 @@ class OrderMapperTest {
     }
 
     @Test
-    fun `FulfillmentStatus fromString falls back to UNFULFILLED for unknown`() {
-        assertEquals(FulfillmentStatus.UNFULFILLED, FulfillmentStatus.fromString("unknown_status"))
+    fun `FulfillmentStatus fromString falls back to AWAITING_CONFIRMATION for unknown`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("unknown_status"))
+    }
+
+    @Test
+    fun `FulfillmentStatus fromString falls back for blank string`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString(""))
+    }
+
+    @Test
+    fun `FulfillmentStatus fromString falls back for whitespace`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("  "))
+    }
+
+    @Test
+    fun `FulfillmentStatus fromString handles uppercase`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("AWAITING_CONFIRMATION"))
+        assertEquals(FulfillmentStatus.CONFIRMED, FulfillmentStatus.fromString("CONFIRMED"))
+        assertEquals(FulfillmentStatus.PROCESSING, FulfillmentStatus.fromString("PROCESSING"))
+        assertEquals(FulfillmentStatus.OUT_FOR_DELIVERY, FulfillmentStatus.fromString("OUT_FOR_DELIVERY"))
+        assertEquals(FulfillmentStatus.DELIVERED, FulfillmentStatus.fromString("DELIVERED"))
+    }
+
+    @Test
+    fun `FulfillmentStatus fromString falls back for legacy unfulfilled`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("unfulfilled"))
+    }
+
+    @Test
+    fun `FulfillmentStatus fromString falls back for unknown future value`() {
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("returned"))
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, FulfillmentStatus.fromString("refunded"))
+    }
+
+    // =============================================================================
+    // Business safety — unknown fulfillment status cannot enable wrong actions
+    // =============================================================================
+
+    @Test
+    fun `unknown fulfillment value maps to AWAITING_CONFIRMATION and does not match other actions`() {
+        // Simulate the backend returning an unknown future fulfillment value
+        val unknown = FulfillmentStatus.fromString("returned")
+
+        // The fallback is AWAITING_CONFIRMATION
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, unknown)
+
+        // It must NOT match any other fulfillment-dependent action guard
+        assertNotEquals(FulfillmentStatus.CONFIRMED, unknown)
+        assertNotEquals(FulfillmentStatus.PROCESSING, unknown)
+        assertNotEquals(FulfillmentStatus.OUT_FOR_DELIVERY, unknown)
+        assertNotEquals(FulfillmentStatus.DELIVERED, unknown)
+    }
+
+    @Test
+    fun `legacy unfulfilled maps to AWAITING_CONFIRMATION and does not match other actions`() {
+        val legacy = FulfillmentStatus.fromString("unfulfilled")
+
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, legacy)
+        assertNotEquals(FulfillmentStatus.CONFIRMED, legacy)
+        assertNotEquals(FulfillmentStatus.PROCESSING, legacy)
+        assertNotEquals(FulfillmentStatus.OUT_FOR_DELIVERY, legacy)
+        assertNotEquals(FulfillmentStatus.DELIVERED, legacy)
+    }
+
+    @Test
+    fun `blank fulfillment value maps to AWAITING_CONFIRMATION and does not match other actions`() {
+        val blank = FulfillmentStatus.fromString("")
+
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, blank)
+        assertNotEquals(FulfillmentStatus.CONFIRMED, blank)
+        assertNotEquals(FulfillmentStatus.PROCESSING, blank)
+        assertNotEquals(FulfillmentStatus.OUT_FOR_DELIVERY, blank)
+        assertNotEquals(FulfillmentStatus.DELIVERED, blank)
+    }
+
+    @Test
+    fun `all five canonical fulfillment statuses parse to distinct enum values`() {
+        // Verify no two canonical values map to the same enum entry
+        val statuses = listOf(
+            FulfillmentStatus.fromString("awaiting_confirmation"),
+            FulfillmentStatus.fromString("confirmed"),
+            FulfillmentStatus.fromString("processing"),
+            FulfillmentStatus.fromString("out_for_delivery"),
+            FulfillmentStatus.fromString("delivered")
+        )
+
+        assertEquals(5, statuses.toSet().size)
+        assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, statuses[0])
+        assertEquals(FulfillmentStatus.CONFIRMED, statuses[1])
+        assertEquals(FulfillmentStatus.PROCESSING, statuses[2])
+        assertEquals(FulfillmentStatus.OUT_FOR_DELIVERY, statuses[3])
+        assertEquals(FulfillmentStatus.DELIVERED, statuses[4])
     }
 
     @Test
@@ -543,5 +633,180 @@ class OrderMapperTest {
         assertEquals(ApprovalStatus.AUTO_APPROVED, snapshot.decision)
         assertNull(snapshot.decisionReason)
         assertNull(snapshot.policyVersion)
+    }
+
+    // =============================================================================
+    // PaymentStatus enum parsing
+    // =============================================================================
+
+    @Test
+    fun `PaymentStatus fromString handles all six backend values`() {
+        assertEquals(PaymentStatus.PENDING, PaymentStatus.fromString("pending"))
+        assertEquals(PaymentStatus.COMPLETED, PaymentStatus.fromString("completed"))
+        assertEquals(PaymentStatus.COLLECTED, PaymentStatus.fromString("collected"))
+        assertEquals(PaymentStatus.FAILED, PaymentStatus.fromString("failed"))
+        assertEquals(PaymentStatus.CANCELLED, PaymentStatus.fromString("cancelled"))
+        assertEquals(PaymentStatus.REFUNDED, PaymentStatus.fromString("refunded"))
+    }
+
+    @Test
+    fun `PaymentStatus fromString handles uppercase`() {
+        assertEquals(PaymentStatus.PENDING, PaymentStatus.fromString("PENDING"))
+        assertEquals(PaymentStatus.COMPLETED, PaymentStatus.fromString("COMPLETED"))
+        assertEquals(PaymentStatus.COLLECTED, PaymentStatus.fromString("COLLECTED"))
+        assertEquals(PaymentStatus.FAILED, PaymentStatus.fromString("FAILED"))
+        assertEquals(PaymentStatus.CANCELLED, PaymentStatus.fromString("CANCELLED"))
+        assertEquals(PaymentStatus.REFUNDED, PaymentStatus.fromString("REFUNDED"))
+    }
+
+    @Test
+    fun `PaymentStatus fromString falls back to PENDING for unknown`() {
+        assertEquals(PaymentStatus.PENDING, PaymentStatus.fromString("unknown_payment"))
+    }
+
+    @Test
+    fun `PaymentStatus fromString falls back for blank string`() {
+        assertEquals(PaymentStatus.PENDING, PaymentStatus.fromString(""))
+    }
+
+    @Test
+    fun `PaymentStatus fromString falls back for whitespace`() {
+        assertEquals(PaymentStatus.PENDING, PaymentStatus.fromString("  "))
+    }
+
+    // =============================================================================
+    // Business safety — unknown payment status cannot enable wrong actions
+    // =============================================================================
+
+    @Test
+    fun `unknown payment value maps to PENDING and does not match other actions`() {
+        val unknown = PaymentStatus.fromString("returned")
+
+        assertEquals(PaymentStatus.PENDING, unknown)
+        assertNotEquals(PaymentStatus.COMPLETED, unknown)
+        assertNotEquals(PaymentStatus.COLLECTED, unknown)
+        assertNotEquals(PaymentStatus.FAILED, unknown)
+        assertNotEquals(PaymentStatus.CANCELLED, unknown)
+        assertNotEquals(PaymentStatus.REFUNDED, unknown)
+    }
+
+    @Test
+    fun `blank payment value maps to PENDING and does not match other actions`() {
+        val blank = PaymentStatus.fromString("")
+
+        assertEquals(PaymentStatus.PENDING, blank)
+        assertNotEquals(PaymentStatus.COMPLETED, blank)
+        assertNotEquals(PaymentStatus.COLLECTED, blank)
+        assertNotEquals(PaymentStatus.FAILED, blank)
+        assertNotEquals(PaymentStatus.CANCELLED, blank)
+        assertNotEquals(PaymentStatus.REFUNDED, blank)
+    }
+
+    @Test
+    fun `all six canonical payment statuses parse to distinct enum values`() {
+        val statuses = listOf(
+            PaymentStatus.fromString("pending"),
+            PaymentStatus.fromString("completed"),
+            PaymentStatus.fromString("collected"),
+            PaymentStatus.fromString("failed"),
+            PaymentStatus.fromString("cancelled"),
+            PaymentStatus.fromString("refunded")
+        )
+
+        assertEquals(6, statuses.toSet().size)
+        assertEquals(PaymentStatus.PENDING, statuses[0])
+        assertEquals(PaymentStatus.COMPLETED, statuses[1])
+        assertEquals(PaymentStatus.COLLECTED, statuses[2])
+        assertEquals(PaymentStatus.FAILED, statuses[3])
+        assertEquals(PaymentStatus.CANCELLED, statuses[4])
+        assertEquals(PaymentStatus.REFUNDED, statuses[5])
+    }
+
+    // =============================================================================
+    // Shipment Mapping Tests — Regression for carrier/courier_name API contract fix
+    // =============================================================================
+
+    @Test
+    fun `mapShipmentInfo maps courier_name from backend to courierName in domain model`() {
+        val dto = ShipmentDto(
+            id = "ship-1",
+            orderId = "order-1",
+            courierName = "Aramex",
+            trackingNumber = "TRK-12345",
+            trackingUrl = "https://track.example.com/TRK-12345",
+            dispatchedAt = "2024-01-15T14:00:00Z",
+            dispatchedBy = "admin-1",
+            deliveryNotes = "Handle with care",
+            customerDeliveryNote = "Will be delivered tomorrow",
+            estimatedDeliveryDate = "2024-01-16T18:00:00Z"
+        )
+
+        val shipment = OrderMapper.mapShipmentInfo(dto)
+
+        assertEquals("ship-1", shipment.id)
+        assertEquals("order-1", shipment.orderId)
+        assertEquals("Aramex", shipment.courierName)
+        assertEquals("TRK-12345", shipment.trackingNumber)
+        assertEquals("https://track.example.com/TRK-12345", shipment.trackingUrl)
+        assertEquals("2024-01-15T14:00:00Z", shipment.dispatchedAt)
+        assertEquals("admin-1", shipment.dispatchedBy)
+        assertEquals("Handle with care", shipment.deliveryNotes)
+        assertEquals("Will be delivered tomorrow", shipment.customerDeliveryNote)
+        assertEquals("2024-01-16T18:00:00Z", shipment.estimatedDeliveryDate)
+    }
+
+    @Test
+    fun `mapShipmentInfo handles null courier_name gracefully`() {
+        val dto = ShipmentDto(
+            id = null,
+            orderId = null,
+            courierName = null,
+            trackingNumber = null,
+            trackingUrl = null,
+            dispatchedAt = null,
+            dispatchedBy = null,
+            deliveryNotes = null,
+            customerDeliveryNote = null,
+            estimatedDeliveryDate = null
+        )
+
+        val shipment = OrderMapper.mapShipmentInfo(dto)
+
+        assertNull(shipment.id)
+        assertNull(shipment.orderId)
+        assertNull(shipment.courierName)
+        assertNull(shipment.trackingNumber)
+        assertNull(shipment.trackingUrl)
+        assertNull(shipment.dispatchedAt)
+        assertNull(shipment.dispatchedBy)
+        assertNull(shipment.deliveryNotes)
+        assertNull(shipment.customerDeliveryNote)
+        assertNull(shipment.estimatedDeliveryDate)
+    }
+
+    @Test
+    fun `ShipmentDto serializes courier_name field correctly`() {
+        // This test verifies that the @SerialName annotation matches the backend API field name.
+        // The backend sends "courier_name", not "carrier". This regression test ensures
+        // the DTO deserializes the correct JSON key so courier data is not silently lost.
+        val json = """{
+          "courier_name": "DHL Express",
+          "tracking_number": "DHL-98765",
+          "tracking_url": "https://dhl.com/track/DHL-98765",
+          "dispatched_at": "2024-06-01T09:00:00Z",
+          "delivery_notes": "Fragile",
+          "customer_delivery_note": "Call before delivery",
+          "estimated_delivery_date": "2024-06-02T17:00:00Z"
+        }"""
+
+        val dto = kotlinx.serialization.json.Json.Default.decodeFromString<ShipmentDto>(json)
+
+        assertEquals("DHL Express", dto.courierName)
+        assertEquals("DHL-98765", dto.trackingNumber)
+        assertEquals("https://dhl.com/track/DHL-98765", dto.trackingUrl)
+        assertEquals("2024-06-01T09:00:00Z", dto.dispatchedAt)
+        assertEquals("Fragile", dto.deliveryNotes)
+        assertEquals("Call before delivery", dto.customerDeliveryNote)
+        assertEquals("2024-06-02T17:00:00Z", dto.estimatedDeliveryDate)
     }
 }

@@ -89,7 +89,7 @@ data class PaymentInfo(
     val paymentMethod: String,
     val amount: Double,
     val currency: String,
-    val status: String,
+    val status: PaymentStatus,
     val collectedAt: String? = null,
     val collectedBy: String? = null
 )
@@ -176,12 +176,14 @@ data class PaginatedReviewQueue(
 data class ShipmentInfo(
     val id: String?,
     val orderId: String?,
-    val deliveryNotes: String?,
-    val customerDeliveryNote: String?,
+    val courierName: String?,
+    val trackingNumber: String?,
+    val trackingUrl: String?,
     val dispatchedAt: String?,
     val dispatchedBy: String?,
-    val trackingNumber: String?,
-    val carrier: String?
+    val deliveryNotes: String?,
+    val customerDeliveryNote: String?,
+    val estimatedDeliveryDate: String?
 )
 
 /**

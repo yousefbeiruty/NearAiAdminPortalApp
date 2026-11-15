@@ -151,11 +151,13 @@ object OrderMapper {
     fun mapShipmentInfo(dto: ShipmentDto): ShipmentInfo = ShipmentInfo(
         id = dto.id,
         orderId = dto.orderId,
-        deliveryNotes = dto.deliveryNotes,
-        customerDeliveryNote = dto.customerDeliveryNote,
+        courierName = dto.courierName,
+        trackingNumber = dto.trackingNumber,
+        trackingUrl = dto.trackingUrl,
         dispatchedAt = dto.dispatchedAt,
         dispatchedBy = dto.dispatchedBy,
-        trackingNumber = dto.trackingNumber,
-        carrier = dto.carrier
+        deliveryNotes = dto.deliveryNotes,
+        customerDeliveryNote = dto.customerDeliveryNote,
+        estimatedDeliveryDate = dto.estimatedDeliveryDate
     )
 }

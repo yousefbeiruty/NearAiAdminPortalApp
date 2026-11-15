@@ -104,8 +104,11 @@
     <string name="order_label_collected_at">Collected At</string>
     <string name="order_payment_cod">Cash on Delivery</string>
     <string name="order_payment_pending">Pending</string>
+    <string name="order_payment_completed">Completed</string>
     <string name="order_payment_collected">Collected</string>
     <string name="order_payment_cancelled">Cancelled</string>
+    <string name="order_payment_failed">Failed</string>
+    <string name="order_payment_refunded">Refunded</string>
     <string name="order_payment_not_available">Payment information not available</string>
 
     <!-- Collect Cash Dialog -->
