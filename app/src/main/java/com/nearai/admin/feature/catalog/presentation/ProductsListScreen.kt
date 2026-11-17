@@ -3,11 +3,10 @@ package com.nearai.admin.feature.catalog.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.*
@@ -19,13 +18,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import coil.compose.AsyncImage
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.nearai.admin.R
+import com.nearai.admin.core.designsystem.components.AppScreen
+import com.nearai.admin.core.designsystem.components.EmptyState
+import com.nearai.admin.core.designsystem.components.ErrorState
+import com.nearai.admin.core.designsystem.components.PaginatedLazyColumn
+import com.nearai.admin.core.designsystem.components.LoadingScreen
+import com.nearai.admin.core.designsystem.components.SearchBar
 import com.nearai.admin.core.designsystem.components.StatusPill
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.catalog.domain.Product
@@ -43,8 +49,8 @@ fun ProductsListScreen(
     onNavigateToCreate: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val event by viewModel.event.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val event by viewModel.event.collectAsStateWithLifecycle()
 
     LaunchedEffect(event) {
         when (event) {
@@ -55,196 +61,140 @@ fun ProductsListScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ShoppingBag,
-                            contentDescription = null,
-                            tint = Navy,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = stringResource(R.string.products_title),
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Navy
-                            )
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = onNavigateBack,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Navy
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = SurfaceLight
-                )
-            )
-        },
+    ProductsListScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onNavigateToCreate = onNavigateToCreate,
+        onNavigateToProduct = onNavigateToProduct,
+        onSearchQueryChanged = { viewModel.onSearchQueryChanged(it) },
+        onClearSearch = { viewModel.onSearchQueryChanged("") },
+        onStatusFilterChanged = { viewModel.onStatusFilterChanged(it) },
+        onRetry = { viewModel.onRetry() },
+        onLoadMore = { viewModel.loadMore() },
+        modifier = modifier
+    )
+}
+
+// =============================================================================
+// Stateless Content Composable — renders products list from UiState
+// =============================================================================
+
+/**
+ * Stateless products list content that renders the full screen from [ProductsListUiState].
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProductsListScreenContent(
+    uiState: ProductsListUiState,
+    onNavigateBack: () -> Unit,
+    onNavigateToCreate: () -> Unit,
+    onNavigateToProduct: (String) -> Unit,
+    onSearchQueryChanged: (String) -> Unit,
+    onClearSearch: () -> Unit,
+    onStatusFilterChanged: (ProductStatus?) -> Unit,
+    onRetry: () -> Unit,
+    onLoadMore: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AppScreen(
+        title = stringResource(R.string.products_title),
+        onNavigateBack = onNavigateBack,
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onNavigateToCreate,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("New Product", fontWeight = FontWeight.Bold) },
+                text = { Text(stringResource(R.string.products_new_product), fontWeight = FontWeight.Bold) },
                 containerColor = Navy,
                 contentColor = Color.White
             )
         },
-        containerColor = BackgroundLight
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Search bar
-            item {
-                OutlinedTextField(
-                    value = uiState.searchQuery,
-                    onValueChange = viewModel::onSearchQueryChanged,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search products...") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
+        modifier = modifier
+    ) { padding ->
+        when {
+            uiState.isLoading && uiState.products.isEmpty() -> {
+                LoadingScreen(
+                    message = stringResource(R.string.common_loading)
                 )
             }
-
-            // Status filter chips
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            uiState.error != null && uiState.products.isEmpty() -> {
+                ErrorState(
+                    message = uiState.error.orEmpty(),
+                    retryText = stringResource(R.string.common_retry),
+                    onRetry = onRetry
+                )
+            }
+            uiState.products.isEmpty() && uiState.error == null -> {
+                EmptyState(
+                    title = stringResource(R.string.products_empty),
+                    message = stringResource(R.string.common_no_data_message)
+                )
+            }
+            else -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
                 ) {
-                    FilterChip(
-                        selected = uiState.selectedStatus == null,
-                        onClick = { viewModel.onStatusFilterChanged(null) },
-                        label = { Text("All") }
+                    // Search bar
+                    SearchBar(
+                        query = uiState.searchQuery,
+                        onQueryChanged = onSearchQueryChanged,
+                        placeholder = stringResource(R.string.products_search_hint),
+                        onClear = onClearSearch
                     )
-                    ProductStatus.ACTIVE.let { status ->
-                        FilterChip(
-                            selected = uiState.selectedStatus == status,
-                            onClick = { viewModel.onStatusFilterChanged(status) },
-                            label = { Text("Active") }
-                        )
-                    }
-                    ProductStatus.INACTIVE.let { status ->
-                        FilterChip(
-                            selected = uiState.selectedStatus == status,
-                            onClick = { viewModel.onStatusFilterChanged(status) },
-                            label = { Text("Inactive") }
-                        )
-                    }
-                    ProductStatus.DRAFT.let { status ->
-                        FilterChip(
-                            selected = uiState.selectedStatus == status,
-                            onClick = { viewModel.onStatusFilterChanged(status) },
-                            label = { Text("Draft") }
-                        )
-                    }
-                }
-            }
 
-            // Loading state
-            if (uiState.isLoading) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(48.dp),
-                        contentAlignment = Alignment.Center
+                    // Status filter chips
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = PaddingLarge)
                     ) {
-                        CircularProgressIndicator(color = Indigo)
-                    }
-                }
-            }
-
-            // Error state
-            if (uiState.error != null && uiState.products.isEmpty()) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = stringResource(R.string.products_error_loading),
-                            style = MaterialTheme.typography.bodyLarge.copy(color = RoseError)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = viewModel::onRetry,
-                            colors = ButtonDefaults.buttonColors(containerColor = Navy)
-                        ) {
-                            Text("Retry", color = Color.White)
-                        }
-                    }
-                }
-            }
-
-            // Empty state
-            if (!uiState.isLoading && uiState.error == null && uiState.products.isEmpty()) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            Icons.Default.ShoppingBag,
-                            contentDescription = null,
-                            tint = TextSecondaryLight,
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.products_empty),
-                            style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondaryLight)
-                        )
-                    }
-                }
-            }
-
-            // Product list
-            itemsIndexed(uiState.products) { index, product ->
-                ProductCard(
-                    product = product,
-                    onClick = { onNavigateToProduct(product.id) }
-                )
-                if (index == uiState.products.lastIndex && uiState.hasMore) {
-                    if (uiState.isLoadingMore) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = Indigo,
-                                strokeWidth = 2.dp
+                        item {
+                            FilterChip(
+                                selected = uiState.selectedStatus == null,
+                                onClick = { onStatusFilterChanged(null) },
+                                label = { Text(stringResource(R.string.products_filter_all)) }
                             )
                         }
-                    } else {
-                        LaunchedEffect(Unit) { viewModel.loadMore() }
+                        item {
+                            FilterChip(
+                                selected = uiState.selectedStatus == ProductStatus.ACTIVE,
+                                onClick = { onStatusFilterChanged(ProductStatus.ACTIVE) },
+                                label = { Text(stringResource(R.string.products_status_active)) }
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = uiState.selectedStatus == ProductStatus.INACTIVE,
+                                onClick = { onStatusFilterChanged(ProductStatus.INACTIVE) },
+                                label = { Text(stringResource(R.string.products_status_inactive)) }
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = uiState.selectedStatus == ProductStatus.DRAFT,
+                                onClick = { onStatusFilterChanged(ProductStatus.DRAFT) },
+                                label = { Text(stringResource(R.string.products_status_draft)) }
+                            )
+                        }
                     }
+
+                    // Product list with pagination
+                    PaginatedLazyColumn(
+                        dataItems = uiState.products,
+                        onLoadMore = onLoadMore,
+                        isLoadingMore = uiState.isLoadingMore,
+                        hasMore = uiState.hasMore,
+                        loadMoreThreshold = 3,
+                        key = { it.id },
+                        contentPadding = PaddingValues(horizontal = PaddingLarge, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        item = { product ->
+                            ProductCard(
+                                product = product,
+                                onClick = { onNavigateToProduct(product.id) }
+                            )
+                        }
+                    )
                 }
             }
         }
@@ -339,9 +289,9 @@ fun ProductCard(
                     )
                     StatusPill(
                         label = when (product.status) {
-                            ProductStatus.ACTIVE -> "Active"
-                            ProductStatus.INACTIVE -> "Inactive"
-                            ProductStatus.DRAFT -> "Draft"
+                            ProductStatus.ACTIVE -> stringResource(R.string.products_status_active)
+                            ProductStatus.INACTIVE -> stringResource(R.string.products_status_inactive)
+                            ProductStatus.DRAFT -> stringResource(R.string.products_status_draft)
                         },
                         dotColor = when (product.status) {
                             ProductStatus.ACTIVE -> EmeraldSuccess

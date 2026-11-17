@@ -4,6 +4,13 @@
     <string name="products_title">Products</string>
     <string name="products_error_loading">Error loading products</string>
     <string name="products_empty">No products found</string>
+    <string name="products_search_hint">Search products…</string>
+    <string name="products_new_product">New Product</string>
+    <string name="products_filter_all">All</string>
+    <string name="products_status_active">Active</string>
+    <string name="products_status_inactive">Inactive</string>
+    <string name="products_status_draft">Draft</string>
+    <string name="products_back">Back</string>
 
     <!-- Categories -->
     <string name="categories_title">Categories</string>

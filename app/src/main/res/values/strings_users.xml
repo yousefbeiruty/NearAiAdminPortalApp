@@ -2,13 +2,19 @@
 <resources>
     <!-- Users Screen -->
     <string name="users_title">Users</string>
-    <string name="users_search_hint">Search users…</string>
-    <string name="users_filter_all">All Users</string>
-    <string name="users_filter_pro">Pro Tier</string>
-    <string name="users_filter_free">Free Plan</string>
-    <string name="users_filter_flagged">Flagged</string>
-    <string name="users_suspended">Suspended</string>
-    <string name="users_active">Active</string>
+    <string name="users_count">%1$d users</string>
+    <string name="users_verified">Verified</string>
+    <string name="users_loading">Loading users…</string>
+    <string name="users_empty">No users found</string>
+    <string name="users_error">Failed to load users</string>
+
+    <!-- Filter labels -->
+    <string name="users_filter_all">All</string>
+    <string name="users_filter_admin">Admin</string>
+    <string name="users_filter_customer">Customer</string>
+    <string name="users_filter_active">Active</string>
+    <string name="users_filter_inactive">Inactive</string>
+    <string name="users_search_hint">Search by email…</string>
 
     <!-- User Detail Sheet -->
     <string name="user_detail_title">User Details</string>
@@ -27,9 +33,18 @@
     <string name="user_detail_updated">Updated</string>
     <string name="user_detail_yes">Yes</string>
     <string name="user_detail_no">No</string>
-    <string name="users_count">%1$d users</string>
-    <string name="users_verified">Verified</string>
-    <string name="users_loading">Loading users…</string>
-    <string name="users_empty">No users found</string>
-    <string name="users_error">Failed to load users</string>
+
+    <!-- User detail actions -->
+    <string name="user_detail_suspend_account">Suspend Account</string>
+    <string name="user_detail_activate_account">Activate Account</string>
+    <string name="user_detail_revoke_sessions">Revoke All Sessions</string>
+    <string name="user_detail_promote_admin">Promote to Admin</string>
+    <string name="user_detail_demote_customer">Demote to Customer</string>
+    <string name="user_detail_view_details">View details</string>
+
+    <!-- Snackbar messages -->
+    <string name="users_role_updated">Role updated successfully</string>
+    <string name="users_activated">User activated</string>
+    <string name="users_suspended_message">User suspended</string>
+    <string name="users_sessions_revoked">%1$d session(s) revoked</string>
 </resources>

@@ -2,10 +2,8 @@ package com.nearai.admin.feature.users.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,6 +25,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nearai.admin.core.designsystem.components.AppScreen
+import com.nearai.admin.core.designsystem.components.EmptyState
+import com.nearai.admin.core.designsystem.components.ErrorState
+import com.nearai.admin.core.designsystem.components.LoadMoreIndicator
+import com.nearai.admin.core.designsystem.components.PaginatedLazyColumn
+import com.nearai.admin.core.designsystem.components.LoadingScreen
 import com.nearai.admin.core.designsystem.components.SearchBar
 import com.nearai.admin.core.designsystem.components.StatusPill
 import com.nearai.admin.core.designsystem.theme.*
@@ -39,10 +44,10 @@ import com.nearai.admin.feature.users.domain.AdminUser
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UsersScreen(
+    onNavigateBack: () -> Unit,
     viewModel: UsersViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val listState = rememberLazyListState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -57,189 +62,19 @@ fun UsersScreen(
         }
     }
 
-    // Trigger loadMore when user scrolls near the end
-    // listState in keys ensures this re-runs on every scroll position change
-    LaunchedEffect(listState, uiState.hasMore, uiState.isLoadingMore) {
-        while (uiState.hasMore && !uiState.isLoadingMore) {
-            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-            val totalItems = listState.layoutInfo.totalItemsCount
-            if (lastVisibleItem != null && lastVisibleItem.index >= totalItems - 2) {
-                viewModel.loadMore()
-                // Wait for loading to start before checking again
-                while (uiState.isLoadingMore) {
-                    kotlinx.coroutines.delay(100)
-                }
-            }
-            kotlinx.coroutines.delay(16) // ~1 frame to avoid excessive polling
-        }
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.users_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                actions = {
-                    if (uiState.users.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.onRefresh() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        when {
-            uiState.isLoading && uiState.users.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            uiState.error != null && uiState.users.isEmpty() -> {
-                val errorMessage = uiState.error
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text("Failed to load users", color = RoseError)
-                        Text(errorMessage ?: "", style = MaterialTheme.typography.bodySmall)
-                        Button(onClick = { viewModel.onRetry() }) {
-                            Text("Retry")
-                        }
-                    }
-                }
-            }
-            uiState.users.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No users found", style = MaterialTheme.typography.bodyMedium, color = TextSecondaryLight)
-                }
-            }
-            else -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                ) {
-                    // Search bar
-                    SearchBar(
-                        query = uiState.searchQuery,
-                        onQueryChanged = { viewModel.setSearchQuery(it) },
-                        placeholder = "Search by email...",
-                        onClear = { viewModel.setSearchQuery("") }
-                    )
-
-                    // Filter chips in a scrollable row
-                    LazyRow(
-                        modifier = Modifier.height(48.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
-                        contentPadding = PaddingValues(horizontal = 16.dp)
-                    ) {
-                        // "All" clears all filters
-                        item {
-                            FilterChip(
-                                selected = uiState.filterRole == null && uiState.filterIsActive == null,
-                                onClick = { viewModel.clearFilters() },
-                                label = { Text("All") }
-                            )
-                        }
-                        // Role group — mutually exclusive
-                        item {
-                            FilterChip(
-                                selected = uiState.filterRole == "admin",
-                                onClick = { viewModel.setFilterRole("admin") },
-                                label = { Text("Admin") }
-                            )
-                        }
-                        item {
-                            FilterChip(
-                                selected = uiState.filterRole == "customer",
-                                onClick = { viewModel.setFilterRole("customer") },
-                                label = { Text("Customer") }
-                            )
-                        }
-                        // Status group — mutually exclusive
-                        item {
-                            FilterChip(
-                                selected = uiState.filterIsActive == true,
-                                onClick = { viewModel.setFilterIsActive(true) },
-                                label = { Text("Active") }
-                            )
-                        }
-                        item {
-                            FilterChip(
-                                selected = uiState.filterIsActive == false,
-                                onClick = { viewModel.setFilterIsActive(false) },
-                                label = { Text("Inactive") }
-                            )
-                        }
-                    }
-
-                    // User count pill
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        StatusPill(
-                            label = stringResource(R.string.users_count, uiState.totalItems),
-                            dotColor = EmeraldSuccess
-                        )
-                    }
-
-                    // User list
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(uiState.users) { user ->
-                            UserListItem(
-                                user = user,
-                                onClick = { viewModel.onUserClicked(user) }
-                            )
-                        }
-                        if (uiState.isLoadingMore) {
-                            item {
-                                Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                                }
-                            }
-                        }
-                        item { Spacer(modifier = Modifier.height(76.dp)) }
-                    }
-                }
-            }
-        }
-    }
-
+    UsersScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onUserClicked = { viewModel.onUserClicked(it) },
+        onRetry = { viewModel.onRetry() },
+        onRefresh = { viewModel.onRefresh() },
+        onSearchQueryChanged = { viewModel.setSearchQuery(it) },
+        onClearSearch = { viewModel.setSearchQuery("") },
+        onFilterRole = { viewModel.setFilterRole(it) },
+        onFilterIsActive = { viewModel.setFilterIsActive(it) },
+        onClearFilters = { viewModel.clearFilters() },
+        onLoadMore = { viewModel.loadMore() }
+    )
 
     // User detail bottom sheet
     uiState.selectedUser?.let { user ->
@@ -256,6 +91,159 @@ fun UsersScreen(
                 viewModel.updateUserRole(user.id, role)
             }
         )
+    }
+}
+
+// =============================================================================
+// Stateless Content Composable — renders users list from UiState
+// =============================================================================
+
+/**
+ * Stateless users list content that renders the full screen from [UsersUiState].
+ *
+ * This composable can be used independently in tests and screenshot previews
+ * without requiring a ViewModel or Hilt dependency injection.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UsersScreenContent(
+    uiState: UsersUiState,
+    onNavigateBack: () -> Unit,
+    onUserClicked: (AdminUser) -> Unit,
+    onRetry: () -> Unit,
+    onRefresh: () -> Unit,
+    onSearchQueryChanged: (String) -> Unit,
+    onClearSearch: () -> Unit,
+    onFilterRole: (String?) -> Unit,
+    onFilterIsActive: (Boolean?) -> Unit,
+    onClearFilters: () -> Unit,
+    onLoadMore: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AppScreen(
+        title = stringResource(R.string.users_title),
+        onNavigateBack = onNavigateBack,
+        actions = {
+            if (uiState.users.isNotEmpty()) {
+                IconButton(onClick = onRefresh) {
+                    Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.common_refresh))
+                }
+            }
+        },
+        modifier = modifier
+    ) { padding ->
+        when {
+            uiState.isLoading && uiState.users.isEmpty() -> {
+                LoadingScreen(
+                    message = stringResource(R.string.common_loading),
+                    modifier = Modifier
+                )
+            }
+            uiState.error != null && uiState.users.isEmpty() -> {
+                ErrorState(
+                    message = uiState.error.orEmpty(),
+                    retryText = stringResource(R.string.common_retry),
+                    onRetry = onRetry
+                )
+            }
+            uiState.users.isEmpty() && uiState.error == null -> {
+                EmptyState(
+                    title = stringResource(R.string.users_empty),
+                    message = stringResource(R.string.common_no_data_message)
+                )
+            }
+            else -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    // Search bar
+                    SearchBar(
+                        query = uiState.searchQuery,
+                        onQueryChanged = onSearchQueryChanged,
+                        placeholder = stringResource(R.string.users_search_hint),
+                        onClear = onClearSearch
+                    )
+
+                    // Filter chips in a scrollable row
+                    LazyRow(
+                        modifier = Modifier.height(48.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
+                        contentPadding = PaddingValues(horizontal = PaddingLarge)
+                    ) {
+                        item {
+                            FilterChip(
+                                selected = uiState.filterRole == null && uiState.filterIsActive == null,
+                                onClick = onClearFilters,
+                                label = { Text(stringResource(R.string.users_filter_all)) }
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = uiState.filterRole == "admin",
+                                onClick = { onFilterRole("admin") },
+                                label = { Text(stringResource(R.string.users_filter_admin)) }
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = uiState.filterRole == "customer",
+                                onClick = { onFilterRole("customer") },
+                                label = { Text(stringResource(R.string.users_filter_customer)) }
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = uiState.filterIsActive == true,
+                                onClick = { onFilterIsActive(true) },
+                                label = { Text(stringResource(R.string.users_filter_active)) }
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = uiState.filterIsActive == false,
+                                onClick = { onFilterIsActive(false) },
+                                label = { Text(stringResource(R.string.users_filter_inactive)) }
+                            )
+                        }
+                    }
+
+                    // User count pill
+                    Row(
+                        modifier = Modifier.padding(horizontal = PaddingLarge, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        StatusPill(
+                            label = stringResource(R.string.users_count, uiState.totalItems),
+                            dotColor = EmeraldSuccess
+                        )
+                    }
+
+                    // User list with pagination
+                    PaginatedLazyColumn(
+                        dataItems = uiState.users,
+                        onLoadMore = onLoadMore,
+                        isLoadingMore = uiState.isLoadingMore,
+                        hasMore = uiState.hasMore,
+                        loadMoreThreshold = 2,
+                        key = { it.id },
+                        contentPadding = PaddingValues(horizontal = PaddingLarge, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        item = { user ->
+                            UserListItem(
+                                user = user,
+                                onClick = { onUserClicked(user) }
+                            )
+                        },
+                        footer = {
+                            item { Spacer(modifier = Modifier.height(76.dp)) }
+                        }
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -321,7 +309,7 @@ fun UserListItem(
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     StatusPill(
-                        label = if (user.isActive) "Active" else "Inactive",
+                        label = if (user.isActive) stringResource(R.string.status_active) else stringResource(R.string.status_inactive),
                         dotColor = if (user.isActive) EmeraldSuccess else RoseError
                     )
                     if (user.emailVerified) {
@@ -331,7 +319,7 @@ fun UserListItem(
             }
             Icon(
                 imageVector = Icons.Default.ChevronRight,
-                contentDescription = "View details",
+                contentDescription = stringResource(R.string.user_detail_view_details),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
@@ -395,7 +383,7 @@ fun UserDetailBottomSheet(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "ID: ${user.id}",
+                        text = stringResource(R.string.user_detail_id, user.id),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -406,7 +394,7 @@ fun UserDetailBottomSheet(
                             dotColor = if (user.role == "admin") Indigo else EmeraldSuccess
                         )
                         StatusPill(
-                            label = if (user.isActive) "Active" else "Inactive",
+                            label = if (user.isActive) stringResource(R.string.status_active) else stringResource(R.string.status_inactive),
                             dotColor = if (user.isActive) EmeraldSuccess else RoseError
                         )
                     }
@@ -450,14 +438,14 @@ fun UserDetailBottomSheet(
                 ) {
                     Icon(Icons.Outlined.Block, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Suspend Account")
+                    Text(stringResource(R.string.user_detail_suspend_account))
                 }
             } else {
                 FilledTonalButton(
                     onClick = { onToggleActive(true) },
                     modifier = Modifier.fillMaxWidth().height(44.dp)
                 ) {
-                    Text("Activate Account")
+                    Text(stringResource(R.string.user_detail_activate_account))
                 }
             }
 
@@ -468,7 +456,7 @@ fun UserDetailBottomSheet(
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Revoke All Sessions")
+                Text(stringResource(R.string.user_detail_revoke_sessions))
             }
 
             // Change role
@@ -477,14 +465,14 @@ fun UserDetailBottomSheet(
                     onClick = { onUpdateRole("admin") },
                     modifier = Modifier.fillMaxWidth().height(44.dp)
                 ) {
-                    Text("Promote to Admin")
+                    Text(stringResource(R.string.user_detail_promote_admin))
                 }
             } else {
                 FilledTonalButton(
                     onClick = { onUpdateRole("customer") },
                     modifier = Modifier.fillMaxWidth().height(44.dp)
                 ) {
-                    Text("Demote to Customer")
+                    Text(stringResource(R.string.user_detail_demote_customer))
                 }
             }
         }
@@ -529,10 +517,10 @@ fun UsersScreenPreview() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(PaddingLarge),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("User Management", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Navy)
+            Text(stringResource(R.string.users_title), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Navy)
             sampleUsers.forEach { user ->
                 UserListItem(user = user, onClick = {})
             }
