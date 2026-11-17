@@ -104,7 +104,9 @@ fun AppNavHost(
         }
 
         composable<UsersRoute> {
-            UsersScreen()
+            UsersScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         composable<AiUsageRoute> {

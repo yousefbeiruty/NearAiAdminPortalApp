@@ -3,13 +3,9 @@ package com.nearai.admin.feature.catalog.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Add
@@ -26,9 +22,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nearai.admin.R
 import com.nearai.admin.core.common.AppError
 import com.nearai.admin.core.common.Result
+import com.nearai.admin.core.designsystem.components.AppScreen
+import com.nearai.admin.core.designsystem.components.EmptyState
+import com.nearai.admin.core.designsystem.components.ErrorState
+import com.nearai.admin.core.designsystem.components.PaginatedLazyColumn
+import com.nearai.admin.core.designsystem.components.LoadingScreen
 import com.nearai.admin.core.designsystem.components.StatusPill
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.catalog.domain.Category
@@ -47,8 +49,8 @@ fun CategoriesListScreen(
     onNavigateToProducts: (categoryId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val event by viewModel.event.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val event by viewModel.event.collectAsStateWithLifecycle()
 
     var showCreateDialog by remember { mutableStateOf(false )}
     var categoryName by remember { mutableStateOf("") }
@@ -71,152 +73,15 @@ fun CategoriesListScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Category,
-                            contentDescription = null,
-                            tint = Navy,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = stringResource(R.string.categories_title),
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Navy
-                            )
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = onNavigateBack,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.categories_back),
-                            tint = Navy
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = SurfaceLight
-                )
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = viewModel::onShowCreateDialog,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.categories_new_category), fontWeight = FontWeight.Bold) },
-                containerColor = Navy,
-                contentColor = Color.White
-            )
-        },
-        containerColor = BackgroundLight
-    ) { innerPadding ->
-        when {
-            uiState.isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Indigo)
-                }
-            }
-            uiState.error != null && uiState.categories.isEmpty() -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.categories_error_loading),
-                        style = MaterialTheme.typography.bodyLarge.copy(color = RoseError)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = viewModel::onRetry,
-                        colors = ButtonDefaults.buttonColors(containerColor = Navy)
-                    ) {
-                        Text(stringResource(R.string.categories_retry), color = Color.White)
-                    }
-                }
-            }
-            uiState.categories.isEmpty() -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        Icons.Default.Category,
-                        contentDescription = null,
-                        tint = TextSecondaryLight,
-                        modifier = Modifier.size(64.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.categories_empty),
-                        style = MaterialTheme.typography.bodyLarge.copy(color = TextSecondaryLight)
-                    )
-                    Text(
-                        text = stringResource(R.string.categories_empty_message),
-                        style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight)
-                    )
-                }
-            }
-            else -> {
-                LazyColumn(
-                    modifier = modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    itemsIndexed(uiState.categories) { index, category ->
-                        CategoryCard(
-                            category = category,
-                            onClick = { onNavigateToProducts(category.id) }
-                        )
-                        if (index == uiState.categories.lastIndex && uiState.hasMore) {
-                            if (uiState.isLoadingMore) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        color = Indigo,
-                                        strokeWidth = 2.dp
-                                    )
-                                }
-                            } else {
-                                LaunchedEffect(Unit) { viewModel.loadMore() }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    CategoriesListScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onNavigateToProducts = onNavigateToProducts,
+        onShowCreateDialog = { viewModel.onShowCreateDialog() },
+        onRetry = { viewModel.onRetry() },
+        onLoadMore = { viewModel.loadMore() },
+        modifier = modifier
+    )
 
     // Create Category Dialog
     if (showCreateDialog) {
@@ -232,6 +97,85 @@ fun CategoriesListScreen(
             isLoading = uiState.isCreating,
             error = uiState.createError
         )
+    }
+}
+
+// =============================================================================
+// Stateless Content Composable — renders categories list from UiState
+// =============================================================================
+
+/**
+ * Stateless categories list content that renders the full screen from [CategoriesListUiState].
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CategoriesListScreenContent(
+    uiState: CategoriesListUiState,
+    onNavigateBack: () -> Unit,
+    onNavigateToProducts: (categoryId: String) -> Unit,
+    onShowCreateDialog: () -> Unit,
+    onRetry: () -> Unit,
+    onLoadMore: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AppScreen(
+        title = stringResource(R.string.categories_title),
+        onNavigateBack = onNavigateBack,
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = onShowCreateDialog,
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text(stringResource(R.string.categories_new_category), fontWeight = FontWeight.Bold) },
+                containerColor = Navy,
+                contentColor = Color.White
+            )
+        },
+        modifier = modifier
+    ) { padding ->
+        when {
+            uiState.isLoading && uiState.categories.isEmpty() -> {
+                LoadingScreen(
+                    message = stringResource(R.string.common_loading)
+                )
+            }
+            uiState.error != null && uiState.categories.isEmpty() -> {
+                ErrorState(
+                    message = uiState.error.orEmpty(),
+                    retryText = stringResource(R.string.common_retry),
+                    onRetry = onRetry
+                )
+            }
+            uiState.categories.isEmpty() && uiState.error == null -> {
+                EmptyState(
+                    title = stringResource(R.string.categories_empty),
+                    message = stringResource(R.string.categories_empty_message)
+                )
+            }
+            else -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    PaginatedLazyColumn(
+                        dataItems = uiState.categories,
+                        onLoadMore = onLoadMore,
+                        isLoadingMore = uiState.isLoadingMore,
+                        hasMore = uiState.hasMore,
+                        loadMoreThreshold = 3,
+                        key = { it.id },
+                        contentPadding = PaddingValues(horizontal = PaddingLarge, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        item = { category ->
+                            CategoryCard(
+                                category = category,
+                                onClick = { onNavigateToProducts(category.id) }
+                            )
+                        }
+                    )
+                }
+            }
+        }
     }
 }
 

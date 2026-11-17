@@ -1,14 +1,11 @@
 package com.nearai.admin.feature.orders.presentation
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -20,6 +17,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.stringResource
 import com.nearai.admin.R
+import com.nearai.admin.core.designsystem.components.AppScreen
+import com.nearai.admin.core.designsystem.components.EmptyState
+import com.nearai.admin.core.designsystem.components.ErrorState
+import com.nearai.admin.core.designsystem.components.LoadMoreIndicator
+import com.nearai.admin.core.designsystem.components.PaginatedLazyColumn
+import com.nearai.admin.core.designsystem.components.LoadingScreen
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderStatus
@@ -71,7 +74,6 @@ fun OrdersListScreen(
  * This composable can be used independently in tests and screenshot previews
  * without requiring a ViewModel or Hilt dependency injection.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrdersListScreenContent(
     uiState: OrdersListUiState,
@@ -84,124 +86,36 @@ fun OrdersListScreenContent(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val listState = rememberLazyListState()
-
-    // Auto-load more when user scrolls near the end
-    LaunchedEffect(listState, uiState.hasMore, uiState.isLoadingMore) {
-        if (uiState.hasMore && !uiState.isLoadingMore) {
-            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            if (lastVisible >= uiState.orders.size - 3) {
-                onLoadMore()
-            }
-        }
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.orders_title),
-                        fontWeight = FontWeight.Bold,
-                        color = Navy
-                    )
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = onNavigateBack,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.common_back),
-                            tint = Navy
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        },
-        containerColor = BackgroundLight
+    AppScreen(
+        title = stringResource(R.string.orders_title),
+        onNavigateBack = onNavigateBack,
+        modifier = modifier
     ) { padding ->
         when {
             uiState.isLoading && uiState.orders.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .testTag("ordersLoading"),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Indigo)
-                }
+                LoadingScreen(
+                    message = stringResource(R.string.common_loading),
+                    modifier = Modifier.testTag("ordersLoading")
+                )
             }
             uiState.error != null && uiState.orders.isEmpty() -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(32.dp)
-                        .testTag("ordersError"),
-                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.orders_error_loading),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Navy
-                        )
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = uiState.error.orEmpty(),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = TextSecondaryLight
-                        )
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = onRetry,
-                        colors = ButtonDefaults.buttonColors(containerColor = Navy),
-                        modifier = Modifier.testTag("ordersRetryButton")
-                    ) {
-                        Text(stringResource(R.string.common_retry), color = Color.White)
-                    }
-                }
+                ErrorState(
+                    message = uiState.error.orEmpty(),
+                    retryText = stringResource(R.string.common_retry),
+                    onRetry = onRetry,
+                    modifier = Modifier.testTag("ordersError")
+                )
             }
             uiState.orders.isEmpty() && uiState.error == null -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(32.dp)
-                        .testTag("ordersEmpty"),
-                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.orders_empty),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Navy
-                        )
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.orders_empty_message),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = TextSecondaryLight
-                        )
-                    )
-                    if (uiState.filterOrderStatus != null || uiState.filterFulfillmentStatus != null) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        TextButton(onClick = onClearFilters) {
-                            Text(stringResource(R.string.orders_clear_filters), color = Indigo)
-                        }
-                    }
-                }
+                val hasActiveFilter = uiState.filterOrderStatus != null ||
+                    uiState.filterFulfillmentStatus != null
+                EmptyState(
+                    title = stringResource(R.string.orders_empty),
+                    message = stringResource(R.string.orders_empty_message),
+                    actionText = if (hasActiveFilter) stringResource(R.string.orders_clear_filters) else null,
+                    onActionClick = if (hasActiveFilter) onClearFilters else null,
+                    modifier = Modifier.testTag("ordersEmpty")
+                )
             }
             else -> {
                 Column(
@@ -225,7 +139,7 @@ fun OrdersListScreenContent(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = stringResource(R.string.orders_count, uiState.totalItems),
@@ -244,38 +158,23 @@ fun OrdersListScreenContent(
                         }
                     }
 
-                    // Orders list
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
+                    // Orders list with pagination
+                    PaginatedLazyColumn(
+                        dataItems = uiState.orders,
+                        onLoadMore = onLoadMore,
+                        isLoadingMore = uiState.isLoadingMore,
+                        hasMore = uiState.hasMore,
+                        loadMoreThreshold = 3,
+                        key = { it.id },
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(uiState.orders, key = { it.id }) { order ->
+                        item = { order ->
                             OrderSummaryCard(
                                 order = order,
                                 onClick = { onOrderClicked(order.id) },
                                 modifier = Modifier.testTag("orderCard_${order.id}")
                             )
                         }
-                        // Loading more indicator
-                        if (uiState.isLoadingMore) {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    contentAlignment = androidx.compose.ui.Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        color = Indigo,
-                                        strokeWidth = 2.dp
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    )
                 }
             }
         }

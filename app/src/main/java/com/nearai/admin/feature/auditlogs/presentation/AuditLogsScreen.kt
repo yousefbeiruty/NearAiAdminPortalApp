@@ -4,13 +4,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,8 +24,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nearai.admin.core.designsystem.components.AppScreen
 import com.nearai.admin.core.designsystem.components.EmptyState
 import com.nearai.admin.core.designsystem.components.ErrorState
+import com.nearai.admin.core.designsystem.components.PaginatedLazyColumn
 import com.nearai.admin.core.designsystem.components.LoadingScreen
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.R
@@ -116,19 +115,6 @@ fun AuditLogsScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val listState = rememberLazyListState()
-
-    // Trigger loadMore when scrolling near the end
-    LaunchedEffect(uiState.hasMore, uiState.currentPage) {
-        if (!uiState.hasMore || uiState.isLoadingMore) return@LaunchedEffect
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
-            .collect { lastVisibleIndex ->
-                val totalItems = uiState.logs.size
-                if (lastVisibleIndex >= totalItems - 2) {
-                    viewModel.loadMore()
-                }
-            }
-    }
 
     // Snackbar for errors
     var lastShownError by remember { mutableStateOf<String?>(null) }
@@ -137,77 +123,90 @@ fun AuditLogsScreen(
         viewModel.clearError()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.audit_logs_title),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    // Clear filters button when filters are active
-                    if (uiState.filterAction != null ||
-                        uiState.filterResourceType != null ||
-                        uiState.filterResourceId != null ||
-                        uiState.filterStartDate != null ||
-                        uiState.filterEndDate != null) {
-                        TextButton(onClick = { viewModel.clearFilters() }) {
-                            Text("Clear", color = MaterialTheme.colorScheme.primary)
-                        }
-                    }
+    AuditLogsScreenContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onToggleExpand = { viewModel.onToggleExpand(it) },
+        onRefresh = { viewModel.onRefresh() },
+        onFilterAction = { viewModel.setFilterAction(it) },
+        onFilterResourceType = { viewModel.setFilterResourceType(it) },
+        onClearFilters = { viewModel.clearFilters() },
+        onLoadMore = { viewModel.loadMore() }
+    )
+}
+
+// =============================================================================
+// Stateless Content Composable — renders audit logs from UiState
+// =============================================================================
+
+/**
+ * Stateless audit logs content that renders the full screen from [AuditLogsUiState].
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AuditLogsScreenContent(
+    uiState: AuditLogsUiState,
+    onNavigateBack: () -> Unit,
+    onToggleExpand: (String) -> Unit,
+    onRefresh: () -> Unit,
+    onFilterAction: (String?) -> Unit,
+    onFilterResourceType: (String?) -> Unit,
+    onClearFilters: () -> Unit,
+    onLoadMore: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AppScreen(
+        title = stringResource(R.string.audit_logs_title),
+        onNavigateBack = onNavigateBack,
+        actions = {
+            if (uiState.filterAction != null ||
+                uiState.filterResourceType != null ||
+                uiState.filterResourceId != null ||
+                uiState.filterStartDate != null ||
+                uiState.filterEndDate != null) {
+                TextButton(onClick = onClearFilters) {
+                    Text(stringResource(R.string.common_clear), color = MaterialTheme.colorScheme.primary)
                 }
-            )
+            }
         },
-        containerColor = BackgroundLight
-    ) { paddingValues ->
+        modifier = modifier
+    ) { padding ->
         when {
             uiState.isLoading && uiState.logs.isEmpty() -> {
-                LoadingScreen(message = "Loading audit logs...")
+                LoadingScreen(message = stringResource(R.string.common_loading))
             }
             uiState.error != null && uiState.logs.isEmpty() -> {
                 ErrorState(
-                    message = uiState.error ?: "Failed to load audit logs",
-                    onRetry = { viewModel.onRefresh() }
+                    message = uiState.error.orEmpty(),
+                    retryText = stringResource(R.string.common_retry),
+                    onRetry = onRefresh
                 )
             }
             uiState.logs.isEmpty() -> {
                 EmptyState(
-                    title = "No Audit Logs",
-                    message = "No audit logs match the current filters.",
-                    actionText = if (uiState.filterAction != null || uiState.filterResourceType != null) "Clear Filters" else null,
-                    onActionClick = { viewModel.clearFilters() }
+                    title = stringResource(R.string.audit_logs_empty),
+                    message = stringResource(R.string.audit_logs_empty_message),
+                    actionText = if (uiState.filterAction != null || uiState.filterResourceType != null) stringResource(R.string.common_clear_filters) else null,
+                    onActionClick = if (uiState.filterAction != null || uiState.filterResourceType != null) onClearFilters else null
                 )
             }
             else -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(paddingValues)
+                        .padding(padding)
                 ) {
-                    // Filter chips
                     AuditLogsFilterBar(
                         uiState = uiState,
-                        onFilterAction = { viewModel.setFilterAction(it) },
-                        onFilterResourceType = { viewModel.setFilterResourceType(it) },
-                        onClearFilters = { viewModel.clearFilters() }
+                        onFilterAction = onFilterAction,
+                        onFilterResourceType = onFilterResourceType,
+                        onClearFilters = onClearFilters
                     )
 
-                    // Log count
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = PaddingLarge, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -217,33 +216,23 @@ fun AuditLogsScreen(
                         )
                     }
 
-                    // Log list
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(uiState.logs, key = { it.id }) { log ->
+                    PaginatedLazyColumn(
+                        dataItems = uiState.logs,
+                        onLoadMore = onLoadMore,
+                        isLoadingMore = uiState.isLoadingMore,
+                        hasMore = uiState.hasMore,
+                        loadMoreThreshold = 2,
+                        key = { it.id },
+                        contentPadding = PaddingValues(horizontal = PaddingLarge, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        item = { log ->
                             AuditLogCard(
                                 log = log,
                                 isExpanded = uiState.expandedLogId == log.id,
-                                onToggleExpand = { viewModel.onToggleExpand(log.id) }
+                                onToggleExpand = { onToggleExpand(log.id) }
                             )
                         }
-                        // Loading more indicator
-                        if (uiState.isLoadingMore) {
-                            items(1) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                                }
-                            }
-                        }
-                    }
+                    )
                 }
             }
         }
@@ -282,7 +271,7 @@ private fun AuditLogsFilterBar(
                     FilterChip(
                         selected = uiState.filterAction == null,
                         onClick = { onFilterAction(null) },
-                        label = { Text("All") }
+                        label = { Text(stringResource(R.string.audit_logs_filter_all)) }
                     )
                 }
                 items(actions) { action ->
@@ -313,7 +302,7 @@ private fun AuditLogsFilterBar(
                     FilterChip(
                         selected = uiState.filterResourceType == null,
                         onClick = { onFilterResourceType(null) },
-                        label = { Text("All Types") }
+                        label = { Text(stringResource(R.string.audit_logs_filter_all_types)) }
                     )
                 }
                 items(resourceTypes) { type ->
@@ -564,85 +553,73 @@ private fun JsonDisplay(jsonString: String) {
 // Preview
 // =============================================================================
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true, widthDp = 390, heightDp = 700)
 @Composable
 fun AuditLogsScreenPreview() {
     NearAiAdminTheme {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Top app bar
-            TopAppBar(
-                title = { Text("Audit Logs") },
-                navigationIcon = {
-                    IconButton(onClick = {}) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
+        val sampleLogs = listOf(
+            com.nearai.admin.feature.auditlogs.domain.AuditLog(
+                id = "log-1",
+                actorId = "admin-uuid-1234",
+                actorRole = "admin",
+                action = "product.create",
+                resourceType = "product",
+                resourceId = "prod-uuid-5678",
+                requestId = "req-123",
+                changes = """{"name":"New Product","price":29.99,"status":"active"}""",
+                metadata = """{"ip_address":"192.168.1.1"}""",
+                createdAt = "2025-11-04T10:30:00Z"
+            ),
+            com.nearai.admin.feature.auditlogs.domain.AuditLog(
+                id = "log-2",
+                actorId = "admin-uuid-1234",
+                actorRole = "admin",
+                action = "stock.adjust",
+                resourceType = "stock",
+                resourceId = "variant-uuid-9012",
+                requestId = "req-456",
+                changes = """{"before":100,"after":85,"delta":-15,"reason":"Damaged goods"}""",
+                metadata = null,
+                createdAt = "2025-11-04T09:15:00Z"
+            ),
+            com.nearai.admin.feature.auditlogs.domain.AuditLog(
+                id = "log-3",
+                actorId = "admin-uuid-1234",
+                actorRole = "admin",
+                action = "user.suspend",
+                resourceType = "user",
+                resourceId = "user-uuid-3456",
+                requestId = "req-789",
+                changes = """{"is_active":false}""",
+                metadata = """{"reason":"Policy violation"}""",
+                createdAt = "2025-11-04T08:00:00Z"
+            ),
+            com.nearai.admin.feature.auditlogs.domain.AuditLog(
+                id = "log-4",
+                actorId = null,
+                actorRole = "system",
+                action = "order.cancel",
+                resourceType = "order",
+                resourceId = "order-uuid-7890",
+                requestId = null,
+                changes = """{"status":"cancelled","reason":"Expired reservation"}""",
+                metadata = null,
+                createdAt = "2025-11-03T23:45:00Z"
             )
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(
-                    listOf(
-                        com.nearai.admin.feature.auditlogs.domain.AuditLog(
-                            id = "log-1",
-                            actorId = "admin-uuid-1234",
-                            actorRole = "admin",
-                            action = "product.create",
-                            resourceType = "product",
-                            resourceId = "prod-uuid-5678",
-                            requestId = "req-123",
-                            changes = """{"name":"New Product","price":29.99,"status":"active"}""",
-                            metadata = """{"ip_address":"192.168.1.1"}""",
-                            createdAt = "2025-11-04T10:30:00Z"
-                        ),
-                        com.nearai.admin.feature.auditlogs.domain.AuditLog(
-                            id = "log-2",
-                            actorId = "admin-uuid-1234",
-                            actorRole = "admin",
-                            action = "stock.adjust",
-                            resourceType = "stock",
-                            resourceId = "variant-uuid-9012",
-                            requestId = "req-456",
-                            changes = """{"before":100,"after":85,"delta":-15,"reason":"Damaged goods"}""",
-                            metadata = null,
-                            createdAt = "2025-11-04T09:15:00Z"
-                        ),
-                        com.nearai.admin.feature.auditlogs.domain.AuditLog(
-                            id = "log-3",
-                            actorId = "admin-uuid-1234",
-                            actorRole = "admin",
-                            action = "user.suspend",
-                            resourceType = "user",
-                            resourceId = "user-uuid-3456",
-                            requestId = "req-789",
-                            changes = """{"is_active":false}""",
-                            metadata = """{"reason":"Policy violation"}""",
-                            createdAt = "2025-11-04T08:00:00Z"
-                        ),
-                        com.nearai.admin.feature.auditlogs.domain.AuditLog(
-                            id = "log-4",
-                            actorId = null,
-                            actorRole = "system",
-                            action = "order.cancel",
-                            resourceType = "order",
-                            resourceId = "order-uuid-7890",
-                            requestId = null,
-                            changes = """{"status":"cancelled","reason":"Expired reservation"}""",
-                            metadata = null,
-                            createdAt = "2025-11-03T23:45:00Z"
-                        )
-                    ),
-                    key = { it.id }
-                ) { log ->
-                    AuditLogCard(
-                        log = log,
-                        isExpanded = log.id == "log-1",
-                        onToggleExpand = {}
-                    )
-                }
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(PaddingLarge),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(stringResource(R.string.audit_logs_title), fontWeight = FontWeight.Bold, color = Navy)
+            sampleLogs.forEach { log ->
+                AuditLogCard(
+                    log = log,
+                    isExpanded = log.id == "log-1",
+                    onToggleExpand = {}
+                )
             }
         }
     }

@@ -88,6 +88,7 @@ fun EmptyState(
 fun ErrorState(
     message: String,
     modifier: Modifier = Modifier,
+    retryText: String = "Retry",
     onRetry: (() -> Unit)? = null
 ) {
     Column(
@@ -117,7 +118,7 @@ fun ErrorState(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Retry")
+                Text(retryText)
             }
         }
     }

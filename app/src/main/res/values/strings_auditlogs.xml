@@ -16,6 +16,9 @@
     <string name="audit_logs_timestamp">Timestamp</string>
     <string name="audit_logs_loading">Loading audit logs…</string>
     <string name="audit_logs_empty">No audit logs found</string>
+    <string name="audit_logs_empty_message">No audit logs match the current filters.</string>
     <string name="audit_logs_error">Failed to load audit logs</string>
     <string name="audit_logs_close">Close</string>
+    <string name="audit_logs_filter_all">All</string>
+    <string name="audit_logs_filter_all_types">All Types</string>
 </resources>
