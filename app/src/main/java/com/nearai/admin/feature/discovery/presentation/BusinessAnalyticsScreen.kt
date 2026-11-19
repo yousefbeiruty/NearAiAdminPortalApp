@@ -322,7 +322,7 @@ private fun OrderKpiGrid(uiState: BusinessAnalyticsUiState) {
 private fun Double?.toKpiTrend(): KpiTrend? {
     val pct = this?.toInt() ?: return null
     if (pct == 0) return null
-    return if (this >= 0) {
+    return if (this >= 0.0) {
         KpiTrend.Up(pct.coerceAtLeast(0), "vs prev")
     } else {
         KpiTrend.Down(-pct, "vs prev")

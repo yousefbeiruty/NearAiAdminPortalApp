@@ -3,9 +3,14 @@ package com.nearai.admin.feature.systemhealth.data
 import com.nearai.admin.feature.systemhealth.domain.ApplicationHealth
 import com.nearai.admin.feature.systemhealth.domain.ComponentHealth
 import com.nearai.admin.feature.systemhealth.domain.SystemHealthData
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
+
+private fun jsonMapOf(vararg pairs: Pair<String, String>): Map<String, kotlinx.serialization.json.JsonElement> {
+    return pairs.associate { it.first to JsonPrimitive(it.second) }
+}
 
 /**
  * Tests for [SystemHealthMapper] DTO-to-domain mapping.
@@ -31,7 +36,7 @@ class SystemHealthMapperTest {
     fun `mapComponent maps name and status correctly`() {
         val dto = ComponentHealthDto(
             status = "healthy",
-            details = mapOf("latency_ms" to "12")
+            details = jsonMapOf("latency_ms" to "12")
         )
 
         val result = SystemHealthMapper.mapComponent("database", dto)
@@ -63,10 +68,10 @@ class SystemHealthMapperTest {
             checkedAt = "2026-11-04T18:30:00Z",
             application = ApplicationHealthDto("healthy", "dev", 7200),
             components = mapOf(
-                "database" to ComponentHealthDto("healthy", mapOf("latency_ms" to "12")),
-                "storage" to ComponentHealthDto("healthy", mapOf("backend" to "local")),
-                "scheduler" to ComponentHealthDto("healthy", mapOf("running" to "true")),
-                "email" to ComponentHealthDto("healthy", mapOf("provider" to "mock"))
+                "database" to ComponentHealthDto("healthy", jsonMapOf("latency_ms" to "12")),
+                "storage" to ComponentHealthDto("healthy", jsonMapOf("backend" to "local")),
+                "scheduler" to ComponentHealthDto("healthy", jsonMapOf("running" to "true")),
+                "email" to ComponentHealthDto("healthy", jsonMapOf("provider" to "mock"))
             )
         )
 
@@ -92,10 +97,10 @@ class SystemHealthMapperTest {
             checkedAt = "2026-11-04T19:00:00Z",
             application = ApplicationHealthDto("healthy", "prod", 86400),
             components = mapOf(
-                "database" to ComponentHealthDto("healthy", mapOf("latency_ms" to "45")),
-                "storage" to ComponentHealthDto("degraded", mapOf("backend" to "local", "error" to "Storage directory is not writable")),
-                "scheduler" to ComponentHealthDto("healthy", mapOf("running" to "true")),
-                "email" to ComponentHealthDto("healthy", mapOf("provider" to "smtp"))
+                "database" to ComponentHealthDto("healthy", jsonMapOf("latency_ms" to "45")),
+                "storage" to ComponentHealthDto("degraded", jsonMapOf("backend" to "local", "error" to "Storage directory is not writable")),
+                "scheduler" to ComponentHealthDto("healthy", jsonMapOf("running" to "true")),
+                "email" to ComponentHealthDto("healthy", jsonMapOf("provider" to "smtp"))
             )
         )
 
@@ -118,8 +123,8 @@ class SystemHealthMapperTest {
             checkedAt = "2026-11-04T20:00:00Z",
             application = ApplicationHealthDto("healthy", "dev", 100),
             components = mapOf(
-                "database" to ComponentHealthDto("healthy", mapOf("latency_ms" to "5")),
-                "scheduler" to ComponentHealthDto("unknown", mapOf("error" to "Check timed out or failed"))
+                "database" to ComponentHealthDto("healthy", jsonMapOf("latency_ms" to "5")),
+                "scheduler" to ComponentHealthDto("unknown", jsonMapOf("error" to "Check timed out or failed"))
             )
         )
 

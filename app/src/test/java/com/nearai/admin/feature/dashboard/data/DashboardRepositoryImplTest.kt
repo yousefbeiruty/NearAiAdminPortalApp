@@ -47,6 +47,9 @@ class DashboardRepositoryImplTest {
     private lateinit var apiService: DashboardApiService
 
     @RelaxedMockK
+    private lateinit var platformApiService: PlatformDashboardApiService
+
+    @RelaxedMockK
     private lateinit var authRepository: AuthRepository
 
     @RelaxedMockK
@@ -67,7 +70,7 @@ class DashboardRepositoryImplTest {
 
     private fun createRepository(): DashboardRepositoryImpl {
         val tokenRefreshManager = TokenRefreshManager(authRepository, sessionManager)
-        return DashboardRepositoryImpl(apiService, tokenRefreshManager)
+        return DashboardRepositoryImpl(apiService, platformApiService, tokenRefreshManager)
     }
 
     // ========================================================================

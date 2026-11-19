@@ -85,8 +85,12 @@ class TokenStorage @Inject constructor(
     fun hasValidSession(): Boolean = !getAccessToken().isNullOrBlank()
 
     /**
-     * Returns true if the stored session exists and the user has the admin role.
+     * Returns true if the stored session exists and the user has an authorized admin role.
+     * Accepts "platform_admin" (primary) and "admin" (legacy backward compatibility).
+     * Rejects "merchant_admin", "customer", and any unknown role.
      */
-    fun hasValidAdminSession(): Boolean =
-        !getAccessToken().isNullOrBlank() && getUserRole()?.equals("admin", ignoreCase = true) == true
+    fun hasValidAdminSession(): Boolean {
+        val role = getUserRole() ?: return false
+        return !getAccessToken().isNullOrBlank() && AdminRoleValidator.isAdminRole(role)
+    }
 }

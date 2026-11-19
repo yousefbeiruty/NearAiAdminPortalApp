@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
 import javax.inject.Inject
 
 /**
@@ -18,8 +19,8 @@ import javax.inject.Inject
 data class AiUsageUiState(
     val isLoading: Boolean = false,
     val isFeatureAvailable: Boolean = false,
-    val monthlyBudgetConsumed: Double = 0.0,
-    val monthlyBudgetTotal: Double = 0.0,
+    val monthlyBudgetConsumed: BigDecimal = BigDecimal.ZERO,
+    val monthlyBudgetTotal: BigDecimal = BigDecimal.ZERO,
     val error: String? = null
 )
 

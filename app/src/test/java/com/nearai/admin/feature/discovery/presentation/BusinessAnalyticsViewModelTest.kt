@@ -121,9 +121,9 @@ class BusinessAnalyticsViewModelTest {
         val state = viewModel.uiState.value
         assertEquals(2, state.revenueByCurrency.size)
         assertEquals("USD", state.revenueByCurrency[0].currency)
-        assertEquals(5000.50, state.revenueByCurrency[0].totalAmount, 0.01)
+        assertEquals(java.math.BigDecimal("5000.50"), state.revenueByCurrency[0].totalAmount)
         assertEquals("EUR", state.revenueByCurrency[1].currency)
-        assertEquals(3000.75, state.revenueByCurrency[1].totalAmount, 0.01)
+        assertEquals(java.math.BigDecimal("3000.75"), state.revenueByCurrency[1].totalAmount)
     }
 
     @Test
@@ -270,7 +270,7 @@ class BusinessAnalyticsViewModelTest {
     fun `revenue is formatted with two decimal places`() = runTest {
         val data = BusinessAnalyticsData(
             revenueByCurrency = listOf(
-                RevenueByCurrency("USD", 5000.50, 80, 62.51)
+                RevenueByCurrency("USD", java.math.BigDecimal("5000.50"), 80, java.math.BigDecimal("62.51"))
             )
         )
         coEvery { repository.getBusinessOverview(any(), any(), any(), any()) } returns Result.Success(data)
@@ -278,7 +278,7 @@ class BusinessAnalyticsViewModelTest {
         val viewModel = createViewModel()
 
         val state = viewModel.uiState.value
-        assertEquals("5000.50", state.revenueByCurrency[0].formattedTotal)
+        assertEquals("5,000.50", state.revenueByCurrency[0].formattedTotal)
         assertEquals("62.51", state.revenueByCurrency[0].formattedAvgOrderValue)
     }
 
@@ -286,7 +286,7 @@ class BusinessAnalyticsViewModelTest {
     fun `product revenue is formatted correctly`() = runTest {
         val data = BusinessAnalyticsData(
             bestSellingProducts = listOf(
-                BestSellingProduct("prod-1", "Widget A", "SKU-001", 50, 2500.0, "USD")
+                BestSellingProduct("prod-1", "Widget A", "SKU-001", 50, java.math.BigDecimal("2500.0"), "USD")
             )
         )
         coEvery { repository.getBusinessOverview(any(), any(), any(), any()) } returns Result.Success(data)
@@ -294,7 +294,7 @@ class BusinessAnalyticsViewModelTest {
         val viewModel = createViewModel()
 
         val state = viewModel.uiState.value
-        assertEquals("2500.00", state.bestSellingProducts[0].formattedRevenue)
+        assertEquals("2,500.00", state.bestSellingProducts[0].formattedRevenue)
     }
 
     // ========================================================================
@@ -395,20 +395,20 @@ fun successData(
         pendingOrders = pendingOrders,
         rejectedOrders = rejectedOrders,
         revenueByCurrency = listOf(
-            RevenueByCurrency("USD", 5000.50, 80, 62.51),
-            RevenueByCurrency("EUR", 3000.75, 40, 75.02)
+            RevenueByCurrency("USD", java.math.BigDecimal("5000.50"), 80, java.math.BigDecimal("62.51")),
+            RevenueByCurrency("EUR", java.math.BigDecimal("3000.75"), 40, java.math.BigDecimal("75.02"))
         ),
         dailyRevenue = listOf(
-            DailyRevenue("2024-01-01", 1000.0, "USD"),
-            DailyRevenue("2024-01-01", 500.0, "EUR")
+            DailyRevenue("2024-01-01", java.math.BigDecimal("1000.0"), "USD"),
+            DailyRevenue("2024-01-01", java.math.BigDecimal("500.0"), "EUR")
         ),
         bestSellingProducts = listOf(
-            BestSellingProduct("prod-1", "Widget A", "SKU-001", 50, 2500.0, "USD"),
-            BestSellingProduct("prod-2", "Widget B", "SKU-002", 30, 1500.0, "EUR")
+            BestSellingProduct("prod-1", "Widget A", "SKU-001", 50, java.math.BigDecimal("2500.0"), "USD"),
+            BestSellingProduct("prod-2", "Widget B", "SKU-002", 30, java.math.BigDecimal("1500.0"), "EUR")
         ),
         categorySales = listOf(
-            CategorySales("cat-1", "Electronics", 100, 5000.0, "USD"),
-            CategorySales("cat-2", "Clothing", 50, 2000.0, "EUR")
+            CategorySales("cat-1", "Electronics", 100, java.math.BigDecimal("5000.0"), "USD"),
+            CategorySales("cat-2", "Clothing", 50, java.math.BigDecimal("2000.0"), "EUR")
         ),
         newRegistrations = newRegistrations,
         dailyRegistrations = listOf(
@@ -427,7 +427,7 @@ fun successDataWithComparison(): BusinessAnalyticsData {
         totalOrdersComparison = IntPeriodComparison(150, 120, 25.0),
         completedOrdersComparison = IntPeriodComparison(120, 100, 20.0),
         revenueComparison = listOf(
-            RevenuePeriodComparison(5000.50, 4000.00, 25.13)
+            RevenuePeriodComparison(java.math.BigDecimal("5000.50"), java.math.BigDecimal("4000.00"), 25.13)
         ),
         newRegistrationsComparison = IntPeriodComparison(25, 20, 25.0),
         activeCustomersComparison = IntPeriodComparison(80, 70, 14.29)

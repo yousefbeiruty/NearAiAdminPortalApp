@@ -92,6 +92,9 @@ import okhttp3.RequestBody
 import java.io.File
 import javax.inject.Inject
 import com.nearai.admin.R
+import com.nearai.admin.core.common.MonetaryFormatter
+import com.nearai.admin.core.common.parseBigDecimalOrNull
+import java.math.BigDecimal
 import com.nearai.admin.core.designsystem.components.NearAiAlertType
 import com.nearai.admin.core.designsystem.components.NearAiAlertDialog
 import com.nearai.admin.core.designsystem.components.StatusPill
@@ -530,7 +533,13 @@ class ProductDetailsViewModel @Inject constructor(
         }
     }
 
-    fun onCreateVariant(sku: String, attributes: Map<String, String>) {
+    fun onCreateVariant(
+        sku: String,
+        attributes: Map<String, String>,
+        priceAmount: BigDecimal? = null,
+        priceCurrency: String? = null,
+        unitOfMeasure: String? = null
+    ) {
         if (sku.isBlank()) {
             _uiState.update { it.copy(variantActionError = "SKU is required") }
             return
@@ -538,7 +547,14 @@ class ProductDetailsViewModel @Inject constructor(
         val productId = _uiState.value.product?.id ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isVariantActionLoading = true, variantActionError = null) }
-            when (val result = catalogRepository.createVariant(productId, sku, attributes)) {
+            when (val result = catalogRepository.createVariant(
+                productId = productId,
+                sku = sku,
+                attributes = attributes,
+                priceAmount = priceAmount,
+                priceCurrency = priceCurrency,
+                unitOfMeasure = unitOfMeasure
+            )) {
                 is com.nearai.admin.core.common.Result.Success -> {
                     _uiState.update { it.copy(isVariantActionLoading = false, showAddVariantDialog = false) }
                     refreshVariants()
@@ -556,14 +572,28 @@ class ProductDetailsViewModel @Inject constructor(
         }
     }
 
-    fun onUpdateVariant(variantId: String, sku: String, attributes: Map<String, String>) {
+    fun onUpdateVariant(
+        variantId: String,
+        sku: String,
+        attributes: Map<String, String>,
+        priceAmount: BigDecimal? = null,
+        priceCurrency: String? = null,
+        unitOfMeasure: String? = null
+    ) {
         if (sku.isBlank()) {
             _uiState.update { it.copy(variantActionError = "SKU is required") }
             return
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isVariantActionLoading = true, variantActionError = null) }
-            when (val result = catalogRepository.updateVariant(variantId, sku, attributes)) {
+            when (val result = catalogRepository.updateVariant(
+                variantId = variantId,
+                sku = sku,
+                attributes = attributes,
+                priceAmount = priceAmount,
+                priceCurrency = priceCurrency,
+                unitOfMeasure = unitOfMeasure
+            )) {
                 is com.nearai.admin.core.common.Result.Success -> {
                     _uiState.update { it.copy(isVariantActionLoading = false, showEditVariantDialog = false) }
                     refreshVariants()
@@ -904,8 +934,8 @@ fun ProductDetailsScreen(
     if (uiState.showAddVariantDialog) {
         AddVariantDialog(
             onDismiss = viewModel::onHideVariantDialog,
-            onConfirm = { sku, attributes ->
-                viewModel.onCreateVariant(sku, attributes)
+            onConfirm = { sku, attributes, priceAmount, priceCurrency, unitOfMeasure ->
+                viewModel.onCreateVariant(sku, attributes, priceAmount, priceCurrency, unitOfMeasure)
             },
             isLoading = uiState.isVariantActionLoading,
             error = uiState.variantActionError
@@ -917,13 +947,16 @@ fun ProductDetailsScreen(
         val editingV = uiState.editingVariant!!
         AddVariantDialog(
             onDismiss = viewModel::onHideVariantDialog,
-            onConfirm = { sku, attrs ->
-                viewModel.onUpdateVariant(editingV.id, sku, attrs)
+            onConfirm = { sku, attrs, priceAmount, priceCurrency, unitOfMeasure ->
+                viewModel.onUpdateVariant(editingV.id, sku, attrs, priceAmount, priceCurrency, unitOfMeasure)
             },
             isLoading = uiState.isVariantActionLoading,
             error = uiState.variantActionError,
             initialSku = editingV.sku,
             initialAttributes = editingV.attributes,
+            initialPriceAmount = editingV.priceAmount,
+            initialPriceCurrency = editingV.priceCurrency,
+            initialUnitOfMeasure = editingV.unitOfMeasure,
             title = stringResource(R.string.variant_edit_title)
         )
     }
@@ -1226,41 +1259,71 @@ fun VariantCard(
                     dotColor = if (variant.status == VariantStatus.ACTIVE) EmeraldSuccess else TextSecondaryLight
                 )
             }
-            if (variant.attributes.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    variant.attributes.forEach { (key, value) ->
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = BackgroundLight
-                        ) {
-                            Text(
-                                text = "$key: $value",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondaryLight,
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (variant.attributes.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        variant.attributes.forEach { (key, value) ->
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = BackgroundLight
+                            ) {
+                                Text(
+                                    text = "$key: $value",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = TextSecondaryLight,
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
                         }
                     }
                 }
+                // Display variant price if available
+                if (variant.priceAmount != null) {
+                    val currency = variant.priceCurrency ?: "USD"
+                    Text(
+                        text = MonetaryFormatter.formatWithCurrencyCode(variant.priceAmount, currency),
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            color = Navy,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier.padding(start = 6.dp)
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = if (variant.availableQuantity > 0) {
-                    stringResource(R.string.variant_stock_available, variant.availableQuantity)
-                } else {
-                    stringResource(R.string.variant_out_of_stock)
-                },
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = if (variant.availableQuantity > 0) EmeraldSuccess else RoseError,
-                    fontWeight = FontWeight.Medium
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = if (variant.availableQuantity > 0) {
+                        stringResource(R.string.variant_stock_available, variant.availableQuantity)
+                    } else {
+                        stringResource(R.string.variant_out_of_stock)
+                    },
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = if (variant.availableQuantity > 0) EmeraldSuccess else RoseError,
+                        fontWeight = FontWeight.Medium
+                    )
                 )
-            )
+                // Display unit of measure if available
+                variant.unitOfMeasure?.let { uom ->
+                    Text(
+                        text = "($uom)",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = TextSecondaryLight,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(10.dp))
             // Row 1: Stock actions
             Row(
@@ -1354,15 +1417,21 @@ fun EmptyVariantsState(modifier: Modifier = Modifier) {
 @Composable
 fun AddVariantDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, Map<String, String>) -> Unit,
+    onConfirm: (String, Map<String, String>, BigDecimal?, String?, String?) -> Unit,
     isLoading: Boolean,
     error: String?,
     initialSku: String = "",
     initialAttributes: Map<String, String> = emptyMap(),
+    initialPriceAmount: BigDecimal? = null,
+    initialPriceCurrency: String? = null,
+    initialUnitOfMeasure: String? = null,
     title: String = stringResource(R.string.variant_add_title),
     modifier: Modifier = Modifier
 ) {
     var sku by remember { mutableStateOf(initialSku) }
+    var priceAmountText by remember { mutableStateOf(initialPriceAmount?.toString() ?: "") }
+    var priceCurrency by remember { mutableStateOf(initialPriceCurrency ?: "") }
+    var unitOfMeasure by remember { mutableStateOf(initialUnitOfMeasure ?: "") }
     val attributes = remember {
         mutableStateListOf<Pair<String, String>?>().apply {
             if (initialAttributes.isNotEmpty()) {
@@ -1455,6 +1524,43 @@ fun AddVariantDialog(
                         onValueChange = { sku = it.trim() },
                         label = { Text(stringResource(R.string.variant_sku_label)) },
                         placeholder = { Text(stringResource(R.string.variant_sku_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = TextPrimaryLight)
+                    )
+
+                    // Price amount field
+                    OutlinedTextField(
+                        value = priceAmountText,
+                        onValueChange = { priceAmountText = it },
+                        label = { Text(stringResource(R.string.variant_price_amount_label)) },
+                        placeholder = { Text(stringResource(R.string.variant_price_amount_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = TextPrimaryLight)
+                    )
+
+                    // Price currency field
+                    OutlinedTextField(
+                        value = priceCurrency,
+                        onValueChange = { priceCurrency = it.uppercase() },
+                        label = { Text(stringResource(R.string.variant_price_currency_label)) },
+                        placeholder = { Text(stringResource(R.string.variant_price_currency_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = TextPrimaryLight)
+                    )
+
+                    // Unit of measure field
+                    OutlinedTextField(
+                        value = unitOfMeasure,
+                        onValueChange = { unitOfMeasure = it },
+                        label = { Text(stringResource(R.string.variant_unit_of_measure_label)) },
+                        placeholder = { Text(stringResource(R.string.variant_unit_of_measure_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
@@ -1594,7 +1700,10 @@ fun AddVariantDialog(
                                 .filter { it != null && it.first.isNotBlank() && it.second.isNotBlank() }
                                 .mapNotNull { it }
                                 .associate { it.first.trim() to it.second.trim() }
-                            onConfirm(sku.trim(), attrMap)
+                            val parsedPrice = priceAmountText.parseBigDecimalOrNull()
+                            val currency = priceCurrency.takeIf { it.isNotBlank() }
+                            val uom = unitOfMeasure.takeIf { it.isNotBlank() }
+                            onConfirm(sku.trim(), attrMap, parsedPrice, currency, uom)
                         },
                         enabled = !isLoading && sku.isNotBlank(),
                         shape = RoundedCornerShape(12.dp),
@@ -1985,7 +2094,7 @@ fun ProductDetailsScreenPreview() {
                 name = "Wireless Headphones",
                 description = "Premium noise-canceling headphones with 30hr battery life",
                 slug = "wireless-headphones",
-                priceAmount = 99.99,
+                priceAmount = BigDecimal("99.99"),
                 priceCurrency = "USD",
                 images = emptyList(),
                 status = ProductStatus.ACTIVE,

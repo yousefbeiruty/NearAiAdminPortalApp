@@ -1136,7 +1136,7 @@ class InventoryViewModelTest {
         name = name,
         description = "A widget",
         slug = "widget",
-        priceAmount = 10.0,
+        priceAmount = java.math.BigDecimal("10.0"),
         priceCurrency = "USD",
         images = emptyList(),
         status = status,

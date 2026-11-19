@@ -73,7 +73,8 @@ class AuditLogsRepositoryImplTest {
                     requestId = "req-1",
                     changes = json.parseToJsonElement("""{"name":"Test"}"""),
                     metadata = null,
-                    createdAt = "2025-11-04T10:00:00Z"
+                    createdAt = "2025-11-04T10:00:00Z",
+                    tenantId = null
                 )
             ),
             total = 1,

@@ -49,33 +49,6 @@ class UsersRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateUser(
-        userId: String,
-        role: String?,
-        isActive: Boolean?
-    ): Result<AdminUser> {
-        return tokenRefreshManager.refreshAndRetry {
-            try {
-                val request = UpdateUserRequestDto(role = role, isActive = isActive)
-                val response = apiService.updateUser(userId, request)
-                Result.Success(UsersMapper.mapUser(response))
-            } catch (e: Exception) {
-                handleException(e)
-            }
-        }
-    }
-
-    override suspend fun revokeSessions(userId: String): Result<Int> {
-        return tokenRefreshManager.refreshAndRetry {
-            try {
-                val response = apiService.revokeSessions(userId)
-                Result.Success(response.revokedCount)
-            } catch (e: Exception) {
-                handleException(e)
-            }
-        }
-    }
-
     private fun handleException(e: Throwable): Result.Error {
         return when (e) {
             is HttpException -> Result.Error(ApiErrorParser.parse(e))

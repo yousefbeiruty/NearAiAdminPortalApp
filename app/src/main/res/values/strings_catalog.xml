@@ -85,6 +85,14 @@
     <string name="variant_stock_available">%1$d available</string>
     <string name="variant_out_of_stock">Out of stock</string>
 
+    <!-- Variant Pricing -->
+    <string name="variant_price_amount_label">Price Amount</string>
+    <string name="variant_price_amount_hint">e.g. 99.99</string>
+    <string name="variant_price_currency_label">Currency</string>
+    <string name="variant_price_currency_hint">e.g. USD</string>
+    <string name="variant_unit_of_measure_label">Unit of Measure</string>
+    <string name="variant_unit_of_measure_hint">e.g. each, kg, liter</string>
+
     <!-- Product Images -->
     <string name="product_delete_image_title">Delete Image</string>
     <string name="product_delete_image_message">Are you sure you want to delete this image? This action cannot be undone.</string>

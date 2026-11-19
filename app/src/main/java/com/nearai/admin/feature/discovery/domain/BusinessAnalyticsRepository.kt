@@ -1,6 +1,7 @@
 package com.nearai.admin.feature.discovery.domain
 
 import com.nearai.admin.core.common.Result
+import java.math.BigDecimal
 
 /**
  * Repository interface for business analytics data.
@@ -81,15 +82,15 @@ data class OrderStatusBreakdown(
 
 data class DailyRevenue(
     val date: String = "",
-    val amount: Double = 0.0,
+    val amount: BigDecimal = BigDecimal.ZERO,
     val currency: String = ""
 )
 
 data class RevenueByCurrency(
     val currency: String = "",
-    val totalAmount: Double = 0.0,
+    val totalAmount: BigDecimal = BigDecimal.ZERO,
     val orderCount: Int = 0,
-    val avgOrderValue: Double = 0.0
+    val avgOrderValue: BigDecimal = BigDecimal.ZERO
 )
 
 // ─── Product Analytics ──────────────────────────────────────────────────────
@@ -99,7 +100,7 @@ data class BestSellingProduct(
     val productName: String = "",
     val sku: String = "",
     val unitsSold: Int = 0,
-    val revenue: Double = 0.0,
+    val revenue: BigDecimal = BigDecimal.ZERO,
     val currency: String = ""
 )
 
@@ -107,7 +108,7 @@ data class CategorySales(
     val categoryId: String = "",
     val categoryName: String = "",
     val unitsSold: Int = 0,
-    val revenue: Double = 0.0,
+    val revenue: BigDecimal = BigDecimal.ZERO,
     val currency: String = ""
 )
 
@@ -121,8 +122,8 @@ data class DailyUserRegistration(
 // ─── Period Comparison ──────────────────────────────────────────────────────
 
 data class RevenuePeriodComparison(
-    val current: Double = 0.0,
-    val previous: Double = 0.0,
+    val current: BigDecimal = BigDecimal.ZERO,
+    val previous: BigDecimal = BigDecimal.ZERO,
     val percentageChange: Double? = null
 )
 

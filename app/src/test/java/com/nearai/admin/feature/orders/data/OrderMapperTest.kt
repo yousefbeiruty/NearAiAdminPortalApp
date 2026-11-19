@@ -17,13 +17,13 @@ class OrderMapperTest {
             createdAt = "2024-01-15T10:30:00Z",
             status = "pending",
             fulfillmentStatus = "awaiting_confirmation",
-            totalAmount = 45.50,
-            subtotalAmount = 40.00,
-            deliveryFeeAmount = 5.50,
-            discountAmount = 0.0,
+            totalAmount = java.math.BigDecimal("45.50"),
+            subtotalAmount = java.math.BigDecimal("40.00"),
+            deliveryFeeAmount = java.math.BigDecimal("5.50"),
+            discountAmount = java.math.BigDecimal("0.0"),
             currency = "JOD",
             items = listOf(
-                OrderItemDto(variantId = "var-1", productName = "Widget", sku = "W-001", quantity = 2, unitPriceAmount = 20.0, unitPriceCurrency = "JOD", subtotalAmount = 40.0)
+                OrderItemDto(variantId = "var-1", productName = "Widget", sku = "W-001", quantity = 2, unitPriceAmount = java.math.BigDecimal("20.0"), unitPriceCurrency = "JOD", subtotalAmount = java.math.BigDecimal("40.0"))
             ),
             deliveryRecipientName = "John Doe",
             deliveryPhone = "+1234567890",
@@ -40,10 +40,10 @@ class OrderMapperTest {
         assertEquals("abc-123", summary.id)
         assertEquals(OrderStatus.PENDING, summary.status)
         assertEquals(FulfillmentStatus.AWAITING_CONFIRMATION, summary.fulfillmentStatus)
-        assertEquals(45.50, summary.totalAmount, 0.001)
-        assertEquals(40.00, summary.subtotalAmount!!, 0.001)
-        assertEquals(5.50, summary.deliveryFeeAmount!!, 0.001)
-        assertEquals(0.0, summary.discountAmount!!, 0.001)
+        assertEquals(java.math.BigDecimal("45.50"), summary.totalAmount)
+        assertEquals(java.math.BigDecimal("40.00"), summary.subtotalAmount)
+        assertEquals(java.math.BigDecimal("5.50"), summary.deliveryFeeAmount)
+        assertEquals(java.math.BigDecimal("0.0"), summary.discountAmount)
         assertEquals("JOD", summary.currency)
         assertEquals("John Doe", summary.deliveryRecipientName)
         assertEquals("+1234567890", summary.deliveryPhone)
@@ -63,7 +63,7 @@ class OrderMapperTest {
             createdAt = "2024-01-15T10:30:00Z",
             status = "pending",
             fulfillmentStatus = "awaiting_confirmation",
-            totalAmount = 45.50,
+            totalAmount = java.math.BigDecimal("45.50"),
             subtotalAmount = null,
             deliveryFeeAmount = null,
             discountAmount = null,
@@ -103,12 +103,12 @@ class OrderMapperTest {
             status = "pending",
             fulfillmentStatus = "awaiting_confirmation",
             items = listOf(
-                OrderItemDto(variantId = "var-1", productName = "Widget A", sku = "W-001", quantity = 3, unitPriceAmount = 29.99, unitPriceCurrency = "JOD", subtotalAmount = 89.97)
+                OrderItemDto(variantId = "var-1", productName = "Widget A", sku = "W-001", quantity = 3, unitPriceAmount = java.math.BigDecimal("29.99"), unitPriceCurrency = "JOD", subtotalAmount = java.math.BigDecimal("89.97"))
             ),
-            subtotalAmount = 84.47,
-            deliveryFeeAmount = 5.50,
-            discountAmount = 0.0,
-            totalAmount = 89.97,
+            subtotalAmount = java.math.BigDecimal("84.47"),
+            deliveryFeeAmount = java.math.BigDecimal("5.50"),
+            discountAmount = java.math.BigDecimal("0.0"),
+            totalAmount = java.math.BigDecimal("89.97"),
             currency = "JOD",
             deliveryRecipientName = "John Doe",
             deliveryPhone = "+1234567890",
@@ -129,11 +129,11 @@ class OrderMapperTest {
         assertEquals("var-1", details.items[0].variantId)
         assertEquals("W-001", details.items[0].sku)
         assertEquals(3, details.items[0].quantity)
-        assertEquals(29.99, details.items[0].unitPriceAmount, 0.001)
+        assertEquals(java.math.BigDecimal("29.99"), details.items[0].unitPriceAmount)
         assertEquals("JOD", details.items[0].unitPriceCurrency)
-        assertEquals(89.97, details.items[0].subtotalAmount!!, 0.001)
-        assertEquals(5.50, details.deliveryFeeAmount!!, 0.001)
-        assertEquals(0.0, details.discountAmount!!, 0.001)
+        assertEquals(java.math.BigDecimal("89.97"), details.items[0].subtotalAmount)
+        assertEquals(java.math.BigDecimal("5.50"), details.deliveryFeeAmount)
+        assertEquals(java.math.BigDecimal("0.0"), details.discountAmount)
         assertEquals("John Doe", details.deliveryRecipientName)
         assertEquals("+1234567890", details.deliveryPhone)
         assertEquals("New York", details.deliveryCity)
@@ -155,7 +155,7 @@ class OrderMapperTest {
             subtotalAmount = null,
             deliveryFeeAmount = null,
             discountAmount = null,
-            totalAmount = 0.0,
+            totalAmount = java.math.BigDecimal("0.0"),
             currency = "JOD",
             deliveryRecipientName = null,
             deliveryPhone = null,
@@ -189,9 +189,9 @@ class OrderMapperTest {
             productName = "Widget A",
             sku = "W-001",
             quantity = 3,
-            unitPriceAmount = 29.99,
+            unitPriceAmount = java.math.BigDecimal("29.99"),
             unitPriceCurrency = "JOD",
-            subtotalAmount = 89.97
+            subtotalAmount = java.math.BigDecimal("89.97")
         )
 
         val item = OrderMapper.mapOrderItem(dto)
@@ -200,9 +200,9 @@ class OrderMapperTest {
         assertEquals("Widget A", item.productName)
         assertEquals("W-001", item.sku)
         assertEquals(3, item.quantity)
-        assertEquals(29.99, item.unitPriceAmount, 0.001)
+        assertEquals(java.math.BigDecimal("29.99"), item.unitPriceAmount)
         assertEquals("JOD", item.unitPriceCurrency)
-        assertEquals(89.97, item.subtotalAmount!!, 0.001)
+        assertEquals(java.math.BigDecimal("89.97"), item.subtotalAmount)
     }
 
     @Test
@@ -212,7 +212,7 @@ class OrderMapperTest {
             productName = "Widget A",
             sku = null,
             quantity = 3,
-            unitPriceAmount = 29.99,
+            unitPriceAmount = java.math.BigDecimal("29.99"),
             unitPriceCurrency = null,
             subtotalAmount = null
         )
@@ -272,10 +272,10 @@ class OrderMapperTest {
                     createdAt = "2024-01-15T10:30:00Z",
                     status = "pending",
                     fulfillmentStatus = "awaiting_confirmation",
-                    totalAmount = 45.50,
-                    subtotalAmount = 40.00,
-                    deliveryFeeAmount = 5.50,
-                    discountAmount = 0.0,
+                    totalAmount = java.math.BigDecimal("45.50"),
+                    subtotalAmount = java.math.BigDecimal("40.00"),
+                    deliveryFeeAmount = java.math.BigDecimal("5.50"),
+                    discountAmount = java.math.BigDecimal("0.0"),
                     currency = "JOD",
                     items = emptyList(),
                     deliveryRecipientName = "John Doe",
@@ -479,10 +479,10 @@ class OrderMapperTest {
             status = "pending",
             fulfillmentStatus = "confirmed",
             items = emptyList(),
-            subtotalAmount = 120.0,
-            deliveryFeeAmount = 0.0,
-            discountAmount = 0.0,
-            totalAmount = 120.0,
+            subtotalAmount = java.math.BigDecimal("120.0"),
+            deliveryFeeAmount = java.math.BigDecimal("0.0"),
+            discountAmount = java.math.BigDecimal("0.0"),
+            totalAmount = java.math.BigDecimal("120.0"),
             currency = "JOD",
             deliveryRecipientName = "John Doe",
             deliveryPhone = "+1234567890",
@@ -495,7 +495,7 @@ class OrderMapperTest {
             approvalStatus = "auto_approved",
             approvalDecision = ApprovalDecisionDto(
                 decision = "auto_approved",
-                evaluatedAmount = 120.0,
+                evaluatedAmount = java.math.BigDecimal("120.0"),
                 currency = "JOD",
                 decisionReason = "Order total within auto-approval limit",
                 policyVersion = 1,
@@ -510,7 +510,7 @@ class OrderMapperTest {
         assertEquals(ApprovalStatus.AUTO_APPROVED, details.approvalStatus)
         assertNotNull(details.approvalDecision)
         assertEquals(ApprovalStatus.AUTO_APPROVED, details.approvalDecision!!.decision)
-        assertEquals(120.0, details.approvalDecision.evaluatedAmount, 0.001)
+        assertEquals(java.math.BigDecimal("120.0"), details.approvalDecision.evaluatedAmount)
         assertEquals("JOD", details.approvalDecision.currency)
         assertEquals("Order total within auto-approval limit", details.approvalDecision.decisionReason)
         assertEquals(1, details.approvalDecision.policyVersion)
@@ -524,10 +524,10 @@ class OrderMapperTest {
             status = "pending",
             fulfillmentStatus = "confirmed",
             items = emptyList(),
-            subtotalAmount = 120.0,
-            deliveryFeeAmount = 0.0,
-            discountAmount = 0.0,
-            totalAmount = 120.0,
+            subtotalAmount = java.math.BigDecimal("120.0"),
+            deliveryFeeAmount = java.math.BigDecimal("0.0"),
+            discountAmount = java.math.BigDecimal("0.0"),
+            totalAmount = java.math.BigDecimal("120.0"),
             currency = "JOD",
             deliveryRecipientName = "John Doe",
             deliveryPhone = "+1234567890",
@@ -554,10 +554,10 @@ class OrderMapperTest {
             createdAt = "2024-01-15T10:30:00Z",
             status = "pending",
             fulfillmentStatus = "confirmed",
-            totalAmount = 120.0,
-            subtotalAmount = 120.0,
-            deliveryFeeAmount = 0.0,
-            discountAmount = 0.0,
+            totalAmount = java.math.BigDecimal("120.0"),
+            subtotalAmount = java.math.BigDecimal("120.0"),
+            deliveryFeeAmount = java.math.BigDecimal("0.0"),
+            discountAmount = java.math.BigDecimal("0.0"),
             currency = "JOD",
             items = emptyList(),
             deliveryRecipientName = "John Doe",
@@ -571,7 +571,7 @@ class OrderMapperTest {
             approvalStatus = "manually_approved",
             approvalDecision = ApprovalDecisionDto(
                 decision = "manually_approved",
-                evaluatedAmount = 350.0,
+                evaluatedAmount = java.math.BigDecimal("350.0"),
                 currency = "JOD",
                 decisionReason = "Manual approval by admin",
                 policyVersion = 1,
@@ -594,7 +594,7 @@ class OrderMapperTest {
     fun `mapApprovalDecision maps all fields`() {
         val dto = ApprovalDecisionDto(
             decision = "awaiting_mandatory_approval",
-            evaluatedAmount = 750.0,
+            evaluatedAmount = java.math.BigDecimal("750.0"),
             currency = "JOD",
             decisionReason = "Order exceeds mandatory review threshold",
             policyVersion = 2,
@@ -606,7 +606,7 @@ class OrderMapperTest {
         val snapshot = OrderMapper.mapApprovalDecision(dto)
 
         assertEquals(ApprovalStatus.AWAITING_MANDATORY_APPROVAL, snapshot.decision)
-        assertEquals(750.0, snapshot.evaluatedAmount, 0.001)
+        assertEquals(java.math.BigDecimal("750.0"), snapshot.evaluatedAmount)
         assertEquals("JOD", snapshot.currency)
         assertEquals("Order exceeds mandatory review threshold", snapshot.decisionReason)
         assertEquals(2, snapshot.policyVersion)
@@ -619,7 +619,7 @@ class OrderMapperTest {
     fun `mapApprovalDecision handles nullable fields`() {
         val dto = ApprovalDecisionDto(
             decision = "auto_approved",
-            evaluatedAmount = 50.0,
+            evaluatedAmount = java.math.BigDecimal("50.0"),
             currency = "JOD",
             decisionReason = null,
             policyVersion = null,

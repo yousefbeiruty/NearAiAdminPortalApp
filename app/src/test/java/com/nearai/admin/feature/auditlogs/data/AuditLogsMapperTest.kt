@@ -26,7 +26,8 @@ class AuditLogsMapperTest {
             requestId = "req-789",
             changes = changesJson,
             metadata = metadataJson,
-            createdAt = "2025-11-04T10:30:00Z"
+            createdAt = "2025-11-04T10:30:00Z",
+            tenantId = null
         )
 
         val log = AuditLogsMapper.mapLog(dto)
@@ -57,7 +58,8 @@ class AuditLogsMapperTest {
             requestId = null,
             changes = null,
             metadata = null,
-            createdAt = "2025-11-04T09:00:00Z"
+            createdAt = "2025-11-04T09:00:00Z",
+            tenantId = null
         )
 
         val log = AuditLogsMapper.mapLog(dto)
@@ -89,7 +91,8 @@ class AuditLogsMapperTest {
             requestId = null,
             changes = changesJson,
             metadata = null,
-            createdAt = "2026-11-04T18:18:47.720004Z"
+            createdAt = "2026-11-04T18:18:47.720004Z",
+            tenantId = null
         )
 
         val log = AuditLogsMapper.mapLog(dto)
@@ -161,7 +164,8 @@ class AuditLogsMapperTest {
                     requestId = null,
                     changes = null,
                     metadata = null,
-                    createdAt = "2025-11-04T10:00:00Z"
+                    createdAt = "2025-11-04T10:00:00Z",
+                    tenantId = null
                 )
             ),
             total = 42,

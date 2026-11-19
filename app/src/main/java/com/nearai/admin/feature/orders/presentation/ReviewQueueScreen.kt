@@ -40,7 +40,8 @@ import java.util.Locale
 /**
  * Formats a currency amount with Locale.US for cross-platform consistency.
  */
-private fun formatAmount(amount: Double): String = String.format(Locale.US, "%.2f", amount)
+private fun formatAmount(amount: java.math.BigDecimal, currency: String): String =
+    com.nearai.admin.core.common.MonetaryFormatter.formatAmountOnly(amount, currency)
 
 /**
  * Review queue screen showing orders awaiting manual approval.
@@ -396,7 +397,7 @@ private fun ReviewQueueOrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    stringResource(R.string.order_currency_format, order.currency, formatAmount(order.totalAmount)),
+                    stringResource(R.string.order_currency_format, order.currency, formatAmount(order.totalAmount, order.currency)),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = Navy

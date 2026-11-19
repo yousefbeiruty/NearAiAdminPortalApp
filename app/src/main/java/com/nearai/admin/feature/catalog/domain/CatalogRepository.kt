@@ -1,6 +1,7 @@
 package com.nearai.admin.feature.catalog.domain
 
 import com.nearai.admin.core.common.Result
+import java.math.BigDecimal
 
 /**
  * Domain model for a product category.
@@ -22,7 +23,7 @@ data class Product(
     val name: String,
     val description: String,
     val slug: String,
-    val priceAmount: Double,
+    val priceAmount: BigDecimal,
     val priceCurrency: String,
     val images: List<String>,
     val status: ProductStatus,
@@ -56,6 +57,9 @@ data class ProductVariant(
     val attributes: Map<String, String>,
     val status: VariantStatus,
     val availableQuantity: Int,
+    val priceAmount: BigDecimal? = null,
+    val priceCurrency: String? = null,
+    val unitOfMeasure: String? = null,
     val createdAt: String,
     val updatedAt: String
 )
@@ -176,8 +180,8 @@ interface CatalogRepository {
         categoryId: String? = null,
         status: ProductStatus? = null,
         search: String? = null,
-        minPrice: Double? = null,
-        maxPrice: Double? = null,
+        minPrice: BigDecimal? = null,
+        maxPrice: BigDecimal? = null,
         sortBy: ProductSortBy = ProductSortBy.NEWEST
     ): Result<PaginatedProducts>
 
@@ -187,8 +191,8 @@ interface CatalogRepository {
         size: Int = 20,
         categoryId: String? = null,
         status: ProductStatus? = null,
-        minPrice: Double? = null,
-        maxPrice: Double? = null,
+        minPrice: BigDecimal? = null,
+        maxPrice: BigDecimal? = null,
         sortBy: ProductSortBy = ProductSortBy.NEWEST
     ): Result<PaginatedProducts>
 
@@ -198,7 +202,7 @@ interface CatalogRepository {
         name: String,
         description: String,
         slug: String? = null,
-        priceAmount: Double,
+        priceAmount: BigDecimal,
         priceCurrency: String = "USD",
         images: List<String>? = null,
         categoryId: String? = null,
@@ -210,7 +214,7 @@ interface CatalogRepository {
         name: String? = null,
         description: String? = null,
         slug: String? = null,
-        priceAmount: Double? = null,
+        priceAmount: BigDecimal? = null,
         priceCurrency: String? = null,
         images: List<String>? = null,
         categoryId: String? = null,
@@ -251,13 +255,19 @@ interface CatalogRepository {
     suspend fun createVariant(
         productId: String,
         sku: String,
-        attributes: Map<String, String> = emptyMap()
+        attributes: Map<String, String> = emptyMap(),
+        priceAmount: BigDecimal? = null,
+        priceCurrency: String? = null,
+        unitOfMeasure: String? = null
     ): Result<ProductVariant>
 
     suspend fun updateVariant(
         variantId: String,
         sku: String? = null,
-        attributes: Map<String, String>? = null
+        attributes: Map<String, String>? = null,
+        priceAmount: BigDecimal? = null,
+        priceCurrency: String? = null,
+        unitOfMeasure: String? = null
     ): Result<ProductVariant>
 
     suspend fun updateVariantStatus(

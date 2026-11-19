@@ -1,13 +1,14 @@
 package com.nearai.admin.feature.dashboard.domain
 
 import com.nearai.admin.core.common.Result
+import java.math.BigDecimal
 
 /**
  * Revenue amount for a single currency.
  */
 data class RevenueByCurrency(
     val currency: String,
-    val amount: Double
+    val amount: BigDecimal
 )
 
 /**
@@ -18,7 +19,7 @@ data class RecentOrder(
     val userName: String,
     val orderDate: String,
     val status: String,
-    val total: Double,
+    val total: BigDecimal,
     val currency: String
 )
 
@@ -56,7 +57,7 @@ data class DashboardData(
     val completedOrders: Int = 0,
     val cancelledOrders: Int = 0,
     val rejectedOrders: Int = 0,
-    val totalRevenue: Double = 0.0,
+    val totalRevenue: BigDecimal = BigDecimal.ZERO,
     val revenueCurrency: String = "",
     val revenueByCurrency: List<RevenueByCurrency> = emptyList(),
     val recentOrders: List<RecentOrder> = emptyList(),
@@ -71,7 +72,12 @@ data class DashboardData(
 interface DashboardRepository {
 
     /**
-     * Fetches the current dashboard data from the backend.
+     * Fetches the current merchant-scoped dashboard data from the backend.
      */
     suspend fun getDashboardData(): Result<DashboardData>
+
+    /**
+     * Fetches the platform-wide dashboard data from the backend.
+     */
+    suspend fun getPlatformDashboardData(): Result<PlatformDashboardData>
 }

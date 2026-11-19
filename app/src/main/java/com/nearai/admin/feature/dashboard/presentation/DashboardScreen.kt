@@ -93,11 +93,7 @@ fun DashboardScreenContent(
     onNavigateToSystemHealth: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val hasData = uiState.totalUsers > 0 ||
-        uiState.totalProducts > 0 ||
-        uiState.recentOrders.isNotEmpty() ||
-        uiState.recentRegistrations.isNotEmpty() ||
-        uiState.lowStockAlerts.isNotEmpty()
+    val hasPlatformData = uiState.platformTenants != null
 
     Scaffold(
         topBar = {
@@ -197,7 +193,7 @@ fun DashboardScreenContent(
         },
         containerColor = BackgroundLight
     ) { innerPadding ->
-        if (uiState.isLoading && !hasData) {
+        if (uiState.isLoading && !hasPlatformData) {
             // Initial loading state
             Box(
                 modifier = Modifier
@@ -222,8 +218,8 @@ fun DashboardScreenContent(
                     )
                 }
             }
-        } else if (uiState.error != null && !hasData) {
-            // Error state with retry
+        } else if (uiState.error != null && !hasPlatformData) {
+            // Error state with retry — platform request failed
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -287,6 +283,8 @@ fun DashboardScreenContent(
 
 /**
  * Dashboard content rendered from ViewModel state.
+ * Displays platform-wide metrics for the global Platform Admin Console.
+ * Never falls back to merchant-scoped data.
  */
 @Composable
 private fun DashboardContent(
@@ -295,6 +293,7 @@ private fun DashboardContent(
     onRefresh: () -> Unit,
     modifier: Modifier
 ) {
+
     LazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -309,13 +308,13 @@ private fun DashboardContent(
             ) {
                 Column {
                     Text(
-                        text = stringResource(R.string.dashboard_greeting),
+                        text = "Platform Admin",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = TextSecondaryLight
                         )
                     )
                     Text(
-                        text = stringResource(R.string.dashboard_user_name),
+                        text = "Global Overview",
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = Navy
@@ -350,114 +349,209 @@ private fun DashboardContent(
             }
         }
 
-        // 2. KPI Grid — 6 metric cards
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    MetricCard(
-                        title = stringResource(R.string.dashboard_total_users),
-                        value = uiState.totalUsers.toString(),
-                        icon = Icons.Outlined.People,
-                        modifier = Modifier.weight(1f)
-                    )
-                    MetricCard(
-                        title = stringResource(R.string.dashboard_products),
-                        value = uiState.totalProducts.toString(),
-                        icon = Icons.Outlined.Inventory2,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    MetricCard(
-                        title = stringResource(R.string.dashboard_categories),
-                        value = uiState.totalCategories.toString(),
-                        icon = Icons.Outlined.Category,
-                        modifier = Modifier.weight(1f)
-                    )
-                    MetricCard(
-                        title = stringResource(R.string.dashboard_total_orders),
-                        value = uiState.totalOrders.toString(),
-                        icon = Icons.Outlined.ShoppingCart,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    MetricCard(
-                        title = stringResource(R.string.dashboard_pending_orders),
-                        value = uiState.pendingOrders.toString(),
-                        icon = Icons.Outlined.Schedule,
-                        modifier = Modifier.weight(1f)
-                    )
-                    MetricCard(
-                        title = stringResource(R.string.dashboard_completed_orders),
-                        value = uiState.completedOrders.toString(),
-                        icon = Icons.Outlined.CheckCircle,
-                        modifier = Modifier.weight(1f)
-                    )
+        // ─── Platform Dashboard ───────────────────────────────────────────
+
+            // 2. Tenant Overview
+            uiState.platformTenants?.let { tenants ->
+                item {
+                    SectionHeader(title = "Tenants")
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle.copy(alpha = 0.5f)),
+                        modifier = Modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            MetricRow(label = "Total", value = tenants.total.toString())
+                            MetricRow(label = "Active", value = tenants.active.toString(), color = EmeraldSuccess)
+                            MetricRow(label = "Pending", value = tenants.pending.toString(), color = AmberWarning)
+                            MetricRow(label = "Suspended", value = tenants.suspended.toString(), color = RoseError)
+                            MetricRow(label = "Deleted", value = tenants.deleted.toString(), color = TextSecondaryLight)
+                        }
+                    }
                 }
             }
-        }
 
-        // 3. Revenue by Currency
-        if (uiState.revenueByCurrency.isNotEmpty()) {
-            item {
-                RevenueSection(uiState.revenueByCurrency)
+            // 3. User Counts by Role
+            uiState.platformUsers?.let { users ->
+                item {
+                    SectionHeader(title = "Users")
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle.copy(alpha = 0.5f)),
+                        modifier = Modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            MetricRow(label = "Total", value = users.total.toString())
+                            MetricRow(label = "Platform Admins", value = users.platformAdmins.toString(), color = Indigo)
+                            MetricRow(label = "Merchant Admins", value = users.merchantAdmins.toString(), color = Indigo)
+                            MetricRow(label = "Customers", value = users.customers.toString(), color = EmeraldSuccess)
+                        }
+                    }
+                }
             }
-        }
 
-        // 4. Recent Orders
-        if (uiState.recentOrders.isNotEmpty()) {
-            item {
-                SectionHeaderWithCount(
-                    title = stringResource(R.string.dashboard_recent_orders),
-                    count = uiState.recentOrders.size
-                )
+            // 4. Order Counts
+            uiState.platformOrders?.let { orders ->
+                item {
+                    SectionHeader(title = "Orders")
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle.copy(alpha = 0.5f)),
+                        modifier = Modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            MetricRow(label = "Total", value = orders.total.toString())
+                            MetricRow(label = "Today", value = uiState.platformOrdersToday.toString(), color = Indigo)
+                            MetricRow(label = "This Month", value = uiState.platformOrdersThisMonth.toString(), color = Indigo)
+                            MetricRow(label = "Pending", value = orders.pending.toString(), color = AmberWarning)
+                            MetricRow(label = "Completed", value = orders.completed.toString(), color = EmeraldSuccess)
+                            MetricRow(label = "Cancelled", value = orders.cancelled.toString(), color = RoseError)
+                            MetricRow(label = "Rejected", value = orders.rejected.toString(), color = RoseError)
+                        }
+                    }
+                }
             }
-            items(uiState.recentOrders) { order ->
-                RecentOrderCard(order = order)
-            }
-        }
 
-        // 5. Recent Registrations
-        if (uiState.recentRegistrations.isNotEmpty()) {
+            // 5. Financial Overview
             item {
-                SectionHeaderWithCount(
-                    title = stringResource(R.string.dashboard_recent_registrations),
-                    count = uiState.recentRegistrations.size
-                )
+                SectionHeader(title = "Financial Overview")
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle.copy(alpha = 0.5f)),
+                    modifier = Modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Revenue",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Navy
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        uiState.platformFinancialRevenue.forEach { rev ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = rev.currency, style = MaterialTheme.typography.bodyMedium.copy(color = Navy))
+                                Text(text = rev.formattedAmount, style = MaterialTheme.typography.bodyMedium.copy(color = EmeraldSuccess, fontWeight = FontWeight.Bold))
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Payment Totals",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Navy
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        uiState.platformFinancialPayments.forEach { pay ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = pay.currency, style = MaterialTheme.typography.bodyMedium.copy(color = Navy))
+                                Text(text = pay.formattedAmount, style = MaterialTheme.typography.bodyMedium.copy(color = Indigo, fontWeight = FontWeight.Bold))
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "COD Totals",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Navy
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        uiState.platformFinancialCod.forEach { cod ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = cod.currency, style = MaterialTheme.typography.bodyMedium.copy(color = Navy))
+                                Text(text = cod.formattedAmount, style = MaterialTheme.typography.bodyMedium.copy(color = AmberWarning, fontWeight = FontWeight.Bold))
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                    }
+                }
             }
-            items(uiState.recentRegistrations) { reg ->
-                RecentRegistrationCard(registration = reg)
-            }
-        }
 
-        // 6. Low Stock Alerts
-        if (uiState.lowStockAlerts.isNotEmpty()) {
+            // 6. Operational Metrics
             item {
-                SectionHeaderWithCount(
-                    title = stringResource(R.string.dashboard_low_stock_alerts),
-                    count = uiState.lowStockAlerts.size
-                )
+                SectionHeader(title = "Operational")
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle.copy(alpha = 0.5f)),
+                    modifier = Modifier.shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        MetricRow(label = "Pending Approvals", value = uiState.platformPendingApprovals.toString(), color = AmberWarning)
+                        MetricRow(label = "Failed Jobs", value = uiState.platformFailedJobs.toString(), color = RoseError)
+                        MetricRow(label = "Pending Jobs", value = uiState.platformPendingJobs.toString(), color = Indigo)
+                    }
+                }
             }
-            items(uiState.lowStockAlerts) { alert ->
-                LowStockAlertCard(alert = alert)
-            }
-        }
 
         // 7. Spacer at bottom
         item {
             Spacer(modifier = Modifier.height(100.dp))
         }
     }
+}
+
+// =============================================================================
+// Platform Dashboard Helpers
+// =============================================================================
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium.copy(
+            fontWeight = FontWeight.Bold,
+            color = Navy
+        )
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+}
+
+@Composable
+private fun MetricRow(label: String, value: String, color: Color = Navy) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = TextSecondaryLight
+            )
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+        )
+    }
+    Spacer(modifier = Modifier.height(4.dp))
 }
 
 // =============================================================================

@@ -13,10 +13,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.nearai.admin.core.designsystem.theme.*
+import com.nearai.admin.core.common.MonetaryFormatter
 import com.nearai.admin.feature.orders.domain.ApprovalStatus
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderStatus
 import com.nearai.admin.feature.orders.domain.OrderSummary
+import java.math.BigDecimal
 import java.util.Locale
 
 /**
@@ -94,7 +96,7 @@ fun OrderSummaryCard(
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "${order.currency} ${String.format(Locale.US, "%.2f", order.totalAmount)}",
+                        text = MonetaryFormatter.formatWithCurrencyCode(order.totalAmount, order.currency),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -201,10 +203,10 @@ fun OrderSummaryCardPreview() {
                 createdAt = "2024-01-15T10:30:00Z",
                 status = OrderStatus.PENDING,
                 fulfillmentStatus = FulfillmentStatus.AWAITING_CONFIRMATION,
-                totalAmount = 45.50,
-                subtotalAmount = 40.00,
-                deliveryFeeAmount = 5.50,
-                discountAmount = 0.0,
+                totalAmount = BigDecimal("45.50"),
+                subtotalAmount = BigDecimal("40.00"),
+                deliveryFeeAmount = BigDecimal("5.50"),
+                discountAmount = BigDecimal.ZERO,
                 currency = "JOD",
                 items = emptyList(),
                 deliveryRecipientName = "John Doe",

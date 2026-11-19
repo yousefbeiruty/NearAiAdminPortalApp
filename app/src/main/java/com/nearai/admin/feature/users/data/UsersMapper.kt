@@ -14,6 +14,7 @@ object UsersMapper {
         role = dto.role,
         isActive = dto.isActive,
         emailVerified = dto.emailVerified,
+        tenantId = dto.tenantId,
         createdAt = dto.createdAt,
         updatedAt = dto.updatedAt
     )

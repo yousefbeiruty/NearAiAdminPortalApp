@@ -77,6 +77,9 @@ object CatalogMapper {
         attributes = dto.attributes,
         status = VariantStatus.parseOrActive(dto.status),
         availableQuantity = dto.availableQuantity,
+        priceAmount = dto.priceAmount,
+        priceCurrency = dto.priceCurrency,
+        unitOfMeasure = dto.unitOfMeasure,
         createdAt = dto.createdAt,
         updatedAt = dto.updatedAt
     )

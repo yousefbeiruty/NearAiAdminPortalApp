@@ -19,10 +19,10 @@ class DashboardMapperTest {
             totalOrders = 1250,
             pendingOrders = 45,
             completedOrders = 1180,
-            totalRevenue = 4820.50,
+            totalRevenue = java.math.BigDecimal("4820.50"),
             revenueCurrency = "USD",
             recentOrders = listOf(
-                RecentOrderDto("ord-1", "John Doe", "2024-01-15", "completed", 150.0, "USD")
+                RecentOrderDto("ord-1", "John Doe", "2024-01-15", "completed", java.math.BigDecimal("150.0"), "USD")
             ),
             recentRegistrations = listOf(
                 RecentRegistrationDto("usr-1", "jane@example.com", "customer", "2024-01-15")
@@ -40,7 +40,7 @@ class DashboardMapperTest {
         assertEquals(1250, data.totalOrders)
         assertEquals(45, data.pendingOrders)
         assertEquals(1180, data.completedOrders)
-        assertEquals(4820.50, data.totalRevenue, 0.001)
+        assertEquals(java.math.BigDecimal("4820.50"), data.totalRevenue)
         assertEquals("USD", data.revenueCurrency)
         assertEquals(1, data.recentOrders.size)
         assertEquals(1, data.recentRegistrations.size)
@@ -49,17 +49,17 @@ class DashboardMapperTest {
 
     @Test
     fun `mapRevenue maps currency and amount`() {
-        val dto = RevenueDto(currency = "EUR", amount = 1250.75)
+        val dto = RevenueDto(currency = "EUR", amount = java.math.BigDecimal("1250.75"))
 
         val domain = DashboardMapper.mapRevenue(dto)
 
         assertEquals("EUR", domain.currency)
-        assertEquals(1250.75, domain.amount, 0.001)
+        assertEquals(java.math.BigDecimal("1250.75"), domain.amount)
     }
 
     @Test
     fun `mapRecentOrder maps all fields`() {
-        val dto = RecentOrderDto("ord-1", "John Doe", "2024-01-15", "completed", 150.0, "USD")
+        val dto = RecentOrderDto("ord-1", "John Doe", "2024-01-15", "completed", java.math.BigDecimal("150.0"), "USD")
 
         val domain = DashboardMapper.mapRecentOrder(dto)
 
@@ -67,7 +67,7 @@ class DashboardMapperTest {
         assertEquals("John Doe", domain.userName)
         assertEquals("2024-01-15", domain.orderDate)
         assertEquals("completed", domain.status)
-        assertEquals(150.0, domain.total, 0.001)
+        assertEquals(java.math.BigDecimal("150.0"), domain.total)
         assertEquals("USD", domain.currency)
     }
 
@@ -105,7 +105,7 @@ class DashboardMapperTest {
 
         assertEquals(0, data.totalUsers)
         assertEquals(0, data.totalProducts)
-        assertEquals(0.0, data.totalRevenue, 0.001)
+        assertEquals(java.math.BigDecimal.ZERO, data.totalRevenue)
         assertTrue(data.recentOrders.isEmpty())
         assertTrue(data.recentRegistrations.isEmpty())
         assertTrue(data.lowStockAlerts.isEmpty())
@@ -114,7 +114,7 @@ class DashboardMapperTest {
     @Test
     fun `mapDashboardData handles multiple currencies`() {
         val dto = DashboardResponseDto(
-            totalRevenue = 600.0,
+            totalRevenue = java.math.BigDecimal("600.0"),
             revenueCurrency = "USD",
             recentOrders = emptyList(),
             recentRegistrations = emptyList(),
@@ -123,7 +123,7 @@ class DashboardMapperTest {
 
         val data = DashboardMapper.mapDashboardData(dto)
 
-        assertEquals(600.0, data.totalRevenue, 0.001)
+        assertEquals(java.math.BigDecimal("600.0"), data.totalRevenue)
         assertEquals("USD", data.revenueCurrency)
     }
 }

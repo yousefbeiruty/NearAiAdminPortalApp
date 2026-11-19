@@ -2,16 +2,23 @@ package com.nearai.admin.feature.dashboard.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nearai.admin.core.common.MonetaryFormatter
 import com.nearai.admin.core.common.Result
+import com.nearai.admin.feature.dashboard.domain.CurrencyAmount
 import com.nearai.admin.feature.dashboard.domain.DashboardRepository
+import com.nearai.admin.feature.dashboard.domain.FinancialOverview
+import com.nearai.admin.feature.dashboard.domain.OrderCounts
+import com.nearai.admin.feature.dashboard.domain.OperationalOverview
+import com.nearai.admin.feature.dashboard.domain.PlatformDashboardData
+import com.nearai.admin.feature.dashboard.domain.TenantCounts
+import com.nearai.admin.feature.dashboard.domain.UserCounts
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.NumberFormat
-import java.util.Locale
+import java.math.BigDecimal
 import javax.inject.Inject
 
 /**
@@ -20,6 +27,7 @@ import javax.inject.Inject
 data class DashboardUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
+    // Merchant dashboard fields
     val totalUsers: Int = 0,
     val totalProducts: Int = 0,
     val totalCategories: Int = 0,
@@ -28,12 +36,24 @@ data class DashboardUiState(
     val completedOrders: Int = 0,
     val cancelledOrders: Int = 0,
     val rejectedOrders: Int = 0,
-    val totalRevenue: Double = 0.0,
+    val totalRevenue: BigDecimal = BigDecimal.ZERO,
     val revenueCurrency: String = "",
     val revenueByCurrency: List<RevenueItem> = emptyList(),
     val recentOrders: List<RecentOrderItem> = emptyList(),
     val recentRegistrations: List<RecentRegistrationItem> = emptyList(),
     val lowStockAlerts: List<LowStockAlertItem> = emptyList(),
+    // Platform dashboard fields
+    val platformTenants: TenantCounts? = null,
+    val platformUsers: UserCounts? = null,
+    val platformOrders: OrderCounts? = null,
+    val platformFinancialRevenue: List<RevenueItem> = emptyList(),
+    val platformFinancialPayments: List<RevenueItem> = emptyList(),
+    val platformFinancialCod: List<RevenueItem> = emptyList(),
+    val platformPendingApprovals: Int = 0,
+    val platformFailedJobs: Int = 0,
+    val platformPendingJobs: Int = 0,
+    val platformOrdersToday: Int = 0,
+    val platformOrdersThisMonth: Int = 0,
     val error: String? = null
 )
 
@@ -42,7 +62,7 @@ data class DashboardUiState(
  */
 data class RevenueItem(
     val currency: String,
-    val amount: Double,
+    val amount: BigDecimal,
     val formattedAmount: String
 )
 
@@ -54,7 +74,7 @@ data class RecentOrderItem(
     val userName: String,
     val orderDate: String,
     val status: String,
-    val total: Double,
+    val total: BigDecimal,
     val currency: String,
     val formattedTotal: String
 )
@@ -104,11 +124,81 @@ class DashboardViewModel @Inject constructor(
     val event: StateFlow<DashboardEvent?> = _event.asStateFlow()
 
     init {
-        loadDashboard()
+        loadPlatformDashboard()
     }
 
     /**
-     * Loads dashboard data from the repository.
+     * Loads platform-wide dashboard data from the repository.
+     */
+    fun loadPlatformDashboard() {
+        viewModelScope.launch {
+            val hasData = _uiState.value.platformTenants != null
+            _uiState.update {
+                it.copy(
+                    isLoading = !hasData,
+                    isRefreshing = hasData,
+                    error = null
+                )
+            }
+
+            when (val result = dashboardRepository.getPlatformDashboardData()) {
+                is Result.Success -> {
+                    val data = result.data
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            platformTenants = data.tenants,
+                            platformUsers = data.users,
+                            platformOrders = data.orders,
+                            platformFinancialRevenue = data.financial.revenueByCurrency.map { rev ->
+                                RevenueItem(
+                                    currency = rev.currency,
+                                    amount = rev.amount,
+                                    formattedAmount = MonetaryFormatter.formatWithCurrencyCode(rev.amount, rev.currency)
+                                )
+                            },
+                            platformFinancialPayments = data.financial.paymentTotalsByCurrency.map { pay ->
+                                RevenueItem(
+                                    currency = pay.currency,
+                                    amount = pay.amount,
+                                    formattedAmount = MonetaryFormatter.formatWithCurrencyCode(pay.amount, pay.currency)
+                                )
+                            },
+                            platformFinancialCod = data.financial.codTotalsByCurrency.map { cod ->
+                                RevenueItem(
+                                    currency = cod.currency,
+                                    amount = cod.amount,
+                                    formattedAmount = MonetaryFormatter.formatWithCurrencyCode(cod.amount, cod.currency)
+                                )
+                            },
+                            platformPendingApprovals = data.operational.pendingApprovals,
+                            platformFailedJobs = data.operational.failedJobs,
+                            platformPendingJobs = data.operational.pendingJobs,
+                            platformOrdersToday = data.dailyOrders.today,
+                            platformOrdersThisMonth = data.dailyOrders.currentMonth
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            error = result.exception.message
+                        )
+                    }
+                }
+                is Result.Loading -> {
+                    // No-op
+                }
+            }
+        }
+    }
+
+    /**
+     * Loads merchant-scoped dashboard data from the repository.
+     * Kept for backward compatibility.
      */
     fun loadDashboard() {
         viewModelScope.launch {
@@ -141,7 +231,7 @@ class DashboardViewModel @Inject constructor(
                                 RevenueItem(
                                     currency = rev.currency,
                                     amount = rev.amount,
-                                    formattedAmount = formatCurrency(rev.amount, rev.currency)
+                                    formattedAmount = MonetaryFormatter.formatWithCurrencyCode(rev.amount, rev.currency)
                                 )
                             },
                             recentOrders = data.recentOrders.map { order ->
@@ -152,7 +242,7 @@ class DashboardViewModel @Inject constructor(
                                     status = order.status,
                                     total = order.total,
                                     currency = order.currency,
-                                    formattedTotal = formatCurrency(order.total, order.currency)
+                                    formattedTotal = MonetaryFormatter.formatWithCurrencyCode(order.total, order.currency)
                                 )
                             },
                             recentRegistrations = data.recentRegistrations.map { reg ->
@@ -192,34 +282,19 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Formats a currency amount using a consistent US locale formatter
-     * for cross-platform consistency (macOS, Linux, Android).
-     */
-    private fun formatCurrency(amount: Double, currencyCode: String): String {
-        return try {
-            val format = NumberFormat.getCurrencyInstance(Locale.US).apply {
-                currency = java.util.Currency.getInstance(currencyCode.ifBlank { "USD" })
-            }
-            format.format(amount)
-        } catch (_: Exception) {
-            // Fallback if currency code is invalid
-            String.format(Locale.US, "%.2f %s", amount, currencyCode)
-        }
-    }
 
     /**
      * Retries loading after an error.
      */
     fun onRetry() {
-        loadDashboard()
+        loadPlatformDashboard()
     }
 
     /**
      * Pull-to-refresh action.
      */
     fun onRefresh() {
-        loadDashboard()
+        loadPlatformDashboard()
     }
 
     /**

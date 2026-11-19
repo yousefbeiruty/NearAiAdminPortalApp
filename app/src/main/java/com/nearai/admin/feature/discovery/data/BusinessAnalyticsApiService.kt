@@ -1,9 +1,11 @@
 package com.nearai.admin.feature.discovery.data
 
+import com.nearai.admin.core.common.BigDecimalJsonSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.GET
 import retrofit2.http.Query
+import java.math.BigDecimal
 
 /**
  * Retrofit service interface for the Business Analytics endpoint.
@@ -13,7 +15,7 @@ import retrofit2.http.Query
  */
 interface BusinessAnalyticsApiService {
 
-    @GET("api/v1/admin/analytics/business/overview")
+    @GET("api/v1/platform/analytics/business/overview")
     suspend fun getBusinessOverview(
         @Query("days") days: Int = 7,
         @Query("start_date") startDate: String? = null,
@@ -89,16 +91,16 @@ data class OrderStatusBreakdownDto(
 @Serializable
 data class DailyRevenueDto(
     @SerialName("date") val date: String = "",
-    @SerialName("amount") val amount: Double = 0.0,
+    @SerialName("amount") @Serializable(BigDecimalJsonSerializer::class) val amount: BigDecimal = BigDecimal.ZERO,
     @SerialName("currency") val currency: String = ""
 )
 
 @Serializable
 data class RevenueByCurrencyDto(
     @SerialName("currency") val currency: String = "",
-    @SerialName("total_amount") val totalAmount: Double = 0.0,
+    @SerialName("total_amount") @Serializable(BigDecimalJsonSerializer::class) val totalAmount: BigDecimal = BigDecimal.ZERO,
     @SerialName("order_count") val orderCount: Int = 0,
-    @SerialName("avg_order_value") val avgOrderValue: Double = 0.0
+    @SerialName("avg_order_value") @Serializable(BigDecimalJsonSerializer::class) val avgOrderValue: BigDecimal = BigDecimal.ZERO
 )
 
 // ─── Product Analytics ──────────────────────────────────────────────────────
@@ -107,9 +109,10 @@ data class RevenueByCurrencyDto(
 data class BestSellingProductDto(
     @SerialName("product_id") val productId: String = "",
     @SerialName("product_name") val productName: String = "",
+    @SerialName("variant_id") val variantId: String = "",
     @SerialName("sku") val sku: String = "",
     @SerialName("units_sold") val unitsSold: Int = 0,
-    @SerialName("revenue") val revenue: Double = 0.0,
+    @SerialName("revenue") @Serializable(BigDecimalJsonSerializer::class) val revenue: BigDecimal = BigDecimal.ZERO,
     @SerialName("currency") val currency: String = ""
 )
 
@@ -118,7 +121,7 @@ data class CategorySalesDto(
     @SerialName("category_id") val categoryId: String = "",
     @SerialName("category_name") val categoryName: String = "",
     @SerialName("units_sold") val unitsSold: Int = 0,
-    @SerialName("revenue") val revenue: Double = 0.0,
+    @SerialName("revenue") @Serializable(BigDecimalJsonSerializer::class) val revenue: BigDecimal = BigDecimal.ZERO,
     @SerialName("currency") val currency: String = ""
 )
 
@@ -134,8 +137,8 @@ data class DailyUserRegistrationDto(
 
 @Serializable
 data class PeriodComparisonDto(
-    @SerialName("current") val current: Double = 0.0,
-    @SerialName("previous") val previous: Double = 0.0,
+    @SerialName("current") @Serializable(BigDecimalJsonSerializer::class) val current: BigDecimal = BigDecimal.ZERO,
+    @SerialName("previous") @Serializable(BigDecimalJsonSerializer::class) val previous: BigDecimal = BigDecimal.ZERO,
     @SerialName("percentage_change") val percentageChange: Double? = null
 )
 

@@ -58,12 +58,12 @@ class BusinessAnalyticsMapperTest {
     fun `mapBusinessOverview maps revenue by currency correctly`() {
         val dto = BusinessAnalyticsResponseDto(
             revenueByCurrency = listOf(
-                RevenueByCurrencyDto("USD", 5000.50, 80, 62.51),
-                RevenueByCurrencyDto("EUR", 3000.75, 40, 75.02)
+                RevenueByCurrencyDto("USD", java.math.BigDecimal("5000.50"), 80, java.math.BigDecimal("62.51")),
+                RevenueByCurrencyDto("EUR", java.math.BigDecimal("3000.75"), 40, java.math.BigDecimal("75.02"))
             ),
             dailyRevenue = listOf(
-                DailyRevenueDto("2024-01-01", 1000.0, "USD"),
-                DailyRevenueDto("2024-01-01", 500.0, "EUR")
+                DailyRevenueDto("2024-01-01", java.math.BigDecimal("1000.0"), "USD"),
+                DailyRevenueDto("2024-01-01", java.math.BigDecimal("500.0"), "EUR")
             )
         )
 
@@ -71,25 +71,25 @@ class BusinessAnalyticsMapperTest {
 
         assertEquals(2, data.revenueByCurrency.size)
         assertEquals("USD", data.revenueByCurrency[0].currency)
-        assertEquals(5000.50, data.revenueByCurrency[0].totalAmount, 0.01)
+        assertEquals(java.math.BigDecimal("5000.50"), data.revenueByCurrency[0].totalAmount)
         assertEquals(80, data.revenueByCurrency[0].orderCount)
-        assertEquals(62.51, data.revenueByCurrency[0].avgOrderValue, 0.01)
+        assertEquals(java.math.BigDecimal("62.51"), data.revenueByCurrency[0].avgOrderValue)
         assertEquals("EUR", data.revenueByCurrency[1].currency)
-        assertEquals(3000.75, data.revenueByCurrency[1].totalAmount, 0.01)
+        assertEquals(java.math.BigDecimal("3000.75"), data.revenueByCurrency[1].totalAmount)
 
         assertEquals(2, data.dailyRevenue.size)
         assertEquals("USD", data.dailyRevenue[0].currency)
-        assertEquals(1000.0, data.dailyRevenue[0].amount, 0.01)
+        assertEquals(java.math.BigDecimal("1000.0"), data.dailyRevenue[0].amount)
         assertEquals("EUR", data.dailyRevenue[1].currency)
-        assertEquals(500.0, data.dailyRevenue[1].amount, 0.01)
+        assertEquals(java.math.BigDecimal("500.0"), data.dailyRevenue[1].amount)
     }
 
     @Test
     fun `mapBusinessOverview maps best selling products correctly`() {
         val dto = BusinessAnalyticsResponseDto(
             bestSellingProducts = listOf(
-                BestSellingProductDto("prod-1", "Widget A", "SKU-001", 50, 2500.0, "USD"),
-                BestSellingProductDto("prod-2", "Widget B", "SKU-002", 30, 1500.0, "EUR")
+                BestSellingProductDto("prod-1", "Widget A", "", "SKU-001", 50, java.math.BigDecimal("2500.0"), "USD"),
+                BestSellingProductDto("prod-2", "Widget B", "", "SKU-002", 30, java.math.BigDecimal("1500.0"), "EUR")
             )
         )
 
@@ -100,7 +100,7 @@ class BusinessAnalyticsMapperTest {
         assertEquals("Widget A", data.bestSellingProducts[0].productName)
         assertEquals("SKU-001", data.bestSellingProducts[0].sku)
         assertEquals(50, data.bestSellingProducts[0].unitsSold)
-        assertEquals(2500.0, data.bestSellingProducts[0].revenue, 0.01)
+        assertEquals(java.math.BigDecimal("2500.0"), data.bestSellingProducts[0].revenue)
         assertEquals("USD", data.bestSellingProducts[0].currency)
         assertEquals("EUR", data.bestSellingProducts[1].currency)
     }
@@ -109,8 +109,8 @@ class BusinessAnalyticsMapperTest {
     fun `mapBusinessOverview maps category sales correctly`() {
         val dto = BusinessAnalyticsResponseDto(
             categorySales = listOf(
-                CategorySalesDto("cat-1", "Electronics", 100, 5000.0, "USD"),
-                CategorySalesDto("cat-2", "Clothing", 50, 2000.0, "EUR")
+                CategorySalesDto("cat-1", "Electronics", 100, java.math.BigDecimal("5000.0"), "USD"),
+                CategorySalesDto("cat-2", "Clothing", 50, java.math.BigDecimal("2000.0"), "EUR")
             )
         )
 
@@ -120,7 +120,7 @@ class BusinessAnalyticsMapperTest {
         assertEquals("cat-1", data.categorySales[0].categoryId)
         assertEquals("Electronics", data.categorySales[0].categoryName)
         assertEquals(100, data.categorySales[0].unitsSold)
-        assertEquals(5000.0, data.categorySales[0].revenue, 0.01)
+        assertEquals(java.math.BigDecimal("5000.0"), data.categorySales[0].revenue)
         assertEquals("USD", data.categorySales[0].currency)
     }
 
@@ -155,7 +155,7 @@ class BusinessAnalyticsMapperTest {
             totalOrdersComparison = IntPeriodComparisonDto(150, 120, 25.0),
             completedOrdersComparison = IntPeriodComparisonDto(120, 100, 20.0),
             revenueComparison = listOf(
-                PeriodComparisonDto(5000.50, 4000.00, 25.13)
+                PeriodComparisonDto(java.math.BigDecimal("5000.50"), java.math.BigDecimal("4000.00"), 25.13)
             ),
             newRegistrationsComparison = IntPeriodComparisonDto(25, 20, 25.0),
             activeCustomersComparison = IntPeriodComparisonDto(80, 70, 14.29)
@@ -177,8 +177,8 @@ class BusinessAnalyticsMapperTest {
 
         assertNotNull(data.revenueComparison)
         assertEquals(1, data.revenueComparison!!.size)
-        assertEquals(5000.50, data.revenueComparison!![0].current, 0.01)
-        assertEquals(4000.00, data.revenueComparison!![0].previous, 0.01)
+        assertEquals(java.math.BigDecimal("5000.50"), data.revenueComparison!![0].current)
+        assertEquals(java.math.BigDecimal("4000.00"), data.revenueComparison!![0].previous)
 
         assertNotNull(data.newRegistrationsComparison)
         assertNotNull(data.activeCustomersComparison)
@@ -248,9 +248,9 @@ class BusinessAnalyticsMapperTest {
     fun `revenue remains separated by currency after mapping`() {
         val dto = BusinessAnalyticsResponseDto(
             revenueByCurrency = listOf(
-                RevenueByCurrencyDto("USD", 5000.50, 80, 62.51),
-                RevenueByCurrencyDto("EUR", 3000.75, 40, 75.02),
-                RevenueByCurrencyDto("GBP", 1500.00, 20, 75.00)
+                RevenueByCurrencyDto("USD", java.math.BigDecimal("5000.50"), 80, java.math.BigDecimal("62.51")),
+                RevenueByCurrencyDto("EUR", java.math.BigDecimal("3000.75"), 40, java.math.BigDecimal("75.02")),
+                RevenueByCurrencyDto("GBP", java.math.BigDecimal("1500.00"), 20, java.math.BigDecimal("75.00"))
             )
         )
 
@@ -270,8 +270,8 @@ class BusinessAnalyticsMapperTest {
         assertNotNull(usdRevenue)
         assertNotNull(eurRevenue)
         assertNotNull(gbpRevenue)
-        assertEquals(5000.50, usdRevenue!!.totalAmount, 0.01)
-        assertEquals(3000.75, eurRevenue!!.totalAmount, 0.01)
-        assertEquals(1500.00, gbpRevenue!!.totalAmount, 0.01)
+        assertEquals(java.math.BigDecimal("5000.50"), usdRevenue!!.totalAmount)
+        assertEquals(java.math.BigDecimal("3000.75"), eurRevenue!!.totalAmount)
+        assertEquals(java.math.BigDecimal("1500.00"), gbpRevenue!!.totalAmount)
     }
 }

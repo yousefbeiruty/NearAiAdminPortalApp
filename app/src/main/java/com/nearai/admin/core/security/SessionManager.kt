@@ -63,10 +63,11 @@ class SessionManager @Inject constructor(
 
     /**
      * Called after successful authentication. Persists tokens and updates state.
-     * Rejects non-admin users.
+     * Accepts "platform_admin" (primary) and "admin" (legacy backward compatibility).
+     * Rejects "merchant_admin", "customer", and any unknown role.
      */
     fun login(accessToken: String, refreshToken: String, email: String, role: String) {
-        if (!role.equals("admin", ignoreCase = true)) {
+        if (!AdminRoleValidator.isAdminRole(role)) {
             // Non-admin user attempted to access admin app — clear any tokens
             tokenStorage.clearAll()
             _sessionState.value = SessionState.NotAdmin

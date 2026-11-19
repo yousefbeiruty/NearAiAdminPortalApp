@@ -12,7 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.nearai.admin.core.common.parseBigDecimalOrNull
+import com.nearai.admin.core.common.validateMonetaryAmountForCurrency
 import javax.inject.Inject
+import java.math.BigDecimal
 
 data class ProductCreateUiState(
     val categoriesLoaded: Boolean = false,
@@ -73,11 +76,14 @@ class ProductCreateViewModel @Inject constructor(
             return
         }
 
-        val price = priceAmount.toDoubleOrNull()
-        if (price == null || price <= 0) {
-            _uiState.update { it.copy(error = "Valid price is required") }
+        val priceCurrencyNorm = priceCurrency.ifBlank { "USD" }
+        val validationError = priceAmount.validateMonetaryAmountForCurrency(priceCurrencyNorm)
+        if (validationError != null) {
+            _uiState.update { it.copy(error = validationError) }
             return
         }
+        val price = priceAmount.parseBigDecimalOrNull()
+            ?: throw IllegalStateException("Price validation passed but parsing failed")
 
         viewModelScope.launch {
             _uiState.update { it.copy(isCreating = true, error = null) }
@@ -86,7 +92,7 @@ class ProductCreateViewModel @Inject constructor(
                 name = name.trim(),
                 description = description.trim(),
                 priceAmount = price,
-                priceCurrency = priceCurrency.ifBlank { "USD" },
+                priceCurrency = priceCurrencyNorm,
                 categoryId = categoryId,
                 status = status
             )) {

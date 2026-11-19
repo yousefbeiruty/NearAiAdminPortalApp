@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import com.nearai.admin.core.common.parseBigDecimalOrNull
+import com.nearai.admin.core.common.validateMonetaryAmountForCurrency
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -194,9 +196,8 @@ class ProductEditViewModel @Inject constructor(
         val descriptionError = if (formData.description.isBlank()) "Description is required" else null
         val priceError = when {
             formData.price.isBlank() -> "Price is required"
-            formData.price.toDoubleOrNull() == null -> "Invalid price format"
-            formData.price.toDouble() <= 0 -> "Price must be greater than 0"
-            else -> null
+            formData.price.parseBigDecimalOrNull() == null -> "Invalid price format"
+            else -> formData.price.validateMonetaryAmountForCurrency("USD")
         }
         val isValid = nameError == null && descriptionError == null && priceError == null
         return ValidationResult(isValid, nameError, descriptionError, priceError)
@@ -218,7 +219,7 @@ class ProductEditViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null, validationError = null) }
 
-            val priceAmount = formData.price.toDoubleOrNull()
+            val priceAmount = formData.price.parseBigDecimalOrNull()
             when (val result = catalogRepository.updateProduct(
                 productId = product.id,
                 name = formData.name,

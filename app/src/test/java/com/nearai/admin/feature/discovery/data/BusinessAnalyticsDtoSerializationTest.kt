@@ -115,11 +115,11 @@ class BusinessAnalyticsDtoSerializationTest {
 
         assertEquals(3, dto.revenueByCurrency.size)
         assertEquals("USD", dto.revenueByCurrency[0].currency)
-        assertEquals(5000.50, dto.revenueByCurrency[0].totalAmount, 0.01)
+        assertEquals(java.math.BigDecimal("5000.50"), dto.revenueByCurrency[0].totalAmount)
         assertEquals("EUR", dto.revenueByCurrency[1].currency)
-        assertEquals(3000.75, dto.revenueByCurrency[1].totalAmount, 0.01)
+        assertEquals(java.math.BigDecimal("3000.75"), dto.revenueByCurrency[1].totalAmount)
         assertEquals("GBP", dto.revenueByCurrency[2].currency)
-        assertEquals(1500.00, dto.revenueByCurrency[2].totalAmount, 0.01)
+        assertEquals(java.math.BigDecimal("1500.00"), dto.revenueByCurrency[2].totalAmount)
 
         assertEquals(3, dto.dailyRevenue.size)
         assertEquals("USD", dto.dailyRevenue[0].currency)
@@ -187,7 +187,7 @@ class BusinessAnalyticsDtoSerializationTest {
 
         assertNotNull(dto.revenueComparison)
         assertEquals(1, dto.revenueComparison!!.size)
-        assertEquals(5000.50, dto.revenueComparison!![0].current, 0.01)
+        assertEquals(java.math.BigDecimal("5000.50"), dto.revenueComparison!![0].current)
 
         assertNotNull(dto.newRegistrationsComparison)
         assertNotNull(dto.activeCustomersComparison)
@@ -244,7 +244,7 @@ class BusinessAnalyticsDtoSerializationTest {
         assertEquals("Widget A", dto.bestSellingProducts[0].productName)
         assertEquals("SKU-001", dto.bestSellingProducts[0].sku)
         assertEquals(50, dto.bestSellingProducts[0].unitsSold)
-        assertEquals(2500.0, dto.bestSellingProducts[0].revenue, 0.01)
+        assertEquals(java.math.BigDecimal("2500.0"), dto.bestSellingProducts[0].revenue)
         assertEquals("USD", dto.bestSellingProducts[0].currency)
         assertEquals("EUR", dto.bestSellingProducts[1].currency)
     }
@@ -266,7 +266,7 @@ class BusinessAnalyticsDtoSerializationTest {
         assertEquals("cat-1", dto.categorySales[0].categoryId)
         assertEquals("Electronics", dto.categorySales[0].categoryName)
         assertEquals(100, dto.categorySales[0].unitsSold)
-        assertEquals(5000.0, dto.categorySales[0].revenue, 0.01)
+        assertEquals(java.math.BigDecimal("5000.0"), dto.categorySales[0].revenue)
         assertEquals("USD", dto.categorySales[0].currency)
     }
 

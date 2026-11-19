@@ -16,6 +16,7 @@ import com.nearai.admin.feature.orders.domain.PaymentStatus
 import com.nearai.admin.feature.orders.domain.StatusHistoryEntry
 import retrofit2.HttpException
 import java.io.IOException
+import java.math.BigDecimal
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -246,8 +247,8 @@ class OrderRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateApprovalPolicy(
-        autoApprovalLimit: Double,
-        mandatoryReviewThreshold: Double,
+        autoApprovalLimit: BigDecimal,
+        mandatoryReviewThreshold: BigDecimal,
         enabled: Boolean
     ): Result<ApprovalPolicyConfig> {
         return tokenRefreshManager.refreshAndRetry {
