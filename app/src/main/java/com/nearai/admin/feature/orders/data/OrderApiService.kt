@@ -140,6 +140,7 @@ data class OrdersListResponse(
 @Serializable
 data class OrderSummaryDto(
     @SerialName("id") val id: String,
+    @SerialName("is_guest") val isGuest: Boolean = false,
     @SerialName("created_at") val createdAt: String,
     @SerialName("status") val status: String,
     @SerialName("fulfillment_status") val fulfillmentStatus: String,
@@ -170,6 +171,7 @@ data class OrderSummaryDto(
 @Serializable
 data class OrderDetailsResponse(
     @SerialName("id") val id: String,
+    @SerialName("is_guest") val isGuest: Boolean = false,
     @SerialName("created_at") val createdAt: String,
     @SerialName("status") val status: String,
     @SerialName("fulfillment_status") val fulfillmentStatus: String,

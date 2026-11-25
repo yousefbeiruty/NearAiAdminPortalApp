@@ -11,9 +11,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.core.common.MonetaryFormatter
+import com.nearai.admin.R
 import com.nearai.admin.feature.orders.domain.ApprovalStatus
 import com.nearai.admin.feature.orders.domain.FulfillmentStatus
 import com.nearai.admin.feature.orders.domain.OrderStatus
@@ -87,12 +90,24 @@ fun OrderSummaryCard(
                         ),
                         maxLines = 1
                     )
-                    Text(
-                        text = order.createdAt.take(10),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = order.createdAt.take(10),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         )
-                    )
+                        if (order.isGuest) {
+                            Text(
+                                text = stringResource(R.string.order_guest_label),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                modifier = Modifier.testTag("guestOrderLabel")
+                            )
+                        }
+                    }
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(

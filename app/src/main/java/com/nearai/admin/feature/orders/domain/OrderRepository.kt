@@ -39,7 +39,8 @@ data class OrderSummary(
     val deliveryApartment: String?,
     val deliveryInstructions: String?,
     val approvalStatus: ApprovalStatus? = null,
-    val approvalDecision: ApprovalDecisionSnapshot? = null
+    val approvalDecision: ApprovalDecisionSnapshot? = null,
+    val isGuest: Boolean = false
 )
 
 /**
@@ -66,7 +67,8 @@ data class OrderDetails(
     val deliveryInstructions: String?,
     val approvalStatus: ApprovalStatus? = null,
     val approvalDecision: ApprovalDecisionSnapshot? = null,
-    val shipmentInfo: ShipmentInfo? = null
+    val shipmentInfo: ShipmentInfo? = null,
+    val isGuest: Boolean = false
 )
 
 /**

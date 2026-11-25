@@ -453,6 +453,9 @@ private fun CustomerDeliveryCard(order: OrderDetails) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.order_details_customer_delivery), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Navy))
+            if (order.isGuest) {
+                Text(stringResource(R.string.order_guest_details_label), modifier = Modifier.testTag("guestOrderLabel"), style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.SemiBold))
+            }
             Spacer(modifier = Modifier.height(12.dp))
             InfoRow(label = stringResource(R.string.order_label_recipient), value = order.deliveryRecipientName ?: "—")
             InfoRow(label = stringResource(R.string.order_label_phone), value = order.deliveryPhone ?: "—")

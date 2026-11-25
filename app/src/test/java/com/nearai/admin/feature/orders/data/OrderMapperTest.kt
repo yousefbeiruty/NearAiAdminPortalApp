@@ -32,7 +32,8 @@ class OrderMapperTest {
             deliveryStreet = "5th Avenue",
             deliveryBuildingNumber = "100",
             deliveryApartment = "4B",
-            deliveryInstructions = "Leave at door"
+            deliveryInstructions = "Leave at door",
+            isGuest = true
         )
 
         val summary = OrderMapper.mapOrderSummary(dto)
@@ -53,6 +54,7 @@ class OrderMapperTest {
         assertEquals("100", summary.deliveryBuildingNumber)
         assertEquals("4B", summary.deliveryApartment)
         assertEquals("Leave at door", summary.deliveryInstructions)
+        assertTrue(summary.isGuest)
         assertEquals(1, summary.items.size)
     }
 
