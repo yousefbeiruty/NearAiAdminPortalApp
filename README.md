@@ -78,6 +78,7 @@
 - **Product editing** via `ProductEditViewModel` with `PATCH /api/v1/products/{id}` endpoint
 - **Inventory management** via `InventoryViewModel` with real stock data (availability, receive, adjust, movements)
 - **Category management** via `CategoriesListViewModel`
+- **Optional variant pricing** with decimal-safe amounts, currency codes, and units of measure
 - **Category filter tabs**: All Items, Subscriptions, AI Credits, Add-ons
 - **SKU cards** with status pills (Active, Reviewing, Deprecated)
 - **Stock operations**: receive stock, adjust stock, view movement history
@@ -173,20 +174,24 @@ com.nearai.admin/
 ├── core/
 │   ├── common/
 │   │   ├── Result.kt                      # Sealed interface: Success/Error/Loading
-│   │   └── AppError.kt                    # Typed error categories (UnauthorizedError, etc.)
+│   │   ├── AppError.kt                    # Typed error categories (UnauthorizedError, etc.)
+│   │   └── PaginatedListState.kt           # Shared paginated list state and response models
 │   ├── designsystem/
 │   │   ├── theme/
 │   │   │   ├── Color.kt                   # 30+ named theme colors (all dynamic)
 │   │   │   ├── Theme.kt                   # Material 3 light/dark schemes
-│   │   │   └── Type.kt                    # Typography hierarchy
-│   │   └── components/                    # 7 focused component files
+│   │   │   ├── Type.kt                    # Typography hierarchy
+│   │   │   └── Dimensions.kt              # Shared spacing, shape, and component sizes
+│   │   └── components/                    # 9 focused component files
 │   │       ├── Statuses.kt                # StatusIndicator, StatusPill, ActivityStatus
 │   │       ├── Inputs.kt                  # SearchBar, FilterChips
 │   │       ├── Cards.kt                   # KpiCard, ActivityStreamCard
 │   │       ├── Charts.kt                  # BudgetProgressBar, SimpleBarChart
 │   │       ├── States.kt                  # LoadingScreen, EmptyState, ErrorState
 │   │       ├── Dialogs.kt                 # ConfirmationDialog
-│   │       └── Sections.kt                # SectionHeader
+│   │       ├── Sections.kt                # SectionHeader
+│   │       ├── AppScreen.kt               # Shared Scaffold and top app bar
+│   │       └── PaginatedList.kt            # PaginatedLazyColumn and load-more indicator
 │   ├── network/
 │   │   ├── NetworkModule.kt              # Hilt @Module: Retrofit + OkHttp + auth interceptor
 │   │   └── ApiErrorParser.kt             # HttpException → AppError mapping (401, 403, etc.)
@@ -373,7 +378,7 @@ No hardcoded `Color(0xFF...)` values exist in feature screens or components — 
 
 ### Component Library
 
-7 focused component files in `core/designsystem/components/`:
+9 focused component files in `core/designsystem/components/`:
 
 | File | Components |
 |---|---|
@@ -384,6 +389,10 @@ No hardcoded `Color(0xFF...)` values exist in feature screens or components — 
 | **States.kt** | `LoadingScreen`, `EmptyState`, `ErrorState` |
 | **Dialogs.kt** | `ConfirmationDialog` |
 | **Sections.kt** | `SectionHeader` |
+| **AppScreen.kt** | `AppScreen` with shared Scaffold, top app bar, back navigation, and optional FAB |
+| **PaginatedList.kt** | `PaginatedLazyColumn` with scroll observation and `LoadMoreIndicator` |
+
+Shared spacing, padding, corner-radius, and component-size tokens are defined in `theme/Dimensions.kt`. The shared pagination state models live in `core/common/PaginatedListState.kt`.
 
 ### Theme Support
 - Light and dark Material 3 color schemes
@@ -572,7 +581,7 @@ Key dependencies are managed via Gradle Version Catalog (`gradle/libs.versions.t
 | `/admin/products/{id}` | PATCH | ✅ Connected — update product |
 | `/admin/products/{id}` | DELETE | ⏳ Pending backend |
 | `/admin/products/{id}/variants` | GET | ✅ Connected — list variants |
-| `/admin/products/{id}/variants` | POST | ✅ Connected — create variant |
+| `/admin/products/{id}/variants` | POST | ✅ Connected — create variant; optional price amount, currency, and unit of measure |
 | `/admin/variants/{id}/stock` | GET | ✅ Connected — stock availability |
 | `/admin/variants/{id}/stock/receive` | POST | ✅ Connected — receive stock |
 | `/admin/variants/{id}/stock/adjust` | POST | ✅ Connected — adjust stock |
@@ -701,12 +710,13 @@ These documents are loaded automatically by coding agents and must be followed f
 - ✅ Full Clean Architecture + MVVM foundation
 - ✅ Hilt DI with proper `@Module` and `@Binds` configuration
 - ✅ Type-safe navigation with 18 routes and 5 bottom nav tabs
-- ✅ All feature screens implemented with proper loading, empty, and error states
+- ✅ Shared loading, empty, and error-state components available; migration is incremental
 - ✅ All colors dynamic — 30+ named theme colors, zero hardcoded values
-- ✅ Components reorganized into 7 focused files
+- ✅ Design system includes shared `AppScreen`, paginated list components, and `Dimensions`; Orders, Users, Products, Categories, and Audit Logs screens migrated
 - ✅ **Authentication**: Real backend integration with `AuthApiService`, `RealAuthRepository`, 14 tests
 - ✅ **Dashboard**: Real backend integration via `GET /api/v1/admin/dashboard` with metrics, revenue, orders, registrations, stock alerts; 34 tests
 - ✅ **Catalog (Products)**: Real backend integration with product CRUD, variants, categories; `CatalogApiService`, `CatalogRepositoryImpl`, `CatalogMapper`
+- ✅ **Variant pricing**: Optional `price_amount`, `price_currency`, and `unit_of_measure` fields supported in variant create/update flows; monetary values use `BigDecimal`
 - ✅ **Inventory**: Real stock data via `InventoryViewModel` with search, filtering, receive/adjust stock, movement history
 - ✅ **Product Editing**: Real backend integration via `PATCH /api/v1/products/{id}` with `ProductEditViewModel`
 - ✅ **Orders**: Full module with listing, details, status updates; `OrderApiService`, `OrderRepositoryImpl`, `OrderMapper`, 30 tests
