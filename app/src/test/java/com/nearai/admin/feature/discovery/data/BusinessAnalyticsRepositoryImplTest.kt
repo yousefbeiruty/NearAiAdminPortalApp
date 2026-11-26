@@ -81,7 +81,7 @@ class BusinessAnalyticsRepositoryImplTest {
             totalOrders = 150,
             completedOrders = 120,
             revenueByCurrency = listOf(
-                RevenueByCurrencyDto("USD", 5000.50, 80, 62.51)
+                RevenueByCurrencyDto("USD", java.math.BigDecimal("5000.50"), 80, java.math.BigDecimal("62.51"))
             )
         )
 

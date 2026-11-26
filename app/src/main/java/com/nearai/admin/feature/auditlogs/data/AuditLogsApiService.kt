@@ -7,17 +7,18 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 /**
- * Retrofit service for admin audit logs endpoints.
+ * Retrofit service for platform audit logs endpoints.
  *
  * Backend contract:
- * - GET /api/v1/admin/audit-logs — list audit logs (paginated, filtered)
+ * - GET /api/v1/platform/audit-logs — list audit logs across all tenants (paginated, filtered)
  */
 interface AuditLogsApiService {
 
-    @GET("api/v1/admin/audit-logs")
+    @GET("api/v1/platform/audit-logs")
     suspend fun listAuditLogs(
         @Query("page") page: Int = 1,
         @Query("size") size: Int = 20,
+        @Query("tenant_id") tenantId: String? = null,
         @Query("actor_id") actorId: String? = null,
         @Query("action") action: String? = null,
         @Query("resource_type") resourceType: String? = null,
@@ -42,6 +43,8 @@ data class AuditLogsListResponseDto(
 @Serializable
 data class AuditLogDto(
     val id: String,
+    @SerialName("tenant_id")
+    val tenantId: String?,
     @SerialName("actor_id")
     val actorId: String?,
     @SerialName("actor_role")

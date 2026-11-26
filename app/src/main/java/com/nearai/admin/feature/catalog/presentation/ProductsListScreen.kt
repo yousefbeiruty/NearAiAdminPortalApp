@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.nearai.admin.R
+import com.nearai.admin.core.common.MonetaryFormatter
 import com.nearai.admin.core.designsystem.components.AppScreen
 import com.nearai.admin.core.designsystem.components.EmptyState
 import com.nearai.admin.core.designsystem.components.ErrorState
@@ -281,7 +282,7 @@ fun ProductCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${product.priceCurrency} ${"%.2f".format(product.priceAmount)}",
+                        text = MonetaryFormatter.formatWithCurrencyCode(product.priceAmount, product.priceCurrency),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = Navy
@@ -315,7 +316,7 @@ fun ProductCardPreview() {
                 name = "Wireless Headphones",
                 description = "Premium noise-canceling headphones with 30hr battery life",
                 slug = "wireless-headphones",
-                priceAmount = 99.99,
+                priceAmount = java.math.BigDecimal("99.99"),
                 priceCurrency = "USD",
                 images = emptyList(),
                 status = ProductStatus.ACTIVE,

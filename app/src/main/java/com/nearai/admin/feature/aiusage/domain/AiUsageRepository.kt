@@ -1,6 +1,7 @@
 package com.nearai.admin.feature.aiusage.domain
 
 import com.nearai.admin.core.common.Result
+import java.math.BigDecimal
 
 /**
  * Repository interface for AI usage data.
@@ -24,8 +25,8 @@ interface AiUsageRepository {
  * This model is a placeholder for when the backend API becomes available.
  */
 data class AiUsageData(
-    val monthlyBudgetConsumed: Double = 0.0,
-    val monthlyBudgetTotal: Double = 0.0,
+    val monthlyBudgetConsumed: BigDecimal = BigDecimal.ZERO,
+    val monthlyBudgetTotal: BigDecimal = BigDecimal.ZERO,
     val providerUsage: List<ProviderUsage> = emptyList(),
     val quotaSafeguards: List<QuotaSafeguard> = emptyList(),
     val recentTelemetry: List<TelemetryEntry> = emptyList()
@@ -39,7 +40,7 @@ data class ProviderUsage(
     val model: String,
     val requestCount: Int,
     val percentageOfTotal: Int,
-    val cost: Double
+    val cost: BigDecimal
 )
 
 /**
@@ -58,7 +59,7 @@ data class QuotaSafeguard(
 data class TelemetryEntry(
     val model: String,
     val tokenCount: Int,
-    val cost: Double,
+    val cost: BigDecimal,
     val latencyMs: Long,
     val status: String
 )

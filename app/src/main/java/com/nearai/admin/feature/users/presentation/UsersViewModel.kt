@@ -2,7 +2,6 @@ package com.nearai.admin.feature.users.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nearai.admin.R
 import com.nearai.admin.core.common.Result
 import com.nearai.admin.feature.users.domain.AdminUser
 import com.nearai.admin.feature.users.domain.UsersRepository
@@ -32,9 +31,7 @@ data class UsersUiState(
     val totalPages: Int = 1,
     val totalItems: Int = 0,
     val hasMore: Boolean = false,
-    val isLoadingMore: Boolean = false,
-    val isUpdating: Boolean = false,
-    val updateMessage: String? = null
+    val isLoadingMore: Boolean = false
 )
 
 /**
@@ -94,8 +91,7 @@ class UsersViewModel @Inject constructor(
                     error = null,
                     currentPage = 1,
                     hasMore = false,
-                    isLoadingMore = false,
-                    updateMessage = null
+                    isLoadingMore = false
                 )
             }
 
@@ -218,80 +214,6 @@ class UsersViewModel @Inject constructor(
 
     fun dismissSelectedUser() {
         _uiState.update { it.copy(selectedUser = null) }
-    }
-
-    fun updateUserRole(userId: String, role: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isUpdating = true, updateMessage = null) }
-            when (val result = usersRepository.updateUser(userId, role = role)) {
-                is Result.Success -> {
-                    _uiState.update { state ->
-                        state.copy(
-                            isUpdating = false,
-                            users = state.users.map { u ->
-                                if (u.id == result.data.id) result.data else u
-                            },
-                            selectedUser = if (state.selectedUser?.id == result.data.id) result.data else state.selectedUser,
-                            updateMessage = "Role updated successfully"
-                        )
-                    }
-                }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(isUpdating = false, error = result.exception.message)
-                    }
-                }
-                is Result.Loading -> { /* No-op */ }
-            }
-        }
-    }
-
-    fun toggleUserActive(userId: String, isActive: Boolean) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isUpdating = true, updateMessage = null) }
-            when (val result = usersRepository.updateUser(userId, isActive = isActive)) {
-                is Result.Success -> {
-                    _uiState.update { state ->
-                        state.copy(
-                            isUpdating = false,
-                            users = state.users.map { u ->
-                                if (u.id == result.data.id) result.data else u
-                            },
-                            selectedUser = if (state.selectedUser?.id == result.data.id) result.data else state.selectedUser,
-                            updateMessage = if (isActive) "User activated" else "User suspended"
-                        )
-                    }
-                }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(isUpdating = false, error = result.exception.message)
-                    }
-                }
-                is Result.Loading -> { /* No-op */ }
-            }
-        }
-    }
-
-    fun revokeSessions(userId: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isUpdating = true, updateMessage = null) }
-            when (val result = usersRepository.revokeSessions(userId)) {
-                is Result.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            isUpdating = false,
-                            updateMessage = "${result.data} session(s) revoked"
-                        )
-                    }
-                }
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(isUpdating = false, error = result.exception.message)
-                    }
-                }
-                is Result.Loading -> { /* No-op */ }
-            }
-        }
     }
 
     /**

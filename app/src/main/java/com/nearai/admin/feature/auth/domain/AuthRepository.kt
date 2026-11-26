@@ -12,10 +12,12 @@ data class AdminSession(
     val refreshToken: String
 ) {
     /**
-     * Returns true if this session belongs to a user with the admin role.
+     * Returns true if this session belongs to a user with an authorized admin role.
+     * Accepts "platform_admin" (primary) and "admin" (legacy backward compatibility).
+     * Rejects "merchant_admin", "customer", and any unknown role.
      */
     val isAdmin: Boolean
-        get() = role.equals("admin", ignoreCase = true)
+        get() = com.nearai.admin.core.security.AdminRoleValidator.isAdminRole(role)
 }
 
 /**

@@ -1,5 +1,6 @@
 package com.nearai.admin.feature.catalog.data
 
+import com.nearai.admin.core.common.BigDecimalJsonSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import okhttp3.MultipartBody
@@ -12,6 +13,7 @@ import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
+import java.math.BigDecimal
 
 /**
  * Retrofit service interface for catalog management endpoints.
@@ -64,8 +66,8 @@ interface CatalogApiService {
         @Query("category_id") categoryId: String? = null,
         @Query("status") status: String? = null,
         @Query("search") search: String? = null,
-        @Query("min_price") minPrice: Double? = null,
-        @Query("max_price") maxPrice: Double? = null,
+        @Query("min_price") minPrice: String? = null,
+        @Query("max_price") maxPrice: String? = null,
         @Query("sort_by") sortBy: String? = null
     ): ProductListResponse
 
@@ -76,8 +78,8 @@ interface CatalogApiService {
         @Query("size") size: Int = 20,
         @Query("category_id") categoryId: String? = null,
         @Query("status") status: String? = null,
-        @Query("min_price") minPrice: Double? = null,
-        @Query("max_price") maxPrice: Double? = null,
+        @Query("min_price") minPrice: String? = null,
+        @Query("max_price") maxPrice: String? = null,
         @Query("sort_by") sortBy: String? = null
     ): ProductListResponse
 
@@ -199,7 +201,7 @@ data class ProductCreateRequest(
     val name: String,
     val description: String,
     val slug: String? = null,
-    @SerialName("price_amount") val priceAmount: Double,
+    @SerialName("price_amount") @Serializable(BigDecimalJsonSerializer::class) val priceAmount: BigDecimal,
     @SerialName("price_currency") val priceCurrency: String = "USD",
     val images: List<String>? = null,
     @SerialName("category_id") val categoryId: String? = null,
@@ -211,7 +213,7 @@ data class ProductUpdateRequest(
     val name: String? = null,
     val description: String? = null,
     val slug: String? = null,
-    @SerialName("price_amount") val priceAmount: Double? = null,
+    @SerialName("price_amount") @Serializable(BigDecimalJsonSerializer::class) val priceAmount: BigDecimal? = null,
     @SerialName("price_currency") val priceCurrency: String? = null,
     val images: List<String>? = null,
     @SerialName("category_id") val categoryId: String? = null,
@@ -232,14 +234,20 @@ data class ReorderImagesRequest(
 @Serializable
 data class VariantCreateRequest(
     val sku: String,
-    val attributes: Map<String, String> = emptyMap()
+    val attributes: Map<String, String> = emptyMap(),
+    @SerialName("price_amount") @Serializable(BigDecimalJsonSerializer::class) val priceAmount: BigDecimal? = null,
+    @SerialName("price_currency") val priceCurrency: String? = null,
+    @SerialName("unit_of_measure") val unitOfMeasure: String? = null
 )
 
 @Serializable
 data class VariantUpdateRequest(
     val sku: String? = null,
     val attributes: Map<String, String>? = null,
-    val status: String? = null
+    val status: String? = null,
+    @SerialName("price_amount") @Serializable(BigDecimalJsonSerializer::class) val priceAmount: BigDecimal? = null,
+    @SerialName("price_currency") val priceCurrency: String? = null,
+    @SerialName("unit_of_measure") val unitOfMeasure: String? = null
 )
 
 @Serializable
@@ -288,7 +296,7 @@ data class ProductResponseDto(
     val name: String,
     val description: String,
     val slug: String,
-    @SerialName("price_amount") val priceAmount: Double,
+    @SerialName("price_amount") @Serializable(BigDecimalJsonSerializer::class) val priceAmount: BigDecimal,
     @SerialName("price_currency") val priceCurrency: String,
     val images: List<String>,
     val status: String,
@@ -327,6 +335,9 @@ data class VariantResponseDto(
     val attributes: Map<String, String>,
     val status: String,
     @SerialName("available_quantity") val availableQuantity: Int,
+    @SerialName("price_amount") @Serializable(BigDecimalJsonSerializer::class) val priceAmount: BigDecimal? = null,
+    @SerialName("price_currency") val priceCurrency: String? = null,
+    @SerialName("unit_of_measure") val unitOfMeasure: String? = null,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
 )

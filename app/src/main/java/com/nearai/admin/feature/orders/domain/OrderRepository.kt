@@ -1,6 +1,7 @@
 package com.nearai.admin.feature.orders.domain
 
 import com.nearai.admin.core.common.Result
+import java.math.BigDecimal
 
 /**
  * Domain model for a single item in an order.
@@ -10,9 +11,9 @@ data class OrderItem(
     val productName: String,
     val sku: String?,
     val quantity: Int,
-    val unitPriceAmount: Double,
+    val unitPriceAmount: BigDecimal,
     val unitPriceCurrency: String?,
-    val subtotalAmount: Double?
+    val subtotalAmount: BigDecimal?
 )
 
 /**
@@ -23,10 +24,10 @@ data class OrderSummary(
     val createdAt: String,
     val status: OrderStatus,
     val fulfillmentStatus: FulfillmentStatus,
-    val totalAmount: Double,
-    val subtotalAmount: Double?,
-    val deliveryFeeAmount: Double?,
-    val discountAmount: Double?,
+    val totalAmount: BigDecimal,
+    val subtotalAmount: BigDecimal?,
+    val deliveryFeeAmount: BigDecimal?,
+    val discountAmount: BigDecimal?,
     val currency: String,
     val items: List<OrderItem>,
     val deliveryRecipientName: String?,
@@ -38,7 +39,8 @@ data class OrderSummary(
     val deliveryApartment: String?,
     val deliveryInstructions: String?,
     val approvalStatus: ApprovalStatus? = null,
-    val approvalDecision: ApprovalDecisionSnapshot? = null
+    val approvalDecision: ApprovalDecisionSnapshot? = null,
+    val isGuest: Boolean = false
 )
 
 /**
@@ -50,10 +52,10 @@ data class OrderDetails(
     val status: OrderStatus,
     val fulfillmentStatus: FulfillmentStatus,
     val items: List<OrderItem>,
-    val subtotalAmount: Double?,
-    val deliveryFeeAmount: Double?,
-    val discountAmount: Double?,
-    val totalAmount: Double,
+    val subtotalAmount: BigDecimal?,
+    val deliveryFeeAmount: BigDecimal?,
+    val discountAmount: BigDecimal?,
+    val totalAmount: BigDecimal,
     val currency: String,
     val deliveryRecipientName: String?,
     val deliveryPhone: String?,
@@ -65,7 +67,8 @@ data class OrderDetails(
     val deliveryInstructions: String?,
     val approvalStatus: ApprovalStatus? = null,
     val approvalDecision: ApprovalDecisionSnapshot? = null,
-    val shipmentInfo: ShipmentInfo? = null
+    val shipmentInfo: ShipmentInfo? = null,
+    val isGuest: Boolean = false
 )
 
 /**
@@ -87,7 +90,7 @@ data class PaymentInfo(
     val id: String,
     val orderId: String,
     val paymentMethod: String,
-    val amount: Double,
+    val amount: BigDecimal,
     val currency: String,
     val status: PaymentStatus,
     val collectedAt: String? = null,
@@ -116,7 +119,7 @@ data class PaginatedOrders(
  */
 data class ApprovalDecisionSnapshot(
     val decision: ApprovalStatus,
-    val evaluatedAmount: Double,
+    val evaluatedAmount: BigDecimal,
     val currency: String,
     val decisionReason: String?,
     val policyVersion: Int?,
@@ -131,8 +134,8 @@ data class ApprovalDecisionSnapshot(
  * Thresholds are backend-driven; never hardcoded in Android.
  */
 data class ApprovalPolicyConfig(
-    val autoApprovalLimit: Double,
-    val mandatoryReviewThreshold: Double,
+    val autoApprovalLimit: BigDecimal,
+    val mandatoryReviewThreshold: BigDecimal,
     val currency: String,
     val enabled: Boolean,
     val version: Int?,
@@ -149,7 +152,7 @@ data class ReviewQueueOrder(
     val status: OrderStatus,
     val fulfillmentStatus: FulfillmentStatus,
     val approvalStatus: ApprovalStatus,
-    val totalAmount: Double,
+    val totalAmount: BigDecimal,
     val currency: String,
     val items: List<OrderItem>,
     val deliveryRecipientName: String?,
@@ -288,8 +291,8 @@ interface OrderRepository {
      * Updates the approval policy configuration.
      */
     suspend fun updateApprovalPolicy(
-        autoApprovalLimit: Double,
-        mandatoryReviewThreshold: Double,
+        autoApprovalLimit: BigDecimal,
+        mandatoryReviewThreshold: BigDecimal,
         enabled: Boolean
     ): Result<ApprovalPolicyConfig>
 }

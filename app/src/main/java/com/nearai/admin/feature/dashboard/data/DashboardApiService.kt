@@ -1,8 +1,10 @@
 package com.nearai.admin.feature.dashboard.data
 
+import com.nearai.admin.core.common.BigDecimalJsonSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.GET
+import java.math.BigDecimal
 
 /**
  * Retrofit service interface for dashboard endpoints.
@@ -30,7 +32,7 @@ data class DashboardResponseDto(
     @SerialName("completed_orders") val completedOrders: Int = 0,
     @SerialName("cancelled_orders") val cancelledOrders: Int = 0,
     @SerialName("rejected_orders") val rejectedOrders: Int = 0,
-    @SerialName("total_revenue") val totalRevenue: Double = 0.0,
+    @SerialName("total_revenue") @Serializable(BigDecimalJsonSerializer::class) val totalRevenue: BigDecimal = BigDecimal.ZERO,
     @SerialName("revenue_currency") val revenueCurrency: String = "",
     @SerialName("recent_orders") val recentOrders: List<RecentOrderDto> = emptyList(),
     @SerialName("recent_users") val recentRegistrations: List<RecentRegistrationDto> = emptyList(),
@@ -40,7 +42,7 @@ data class DashboardResponseDto(
 @Serializable
 data class RevenueDto(
     val currency: String,
-    val amount: Double = 0.0
+    @Serializable(BigDecimalJsonSerializer::class) val amount: BigDecimal = BigDecimal.ZERO
 )
 
 @Serializable
@@ -49,7 +51,7 @@ data class RecentOrderDto(
     @SerialName("user_email") val userName: String = "",
     @SerialName("created_at") val orderDate: String = "",
     val status: String = "",
-    @SerialName("total_amount") val total: Double = 0.0,
+    @SerialName("total_amount") @Serializable(BigDecimalJsonSerializer::class) val total: BigDecimal = BigDecimal.ZERO,
     val currency: String = ""
 )
 

@@ -352,98 +352,6 @@ class UsersViewModelTest {
     // 9. User update success and failure
     // =============================================================================
 
-    @Test
-    fun `updateUserRole success updates user in list and selectedUser`() = runTest {
-        coEvery { usersRepository.listUsers(any(), any(), any(), any(), any()) } returns Result.Success(
-            successData()
-        )
-        val updatedUser = testUser(id = "user-1", role = "admin")
-        coEvery { usersRepository.updateUser("user-1", role = "admin", isActive = null) } returns Result.Success(
-            updatedUser
-        )
-
-        val viewModel = createViewModel()
-        val user = viewModel.uiState.value.users[0]
-        viewModel.onUserClicked(user)
-        assertEquals("customer", viewModel.uiState.value.selectedUser?.role)
-
-        viewModel.updateUserRole("user-1", "admin")
-
-        val state = viewModel.uiState.value
-        assertEquals("admin", state.users[0].role)
-        assertEquals("admin", state.selectedUser?.role)
-        assertEquals("Role updated successfully", state.updateMessage)
-        assertFalse(state.isUpdating)
-    }
-
-    @Test
-    fun `updateUserRole error sets error and clears isUpdating`() = runTest {
-        coEvery { usersRepository.listUsers(any(), any(), any(), any(), any()) } returns Result.Success(
-            successData()
-        )
-        coEvery { usersRepository.updateUser("user-1", role = "admin", isActive = null) } returns Result.Error(
-            AppError.ServerError("Backend error", 500)
-        )
-
-        val viewModel = createViewModel()
-        viewModel.updateUserRole("user-1", "admin")
-
-        val state = viewModel.uiState.value
-        assertEquals("Backend error", state.error)
-        assertFalse(state.isUpdating)
-    }
-
-    @Test
-    fun `toggleUserActive success updates user and shows message`() = runTest {
-        coEvery { usersRepository.listUsers(any(), any(), any(), any(), any()) } returns Result.Success(
-            successData()
-        )
-        val updatedUser = testUser(id = "user-1", isActive = false)
-        coEvery { usersRepository.updateUser("user-1", role = null, isActive = false) } returns Result.Success(
-            updatedUser
-        )
-
-        val viewModel = createViewModel()
-        viewModel.toggleUserActive("user-1", false)
-
-        val state = viewModel.uiState.value
-        assertFalse(state.users[0].isActive)
-        assertEquals("User suspended", state.updateMessage)
-        assertFalse(state.isUpdating)
-    }
-
-    @Test
-    fun `revokeSessions success shows session count`() = runTest {
-        coEvery { usersRepository.listUsers(any(), any(), any(), any(), any()) } returns Result.Success(
-            successData()
-        )
-        coEvery { usersRepository.revokeSessions("user-1") } returns Result.Success(3)
-
-        val viewModel = createViewModel()
-        viewModel.revokeSessions("user-1")
-
-        val state = viewModel.uiState.value
-        assertEquals("3 session(s) revoked", state.updateMessage)
-        assertFalse(state.isUpdating)
-    }
-
-    @Test
-    fun `revokeSessions error sets error`() = runTest {
-        coEvery { usersRepository.listUsers(any(), any(), any(), any(), any()) } returns Result.Success(
-            successData()
-        )
-        coEvery { usersRepository.revokeSessions("user-1") } returns Result.Error(
-            AppError.ServerError("Server error", 500)
-        )
-
-        val viewModel = createViewModel()
-        viewModel.revokeSessions("user-1")
-
-        val state = viewModel.uiState.value
-        assertEquals("Server error", state.error)
-        assertFalse(state.isUpdating)
-    }
-
     // =============================================================================
     // 10. Loading flags reset after exceptions
     // =============================================================================
@@ -545,6 +453,7 @@ class UsersViewModelTest {
         role: String = "customer",
         isActive: Boolean = true,
         emailVerified: Boolean = true,
+        tenantId: String? = null,
         createdAt: String = "2024-01-01T00:00:00Z",
         updatedAt: String = "2024-01-01T00:00:00Z"
     ) = AdminUser(
@@ -553,6 +462,7 @@ class UsersViewModelTest {
         role = role,
         isActive = isActive,
         emailVerified = emailVerified,
+        tenantId = tenantId,
         createdAt = createdAt,
         updatedAt = updatedAt
     )

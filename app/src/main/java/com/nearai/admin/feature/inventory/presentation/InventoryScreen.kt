@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.nearai.admin.R
+import com.nearai.admin.core.common.MonetaryFormatter
 import com.nearai.admin.core.designsystem.theme.*
 import com.nearai.admin.feature.catalog.domain.ProductStatus
 import com.nearai.admin.feature.catalog.domain.StockMovementType
@@ -711,7 +712,7 @@ fun InventoryItem.toSkuItem(): SkuItem {
         id = product.id,
         title = product.name,
         skuCode = variant?.variant?.sku ?: product.slug,
-        price = "$${String.format(Locale.US, "%.2f", product.priceAmount)}",
+        price = MonetaryFormatter.formatWithCurrencyCode(product.priceAmount, product.priceCurrency),
         billingCycle = "per unit",
         status = status,
         leadingIcon = product.status.toLeadingIcon(),
@@ -1425,7 +1426,7 @@ fun InventoryScreenPreview() {
             name = "Wireless Headphones Pro",
             description = "Premium noise-canceling headphones",
             slug = "wireless-headphones-pro",
-            priceAmount = 199.99,
+            priceAmount = java.math.BigDecimal("199.99"),
             priceCurrency = "USD",
             images = emptyList(),
             status = ProductStatus.ACTIVE,
@@ -1471,7 +1472,7 @@ fun InventoryScreenPreview() {
                 name = "USB-C Charging Cable",
                 description = "Durable charging cable",
                 slug = "usb-c-charging-cable",
-                priceAmount = 12.99,
+                priceAmount = java.math.BigDecimal("12.99"),
                 priceCurrency = "USD",
                 images = emptyList(),
                 status = ProductStatus.ACTIVE,

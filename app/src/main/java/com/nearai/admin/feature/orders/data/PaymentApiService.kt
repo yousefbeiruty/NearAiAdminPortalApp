@@ -1,9 +1,11 @@
 package com.nearai.admin.feature.orders.data
 
+import com.nearai.admin.core.common.BigDecimalJsonSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.POST
 import retrofit2.http.Path
+import java.math.BigDecimal
 
 /**
  * Retrofit service interface for payment-related endpoints used by the Admin Portal.
@@ -36,7 +38,7 @@ data class PaymentInfoDto(
     @SerialName("payment_method") val paymentMethod: String,
     @SerialName("provider") val provider: String,
     @SerialName("provider_payment_id") val providerPaymentId: String? = null,
-    @SerialName("amount") val amount: Double,
+    @SerialName("amount") @Serializable(BigDecimalJsonSerializer::class) val amount: BigDecimal,
     @SerialName("currency") val currency: String,
     @SerialName("status") val status: String,
     @SerialName("checkout_url") val checkoutUrl: String? = null,
@@ -54,7 +56,7 @@ data class CollectCashResponseDto(
     @SerialName("id") val id: String,
     @SerialName("order_id") val orderId: String,
     @SerialName("payment_method") val paymentMethod: String,
-    @SerialName("amount") val amount: Double,
+    @SerialName("amount") @Serializable(BigDecimalJsonSerializer::class) val amount: BigDecimal,
     @SerialName("currency") val currency: String,
     @SerialName("status") val status: String,
     @SerialName("collected_at") val collectedAt: String? = null,

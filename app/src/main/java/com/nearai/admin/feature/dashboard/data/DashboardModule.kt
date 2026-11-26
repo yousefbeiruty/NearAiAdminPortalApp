@@ -28,5 +28,11 @@ abstract class DashboardModule {
         fun provideDashboardApiService(
             retrofit: retrofit2.Retrofit
         ): DashboardApiService = retrofit.create(DashboardApiService::class.java)
+
+        @Provides
+        @Singleton
+        fun providePlatformDashboardApiService(
+            retrofit: retrofit2.Retrofit
+        ): PlatformDashboardApiService = retrofit.create(PlatformDashboardApiService::class.java)
     }
 }

@@ -2,25 +2,20 @@ package com.nearai.admin.feature.users.data
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import retrofit2.http.Body
 import retrofit2.http.GET
-import retrofit2.http.PATCH
-import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
 /**
- * Retrofit service for admin users management endpoints.
+ * Retrofit service for platform user inspection endpoints (read-only).
  *
  * Backend contract:
- * - GET    /api/v1/admin/users              — list users (paginated, filtered)
- * - GET    /api/v1/admin/users/{id}         — get user by ID
- * - PATCH  /api/v1/admin/users/{id}         — update user role/active status
- * - POST   /api/v1/admin/users/{id}/revoke-sessions — revoke all sessions
+ * - GET /api/v1/platform/users       — list users across all tenants (paginated, filtered)
+ * - GET /api/v1/platform/users/{id}  — get user detail by ID
  */
 interface UsersApiService {
 
-    @GET("api/v1/admin/users")
+    @GET("api/v1/platform/users")
     suspend fun listUsers(
         @Query("page") page: Int = 1,
         @Query("size") size: Int = 20,
@@ -29,17 +24,8 @@ interface UsersApiService {
         @Query("is_active") isActive: Boolean? = null
     ): UsersListResponseDto
 
-    @GET("api/v1/admin/users/{user_id}")
+    @GET("api/v1/platform/users/{user_id}")
     suspend fun getUser(@Path("user_id") userId: String): UserResponseDto
-
-    @PATCH("api/v1/admin/users/{user_id}")
-    suspend fun updateUser(
-        @Path("user_id") userId: String,
-        @Body request: UpdateUserRequestDto
-    ): UserResponseDto
-
-    @POST("api/v1/admin/users/{user_id}/revoke-sessions")
-    suspend fun revokeSessions(@Path("user_id") userId: String): RevokeSessionsResponseDto
 }
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
@@ -63,21 +49,10 @@ data class UserResponseDto(
     val isActive: Boolean,
     @SerialName("email_verified")
     val emailVerified: Boolean,
+    @SerialName("tenant_id")
+    val tenantId: String?,
     @SerialName("created_at")
     val createdAt: String,
     @SerialName("updated_at")
     val updatedAt: String
-)
-
-@Serializable
-data class UpdateUserRequestDto(
-    val role: String? = null,
-    @SerialName("is_active")
-    val isActive: Boolean? = null
-)
-
-@Serializable
-data class RevokeSessionsResponseDto(
-    @SerialName("revoked_count")
-    val revokedCount: Int
 )

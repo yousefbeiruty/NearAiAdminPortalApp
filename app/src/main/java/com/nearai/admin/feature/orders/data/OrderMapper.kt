@@ -40,7 +40,8 @@ object OrderMapper {
         deliveryApartment = dto.deliveryApartment,
         deliveryInstructions = dto.deliveryInstructions,
         approvalStatus = dto.approvalStatus?.let { ApprovalStatus.parseOrAwaitingReview(it) },
-        approvalDecision = dto.approvalDecision?.let { mapApprovalDecision(it) }
+        approvalDecision = dto.approvalDecision?.let { mapApprovalDecision(it) },
+        isGuest = dto.isGuest
     )
 
     fun mapOrderDetails(dto: OrderDetailsResponse): OrderDetails = OrderDetails(
@@ -64,7 +65,8 @@ object OrderMapper {
         deliveryInstructions = dto.deliveryInstructions,
         approvalStatus = dto.approvalStatus?.let { ApprovalStatus.parseOrAwaitingReview(it) },
         approvalDecision = dto.approvalDecision?.let { mapApprovalDecision(it) },
-        shipmentInfo = dto.shipmentInfo?.let { mapShipmentInfo(it) }
+        shipmentInfo = dto.shipmentInfo?.let { mapShipmentInfo(it) },
+        isGuest = dto.isGuest
     )
 
     fun mapOrderItem(dto: OrderItemDto): OrderItem = OrderItem(

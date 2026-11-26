@@ -49,19 +49,6 @@ fun UsersScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    // Display update messages as snackbar — consumed once via key tracking
-    var lastShownMessage by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(uiState.updateMessage) {
-        uiState.updateMessage?.let { msg ->
-            if (msg != lastShownMessage) {
-                snackbarHostState.showSnackbar(msg)
-                lastShownMessage = msg
-            }
-        }
-    }
-
     UsersScreenContent(
         uiState = uiState,
         onNavigateBack = onNavigateBack,
@@ -76,20 +63,11 @@ fun UsersScreen(
         onLoadMore = { viewModel.loadMore() }
     )
 
-    // User detail bottom sheet
+    // User detail bottom sheet (read-only inspection)
     uiState.selectedUser?.let { user ->
         UserDetailBottomSheet(
             user = user,
-            onDismiss = { viewModel.dismissSelectedUser() },
-            onToggleActive = { isActive ->
-                viewModel.toggleUserActive(user.id, isActive)
-            },
-            onRevokeSessions = {
-                viewModel.revokeSessions(user.id)
-            },
-            onUpdateRole = { role ->
-                viewModel.updateUserRole(user.id, role)
-            }
+            onDismiss = { viewModel.dismissSelectedUser() }
         )
     }
 }
@@ -328,16 +306,13 @@ fun UserListItem(
 }
 
 /**
- * User detail bottom sheet with account info and admin actions.
+ * User detail bottom sheet — read-only inspection for platform admin.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserDetailBottomSheet(
     user: AdminUser,
-    onDismiss: () -> Unit,
-    onToggleActive: (Boolean) -> Unit,
-    onRevokeSessions: () -> Unit,
-    onUpdateRole: (String) -> Unit
+    onDismiss: () -> Unit
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -391,7 +366,7 @@ fun UserDetailBottomSheet(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         StatusPill(
                             label = user.role,
-                            dotColor = if (user.role == "admin") Indigo else EmeraldSuccess
+                            dotColor = if (user.role == "admin" || user.role == "platform_admin") Indigo else EmeraldSuccess
                         )
                         StatusPill(
                             label = if (user.isActive) stringResource(R.string.status_active) else stringResource(R.string.status_inactive),
@@ -417,64 +392,19 @@ fun UserDetailBottomSheet(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     UserDetailRow(label = stringResource(R.string.user_detail_email_verified), value = if (user.emailVerified) stringResource(R.string.user_detail_yes) else stringResource(R.string.user_detail_no))
+                    user.tenantId?.let {
+                        UserDetailRow(label = "Tenant ID", value = it)
+                    }
                     UserDetailRow(label = stringResource(R.string.user_detail_created), value = user.createdAt)
                     UserDetailRow(label = stringResource(R.string.user_detail_updated), value = user.updatedAt)
                 }
             }
 
-            // Admin actions
             Text(
-                text = stringResource(R.string.user_detail_admin_actions),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
+                text = "Read-only inspection — no mutation operations available.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
-            // Toggle active
-            if (user.isActive) {
-                Button(
-                    onClick = { onToggleActive(false) },
-                    modifier = Modifier.fillMaxWidth().height(44.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = RoseError)
-                ) {
-                    Icon(Icons.Outlined.Block, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.user_detail_suspend_account))
-                }
-            } else {
-                FilledTonalButton(
-                    onClick = { onToggleActive(true) },
-                    modifier = Modifier.fillMaxWidth().height(44.dp)
-                ) {
-                    Text(stringResource(R.string.user_detail_activate_account))
-                }
-            }
-
-            // Revoke sessions
-            FilledTonalButton(
-                onClick = onRevokeSessions,
-                modifier = Modifier.fillMaxWidth().height(44.dp)
-            ) {
-                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(stringResource(R.string.user_detail_revoke_sessions))
-            }
-
-            // Change role
-            if (user.role != "admin") {
-                FilledTonalButton(
-                    onClick = { onUpdateRole("admin") },
-                    modifier = Modifier.fillMaxWidth().height(44.dp)
-                ) {
-                    Text(stringResource(R.string.user_detail_promote_admin))
-                }
-            } else {
-                FilledTonalButton(
-                    onClick = { onUpdateRole("customer") },
-                    modifier = Modifier.fillMaxWidth().height(44.dp)
-                ) {
-                    Text(stringResource(R.string.user_detail_demote_customer))
-                }
-            }
         }
     }
 }
@@ -509,10 +439,10 @@ fun UserDetailRow(label: String, value: String, modifier: Modifier = Modifier) {
 fun UsersScreenPreview() {
     NearAiAdminTheme {
         val sampleUsers = listOf(
-            AdminUser("u1", "admin@nearai.com", "admin", true, true, "2024-01-15T10:30:00Z", "2024-01-15T10:30:00Z"),
-            AdminUser("u2", "customer@example.com", "customer", true, true, "2024-02-20T08:00:00Z", "2024-02-20T08:00:00Z"),
-            AdminUser("u3", "suspended@example.com", "customer", false, false, "2024-03-10T12:00:00Z", "2024-03-10T12:00:00Z"),
-            AdminUser("u4", "a.very.long.email.address.that.should.not.overflow.the.card@verylongdomain.com", "customer", true, false, "2024-04-01T00:00:00Z", "2024-04-01T00:00:00Z")
+            AdminUser("u1", "admin@nearai.com", "admin", true, true, null, "2024-01-15T10:30:00Z", "2024-01-15T10:30:00Z"),
+            AdminUser("u2", "customer@example.com", "customer", true, true, "tenant-1", "2024-02-20T08:00:00Z", "2024-02-20T08:00:00Z"),
+            AdminUser("u3", "suspended@example.com", "customer", false, false, "tenant-2", "2024-03-10T12:00:00Z", "2024-03-10T12:00:00Z"),
+            AdminUser("u4", "a.very.long.email.address.that.should.not.overflow.the.card@verylongdomain.com", "customer", true, false, "tenant-1", "2024-04-01T00:00:00Z", "2024-04-01T00:00:00Z")
         )
         Column(
             modifier = Modifier

@@ -1,13 +1,16 @@
 package com.nearai.admin.feature.orders.data
 
+import com.nearai.admin.core.common.BigDecimalJsonSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Serializer
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.PUT
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import java.math.BigDecimal
 
 /**
  * Retrofit service interface for order management endpoints.
@@ -106,8 +109,8 @@ data class RejectApprovalRequest(@SerialName("reason") val reason: String)
  */
 @Serializable
 data class UpdatePolicyRequest(
-    @SerialName("auto_approval_limit") val autoApprovalLimit: Double,
-    @SerialName("mandatory_review_threshold") val mandatoryReviewThreshold: Double,
+    @SerialName("auto_approval_limit") @Serializable(BigDecimalJsonSerializer::class) val autoApprovalLimit: BigDecimal,
+    @SerialName("mandatory_review_threshold") @Serializable(BigDecimalJsonSerializer::class) val mandatoryReviewThreshold: BigDecimal,
     @SerialName("enabled") val enabled: Boolean
 )
 
@@ -137,13 +140,14 @@ data class OrdersListResponse(
 @Serializable
 data class OrderSummaryDto(
     @SerialName("id") val id: String,
+    @SerialName("is_guest") val isGuest: Boolean = false,
     @SerialName("created_at") val createdAt: String,
     @SerialName("status") val status: String,
     @SerialName("fulfillment_status") val fulfillmentStatus: String,
-    @SerialName("total_amount") val totalAmount: Double,
-    @SerialName("subtotal_amount") val subtotalAmount: Double? = null,
-    @SerialName("delivery_fee_amount") val deliveryFeeAmount: Double? = null,
-    @SerialName("discount_amount") val discountAmount: Double? = null,
+    @SerialName("total_amount") @Serializable(BigDecimalJsonSerializer::class) val totalAmount: BigDecimal,
+    @SerialName("subtotal_amount") @Serializable(BigDecimalJsonSerializer::class) val subtotalAmount: BigDecimal? = null,
+    @SerialName("delivery_fee_amount") @Serializable(BigDecimalJsonSerializer::class) val deliveryFeeAmount: BigDecimal? = null,
+    @SerialName("discount_amount") @Serializable(BigDecimalJsonSerializer::class) val discountAmount: BigDecimal? = null,
     @SerialName("currency") val currency: String,
     @SerialName("items") val items: List<OrderItemDto>,
     @SerialName("delivery_recipient_name") val deliveryRecipientName: String? = null,
@@ -167,14 +171,15 @@ data class OrderSummaryDto(
 @Serializable
 data class OrderDetailsResponse(
     @SerialName("id") val id: String,
+    @SerialName("is_guest") val isGuest: Boolean = false,
     @SerialName("created_at") val createdAt: String,
     @SerialName("status") val status: String,
     @SerialName("fulfillment_status") val fulfillmentStatus: String,
     @SerialName("items") val items: List<OrderItemDto>,
-    @SerialName("subtotal_amount") val subtotalAmount: Double? = null,
-    @SerialName("delivery_fee_amount") val deliveryFeeAmount: Double? = null,
-    @SerialName("discount_amount") val discountAmount: Double? = null,
-    @SerialName("total_amount") val totalAmount: Double,
+    @SerialName("subtotal_amount") @Serializable(BigDecimalJsonSerializer::class) val subtotalAmount: BigDecimal? = null,
+    @SerialName("delivery_fee_amount") @Serializable(BigDecimalJsonSerializer::class) val deliveryFeeAmount: BigDecimal? = null,
+    @SerialName("discount_amount") @Serializable(BigDecimalJsonSerializer::class) val discountAmount: BigDecimal? = null,
+    @SerialName("total_amount") @Serializable(BigDecimalJsonSerializer::class) val totalAmount: BigDecimal,
     @SerialName("currency") val currency: String,
     @SerialName("delivery_recipient_name") val deliveryRecipientName: String? = null,
     @SerialName("delivery_phone") val deliveryPhone: String? = null,
@@ -201,9 +206,9 @@ data class OrderItemDto(
     @SerialName("product_name") val productName: String,
     @SerialName("sku") val sku: String? = null,
     @SerialName("quantity") val quantity: Int,
-    @SerialName("unit_price_amount") val unitPriceAmount: Double,
+    @SerialName("unit_price_amount") @Serializable(BigDecimalJsonSerializer::class) val unitPriceAmount: BigDecimal,
     @SerialName("unit_price_currency") val unitPriceCurrency: String? = null,
-    @SerialName("subtotal_amount") val subtotalAmount: Double? = null
+    @SerialName("subtotal_amount") @Serializable(BigDecimalJsonSerializer::class) val subtotalAmount: BigDecimal? = null
 )
 
 /**
@@ -238,7 +243,7 @@ data class StatusHistoryEntryDto(
 @Serializable
 data class ApprovalDecisionDto(
     @SerialName("decision") val decision: String,
-    @SerialName("evaluated_amount") val evaluatedAmount: Double,
+    @SerialName("evaluated_amount") @Serializable(BigDecimalJsonSerializer::class) val evaluatedAmount: BigDecimal,
     @SerialName("currency") val currency: String,
     @SerialName("decision_reason") val decisionReason: String? = null,
     @SerialName("policy_version") val policyVersion: Int? = null,
@@ -252,8 +257,8 @@ data class ApprovalDecisionDto(
  */
 @Serializable
 data class ApprovalPolicyDto(
-    @SerialName("auto_approval_limit") val autoApprovalLimit: Double,
-    @SerialName("mandatory_review_threshold") val mandatoryReviewThreshold: Double,
+    @SerialName("auto_approval_limit") @Serializable(BigDecimalJsonSerializer::class) val autoApprovalLimit: BigDecimal,
+    @SerialName("mandatory_review_threshold") @Serializable(BigDecimalJsonSerializer::class) val mandatoryReviewThreshold: BigDecimal,
     @SerialName("currency") val currency: String,
     @SerialName("enabled") val enabled: Boolean,
     @SerialName("version") val version: Int? = null,
@@ -271,7 +276,7 @@ data class ReviewQueueOrderDto(
     @SerialName("status") val status: String,
     @SerialName("fulfillment_status") val fulfillmentStatus: String,
     @SerialName("approval_status") val approvalStatus: String,
-    @SerialName("total_amount") val totalAmount: Double,
+    @SerialName("total_amount") @Serializable(BigDecimalJsonSerializer::class) val totalAmount: BigDecimal,
     @SerialName("currency") val currency: String,
     @SerialName("items") val items: List<OrderItemDto>,
     @SerialName("delivery_recipient_name") val deliveryRecipientName: String? = null,

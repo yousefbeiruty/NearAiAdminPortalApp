@@ -6,6 +6,7 @@ import com.nearai.admin.core.network.ApiErrorParser
 import com.nearai.admin.core.security.TokenRefreshManager
 import com.nearai.admin.feature.dashboard.domain.DashboardData
 import com.nearai.admin.feature.dashboard.domain.DashboardRepository
+import com.nearai.admin.feature.dashboard.domain.PlatformDashboardData
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
@@ -20,6 +21,7 @@ import javax.inject.Singleton
 @Singleton
 class DashboardRepositoryImpl @Inject constructor(
     private val apiService: DashboardApiService,
+    private val platformApiService: PlatformDashboardApiService,
     private val tokenRefreshManager: TokenRefreshManager
 ) : DashboardRepository {
 
@@ -28,6 +30,17 @@ class DashboardRepositoryImpl @Inject constructor(
             try {
                 val response = apiService.getDashboard()
                 Result.Success(DashboardMapper.mapDashboardData(response))
+            } catch (e: Exception) {
+                handleException(e)
+            }
+        }
+    }
+
+    override suspend fun getPlatformDashboardData(): Result<PlatformDashboardData> {
+        return tokenRefreshManager.refreshAndRetry {
+            try {
+                val response = platformApiService.getPlatformDashboard()
+                Result.Success(DashboardMapper.mapPlatformDashboardData(response))
             } catch (e: Exception) {
                 handleException(e)
             }

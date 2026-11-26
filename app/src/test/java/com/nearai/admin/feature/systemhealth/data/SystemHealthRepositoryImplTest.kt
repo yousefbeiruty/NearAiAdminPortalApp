@@ -17,11 +17,16 @@ import kotlinx.coroutines.test.setMain
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody
 import org.junit.After
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import retrofit2.HttpException
 import java.io.IOException
+
+private fun jsonMapOf(vararg pairs: Pair<String, String>): Map<String, JsonPrimitive> {
+    return pairs.associate { it.first to JsonPrimitive(it.second) }
+}
 
 /**
  * Tests for [SystemHealthRepositoryImpl] verifying that [ApiErrorParser] is used
@@ -46,8 +51,8 @@ class SystemHealthRepositoryImplTest {
         checkedAt = "2026-11-04T18:30:00Z",
         application = ApplicationHealthDto("healthy", "dev", 3600),
         components = mapOf(
-            "database" to ComponentHealthDto("healthy", mapOf("latency_ms" to "12")),
-            "storage" to ComponentHealthDto("healthy", mapOf("backend" to "local"))
+            "database" to ComponentHealthDto("healthy", jsonMapOf("latency_ms" to "12")),
+            "storage" to ComponentHealthDto("healthy", jsonMapOf("backend" to "local"))
         )
     )
 

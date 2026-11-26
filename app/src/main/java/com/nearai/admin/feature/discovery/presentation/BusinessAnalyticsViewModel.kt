@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import com.nearai.admin.core.common.MonetaryFormatter
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -90,17 +92,17 @@ data class DailyOrderUi(
 
 data class RevenueByCurrencyUi(
     val currency: String = "",
-    val totalAmount: Double = 0.0,
+    val totalAmount: BigDecimal = BigDecimal.ZERO,
     val formattedTotal: String = "0.00",
     val orderCount: Int = 0,
     val formattedOrderCount: String = "0",
-    val avgOrderValue: Double = 0.0,
+    val avgOrderValue: BigDecimal = BigDecimal.ZERO,
     val formattedAvgOrderValue: String = "0.00"
 )
 
 data class DailyRevenueUi(
     val date: String = "",
-    val amount: Double = 0.0,
+    val amount: BigDecimal = BigDecimal.ZERO,
     val currency: String = "",
     val formattedDate: String = "",
     val formattedAmount: String = "0.00"
@@ -112,7 +114,7 @@ data class ProductSalesUi(
     val sku: String = "",
     val unitsSold: Int = 0,
     val formattedUnitsSold: String = "0",
-    val revenue: Double = 0.0,
+    val revenue: BigDecimal = BigDecimal.ZERO,
     val currency: String = "",
     val formattedRevenue: String = "0.00"
 )
@@ -122,7 +124,7 @@ data class CategorySalesUi(
     val categoryName: String = "",
     val unitsSold: Int = 0,
     val formattedUnitsSold: String = "0",
-    val revenue: Double = 0.0,
+    val revenue: BigDecimal = BigDecimal.ZERO,
     val currency: String = "",
     val formattedRevenue: String = "0.00"
 )
@@ -135,8 +137,8 @@ data class DailyRegistrationUi(
 )
 
 data class RevenueComparisonUi(
-    val current: Double = 0.0,
-    val previous: Double = 0.0,
+    val current: BigDecimal = BigDecimal.ZERO,
+    val previous: BigDecimal = BigDecimal.ZERO,
     val percentageChange: Double? = null,
     val formattedCurrent: String = "0.00",
     val formattedPrevious: String = "0.00"
@@ -221,8 +223,8 @@ class BusinessAnalyticsViewModel @Inject constructor(
         return numberFormat.format(value)
     }
 
-    private fun formatCurrency(value: Double): String {
-        return String.format(Locale.US, "%.2f", value)
+    private fun formatCurrency(value: BigDecimal, currency: String = "USD"): String {
+        return MonetaryFormatter.formatAmountOnly(value, currency, Locale.US)
     }
 
     private fun formatDate(dateStr: String): String {
@@ -247,8 +249,8 @@ private fun formatNumber(value: Int): String {
     return numberFormat.format(value)
 }
 
-private fun formatCurrency(value: Double): String {
-    return String.format(Locale.US, "%.2f", value)
+private fun formatCurrency(value: BigDecimal, currency: String = "USD"): String {
+    return MonetaryFormatter.formatAmountOnly(value, currency, Locale.US)
 }
 
 private fun formatDate(dateStr: String): String {
@@ -302,11 +304,11 @@ private fun BusinessAnalyticsUiState.copyData(
             RevenueByCurrencyUi(
                 currency = it.currency,
                 totalAmount = it.totalAmount,
-                formattedTotal = formatCurrency(it.totalAmount),
+                formattedTotal = formatCurrency(it.totalAmount, it.currency),
                 orderCount = it.orderCount,
                 formattedOrderCount = formatNumber(it.orderCount),
                 avgOrderValue = it.avgOrderValue,
-                formattedAvgOrderValue = formatCurrency(it.avgOrderValue)
+                formattedAvgOrderValue = formatCurrency(it.avgOrderValue, it.currency)
             )
         },
         dailyRevenue = data.dailyRevenue.map {
@@ -315,7 +317,7 @@ private fun BusinessAnalyticsUiState.copyData(
                 amount = it.amount,
                 currency = it.currency,
                 formattedDate = formatDate(it.date),
-                formattedAmount = formatCurrency(it.amount)
+                formattedAmount = formatCurrency(it.amount, it.currency)
             )
         },
 
@@ -329,7 +331,7 @@ private fun BusinessAnalyticsUiState.copyData(
                 formattedUnitsSold = formatNumber(it.unitsSold),
                 revenue = it.revenue,
                 currency = it.currency,
-                formattedRevenue = formatCurrency(it.revenue)
+                formattedRevenue = formatCurrency(it.revenue, it.currency)
             )
         },
         categorySales = data.categorySales.map {
@@ -340,7 +342,7 @@ private fun BusinessAnalyticsUiState.copyData(
                 formattedUnitsSold = formatNumber(it.unitsSold),
                 revenue = it.revenue,
                 currency = it.currency,
-                formattedRevenue = formatCurrency(it.revenue)
+                formattedRevenue = formatCurrency(it.revenue, it.currency)
             )
         },
 
@@ -366,13 +368,14 @@ private fun BusinessAnalyticsUiState.copyData(
         previousEndDate = data.previousEndDate,
         totalOrdersPercentageChange = data.totalOrdersComparison?.percentageChange,
         completedOrdersPercentageChange = data.completedOrdersComparison?.percentageChange,
-        revenuePercentageChanges = data.revenueComparison?.map {
+        revenuePercentageChanges = data.revenueComparison?.mapIndexed { index, comparison ->
+            val currency = data.revenueByCurrency.getOrNull(index)?.currency ?: "USD"
             RevenueComparisonUi(
-                current = it.current,
-                previous = it.previous,
-                percentageChange = it.percentageChange,
-                formattedCurrent = formatCurrency(it.current),
-                formattedPrevious = formatCurrency(it.previous)
+                current = comparison.current,
+                previous = comparison.previous,
+                percentageChange = comparison.percentageChange,
+                formattedCurrent = formatCurrency(comparison.current, currency),
+                formattedPrevious = formatCurrency(comparison.previous, currency)
             )
         },
         newRegistrationsPercentageChange = data.newRegistrationsComparison?.percentageChange,

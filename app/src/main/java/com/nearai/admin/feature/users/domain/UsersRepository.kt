@@ -3,7 +3,7 @@ package com.nearai.admin.feature.users.domain
 import com.nearai.admin.core.common.Result
 
 /**
- * Domain model representing a user in the admin portal.
+ * Domain model representing a user in the platform admin portal.
  */
 data class AdminUser(
     val id: String,
@@ -11,6 +11,7 @@ data class AdminUser(
     val role: String,
     val isActive: Boolean,
     val emailVerified: Boolean,
+    val tenantId: String?,
     val createdAt: String,
     val updatedAt: String
 )
@@ -27,12 +28,12 @@ data class PaginatedAdminUsers(
 )
 
 /**
- * Repository interface for user management operations.
+ * Repository interface for platform user inspection (read-only).
  */
 interface UsersRepository {
 
     /**
-     * Fetches a paginated list of users with optional filters.
+     * Fetches a paginated list of users across all tenants with optional filters.
      */
     suspend fun listUsers(
         page: Int = 1,
@@ -46,18 +47,4 @@ interface UsersRepository {
      * Fetches a single user by ID.
      */
     suspend fun getUser(userId: String): Result<AdminUser>
-
-    /**
-     * Updates a user's role and/or active status.
-     */
-    suspend fun updateUser(
-        userId: String,
-        role: String? = null,
-        isActive: Boolean? = null
-    ): Result<AdminUser>
-
-    /**
-     * Revokes all refresh sessions for a user.
-     */
-    suspend fun revokeSessions(userId: String): Result<Int>
 }

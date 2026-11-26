@@ -66,8 +66,8 @@ class AiUsageViewModelTest {
         assertFalse(state.isLoading)
         assertFalse(state.isFeatureAvailable)
         assertTrue(state.error!!.contains("not yet available", ignoreCase = true))
-        assertEquals(0.0, state.monthlyBudgetConsumed, 0.001)
-        assertEquals(0.0, state.monthlyBudgetTotal, 0.001)
+        assertEquals(java.math.BigDecimal.ZERO, state.monthlyBudgetConsumed)
+        assertEquals(java.math.BigDecimal.ZERO, state.monthlyBudgetTotal)
     }
 
     @Test
@@ -78,8 +78,8 @@ class AiUsageViewModelTest {
 
         val state = viewModel.uiState.value
         // Verify no fabricated data — budget values should be zero
-        assertEquals(0.0, state.monthlyBudgetConsumed, 0.001)
-        assertEquals(0.0, state.monthlyBudgetTotal, 0.001)
+        assertEquals(java.math.BigDecimal.ZERO, state.monthlyBudgetConsumed)
+        assertEquals(java.math.BigDecimal.ZERO, state.monthlyBudgetTotal)
     }
 
     @Test
@@ -137,8 +137,8 @@ class AiUsageViewModelTest {
     @Test
     fun `success result sets feature available when API becomes available`() = runTest {
         val data = AiUsageData(
-            monthlyBudgetConsumed = 100.0,
-            monthlyBudgetTotal = 500.0
+            monthlyBudgetConsumed = java.math.BigDecimal("100.0"),
+            monthlyBudgetTotal = java.math.BigDecimal("500.0")
         )
         coEvery { aiUsageRepository.getAiUsageData() } returns Result.Success(data)
 
@@ -147,8 +147,8 @@ class AiUsageViewModelTest {
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
         assertTrue(state.isFeatureAvailable)
-        assertEquals(100.0, state.monthlyBudgetConsumed, 0.001)
-        assertEquals(500.0, state.monthlyBudgetTotal, 0.001)
+        assertEquals(java.math.BigDecimal("100.0"), state.monthlyBudgetConsumed)
+        assertEquals(java.math.BigDecimal("500.0"), state.monthlyBudgetTotal)
         assertNull(state.error)
     }
 

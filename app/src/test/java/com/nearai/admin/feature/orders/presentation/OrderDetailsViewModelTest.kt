@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import java.math.BigDecimal
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -268,7 +269,7 @@ class OrderDetailsViewModelTest {
         assertEquals(2, order!!.items.size)
         assertEquals("Widget A", order.items[0].productName)
         assertEquals(3, order.items[0].quantity)
-        assertEquals(29.99, order.items[0].unitPriceAmount, 0.001)
+        assertEquals(BigDecimal("29.99"), order.items[0].unitPriceAmount)
         assertEquals("JOD", order.currency)
     }
 
@@ -296,7 +297,7 @@ class OrderDetailsViewModelTest {
                 approvalStatus = ApprovalStatus.AUTO_APPROVED,
                 approvalDecision = ApprovalDecisionSnapshot(
                     decision = ApprovalStatus.AUTO_APPROVED,
-                    evaluatedAmount = 120.0,
+                    evaluatedAmount = BigDecimal("120.00"),
                     currency = "JOD",
                     decisionReason = "Within auto-approval limit",
                     policyVersion = 1,
@@ -312,7 +313,7 @@ class OrderDetailsViewModelTest {
 
         assertEquals(ApprovalStatus.AUTO_APPROVED, viewModel.uiState.value.approvalStatus)
         assertNotNull(viewModel.uiState.value.approvalDecision)
-        assertEquals(120.0, viewModel.uiState.value.approvalDecision!!.evaluatedAmount, 0.001)
+        assertEquals(BigDecimal("120.00"), viewModel.uiState.value.approvalDecision!!.evaluatedAmount)
     }
 
     @Test
@@ -323,7 +324,7 @@ class OrderDetailsViewModelTest {
                 fulfillmentStatus = FulfillmentStatus.CONFIRMED,
                 approvalDecision = ApprovalDecisionSnapshot(
                     decision = ApprovalStatus.MANUALLY_APPROVED,
-                    evaluatedAmount = 350.0,
+                    evaluatedAmount = BigDecimal("350.00"),
                     currency = "JOD",
                     decisionReason = "Manual approval",
                     policyVersion = 1,
@@ -446,13 +447,13 @@ class OrderDetailsViewModelTest {
         status = OrderStatus.PENDING,
         fulfillmentStatus = fulfillmentStatus,
         items = listOf(
-            OrderItem("var-1", "Widget A", "W-001", 3, 29.99, "JOD", 89.97),
-            OrderItem("var-2", "Widget B", "W-002", 1, 15.00, "JOD", 15.00)
+            OrderItem("var-1", "Widget A", "W-001", 3, BigDecimal("29.99"), "JOD", BigDecimal("89.97")),
+            OrderItem("var-2", "Widget B", "W-002", 1, BigDecimal("15.00"), "JOD", BigDecimal("15.00"))
         ),
-        subtotalAmount = 104.97,
-        deliveryFeeAmount = 0.0,
-        discountAmount = 0.0,
-        totalAmount = 104.97,
+        subtotalAmount = BigDecimal("104.97"),
+        deliveryFeeAmount = BigDecimal.ZERO,
+        discountAmount = BigDecimal.ZERO,
+        totalAmount = BigDecimal("104.97"),
         currency = "JOD",
         deliveryRecipientName = "John Doe",
         deliveryPhone = "+1234567890",

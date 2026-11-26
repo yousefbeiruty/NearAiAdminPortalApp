@@ -11,9 +11,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.nearai.admin.core.common.parseBigDecimalOrNull
+import com.nearai.admin.core.common.validateMonetaryAmountForCurrency
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.math.BigDecimal
 
 /**
  * Immutable UI state for the Products List screen.
@@ -172,7 +175,7 @@ class ProductsListViewModel @Inject constructor(
     fun onCreateProduct(
         name: String,
         description: String,
-        priceAmount: Double,
+        priceAmount: String,
         priceCurrency: String,
         categoryId: String?,
         status: ProductStatus
@@ -181,10 +184,13 @@ class ProductsListViewModel @Inject constructor(
             _uiState.update { it.copy(createError = "Product name is required") }
             return
         }
-        if (priceAmount <= 0) {
-            _uiState.update { it.copy(createError = "Price must be greater than 0") }
+        val validationError = priceAmount.validateMonetaryAmountForCurrency(priceCurrency.ifBlank { "USD" })
+        if (validationError != null) {
+            _uiState.update { it.copy(createError = validationError) }
             return
         }
+        val price = priceAmount.parseBigDecimalOrNull()
+            ?: throw IllegalStateException("Price validation passed but parsing failed")
 
         viewModelScope.launch {
             _uiState.update { it.copy(isCreating = true, createError = null) }
@@ -192,8 +198,8 @@ class ProductsListViewModel @Inject constructor(
             when (val result = catalogRepository.createProduct(
                 name = name.trim(),
                 description = description,
-                priceAmount = priceAmount,
-                priceCurrency = priceCurrency,
+                priceAmount = price,
+                priceCurrency = priceCurrency.ifBlank { "USD" },
                 categoryId = categoryId,
                 status = status
             )) {

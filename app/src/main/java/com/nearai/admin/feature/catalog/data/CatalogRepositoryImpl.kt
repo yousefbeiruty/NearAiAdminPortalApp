@@ -15,6 +15,7 @@ import com.nearai.admin.feature.catalog.domain.VariantStatus
 import okhttp3.MultipartBody
 import retrofit2.HttpException
 import java.io.IOException
+import java.math.BigDecimal
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -66,11 +67,11 @@ class CatalogRepositoryImpl @Inject constructor(
 
     override suspend fun listProducts(
         page: Int, size: Int, categoryId: String?, status: ProductStatus?,
-        search: String?, minPrice: Double?, maxPrice: Double?, sortBy: ProductSortBy
+        search: String?, minPrice: BigDecimal?, maxPrice: BigDecimal?, sortBy: ProductSortBy
     ): Result<PaginatedProducts> {
         return tokenRefreshManager.refreshAndRetry {
             try {
-                val response = apiService.listProducts(page, size, categoryId, status?.name?.lowercase(), search, minPrice, maxPrice, sortBy.toApiValue())
+                val response = apiService.listProducts(page, size, categoryId, status?.name?.lowercase(), search, minPrice?.toString(), maxPrice?.toString(), sortBy.toApiValue())
                 Result.Success(CatalogMapper.mapPaginatedProducts(response))
             } catch (e: Exception) {
                 handleException(e)
@@ -80,11 +81,11 @@ class CatalogRepositoryImpl @Inject constructor(
 
     override suspend fun searchProducts(
         query: String, page: Int, size: Int, categoryId: String?, status: ProductStatus?,
-        minPrice: Double?, maxPrice: Double?, sortBy: ProductSortBy
+        minPrice: BigDecimal?, maxPrice: BigDecimal?, sortBy: ProductSortBy
     ): Result<PaginatedProducts> {
         return tokenRefreshManager.refreshAndRetry {
             try {
-                val response = apiService.searchProducts(query, page, size, categoryId, status?.name?.lowercase(), minPrice, maxPrice, sortBy.toApiValue())
+                val response = apiService.searchProducts(query, page, size, categoryId, status?.name?.lowercase(), minPrice?.toString(), maxPrice?.toString(), sortBy.toApiValue())
                 Result.Success(CatalogMapper.mapPaginatedProducts(response))
             } catch (e: Exception) {
                 handleException(e)
@@ -104,7 +105,7 @@ class CatalogRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createProduct(
-        name: String, description: String, slug: String?, priceAmount: Double,
+        name: String, description: String, slug: String?, priceAmount: BigDecimal,
         priceCurrency: String, images: List<String>?, categoryId: String?, status: ProductStatus
     ): Result<com.nearai.admin.feature.catalog.domain.Product> {
         return tokenRefreshManager.refreshAndRetry {
@@ -122,7 +123,7 @@ class CatalogRepositoryImpl @Inject constructor(
         name: String?,
         description: String?,
         slug: String?,
-        priceAmount: Double?,
+        priceAmount: BigDecimal?,
         priceCurrency: String?,
         images: List<String>?,
         categoryId: String?,
@@ -234,10 +235,23 @@ class CatalogRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createVariant(productId: String, sku: String, attributes: Map<String, String>): Result<com.nearai.admin.feature.catalog.domain.ProductVariant> {
+    override suspend fun createVariant(
+        productId: String,
+        sku: String,
+        attributes: Map<String, String>,
+        priceAmount: BigDecimal?,
+        priceCurrency: String?,
+        unitOfMeasure: String?
+    ): Result<com.nearai.admin.feature.catalog.domain.ProductVariant> {
         return tokenRefreshManager.refreshAndRetry {
             try {
-                val response = apiService.createVariant(productId, VariantCreateRequest(sku, attributes))
+                val response = apiService.createVariant(productId, VariantCreateRequest(
+                    sku = sku,
+                    attributes = attributes,
+                    priceAmount = priceAmount,
+                    priceCurrency = priceCurrency,
+                    unitOfMeasure = unitOfMeasure
+                ))
                 Result.Success(CatalogMapper.mapVariant(response))
             } catch (e: Exception) {
                 handleException(e)
@@ -248,11 +262,20 @@ class CatalogRepositoryImpl @Inject constructor(
     override suspend fun updateVariant(
         variantId: String,
         sku: String?,
-        attributes: Map<String, String>?
+        attributes: Map<String, String>?,
+        priceAmount: BigDecimal?,
+        priceCurrency: String?,
+        unitOfMeasure: String?
     ): Result<com.nearai.admin.feature.catalog.domain.ProductVariant> {
         return tokenRefreshManager.refreshAndRetry {
             try {
-                val response = apiService.updateVariant(variantId, VariantUpdateRequest(sku, attributes))
+                val response = apiService.updateVariant(variantId, VariantUpdateRequest(
+                    sku = sku,
+                    attributes = attributes,
+                    priceAmount = priceAmount,
+                    priceCurrency = priceCurrency,
+                    unitOfMeasure = unitOfMeasure
+                ))
                 Result.Success(CatalogMapper.mapVariant(response))
             } catch (e: Exception) {
                 handleException(e)

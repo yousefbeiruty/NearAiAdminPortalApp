@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import java.math.BigDecimal
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -289,10 +290,10 @@ class OrdersListViewModelTest {
                 createdAt = "2024-01-15T10:30:00Z",
                 status = status,
                 fulfillmentStatus = fulfillmentStatus,
-                totalAmount = 45.50,
-                subtotalAmount = 40.00,
-                deliveryFeeAmount = 5.50,
-                discountAmount = 0.0,
+                totalAmount = BigDecimal("45.50"),
+                subtotalAmount = BigDecimal("40.00"),
+                deliveryFeeAmount = BigDecimal("5.50"),
+                discountAmount = BigDecimal.ZERO,
                 currency = "JOD",
                 items = emptyList(),
                 deliveryRecipientName = "John Doe",
@@ -309,10 +310,10 @@ class OrdersListViewModelTest {
                 createdAt = "2024-01-14T08:15:00Z",
                 status = status,
                 fulfillmentStatus = fulfillmentStatus,
-                totalAmount = 120.00,
-                subtotalAmount = 110.00,
-                deliveryFeeAmount = 10.00,
-                discountAmount = 0.0,
+                totalAmount = BigDecimal("120.00"),
+                subtotalAmount = BigDecimal("110.00"),
+                deliveryFeeAmount = BigDecimal("10.00"),
+                discountAmount = BigDecimal.ZERO,
                 currency = "JOD",
                 items = emptyList(),
                 deliveryRecipientName = "Jane Smith",
