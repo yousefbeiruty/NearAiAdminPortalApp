@@ -7,6 +7,7 @@ import com.nearai.admin.core.designsystem.theme.NearAiAdminTheme
 import com.nearai.admin.feature.dashboard.presentation.DashboardScreenContent
 import com.nearai.admin.feature.dashboard.presentation.DashboardUiState
 import com.nearai.admin.test.TestDataFactory
+import java.math.BigDecimal
 import java.util.Locale
 
 /**
@@ -116,7 +117,7 @@ fun DashboardScreenEmptyPreview() {
     }
 }
 
-private fun formatCurrency(amount: Double, currencyCode: String): String {
+private fun formatCurrency(amount: BigDecimal, currencyCode: String): String {
     return try {
         val format = java.text.NumberFormat.getCurrencyInstance(Locale.US).apply {
             currency = java.util.Currency.getInstance(currencyCode.ifBlank { "USD" })

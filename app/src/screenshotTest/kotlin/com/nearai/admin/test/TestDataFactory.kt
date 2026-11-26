@@ -12,6 +12,7 @@ import com.nearai.admin.feature.orders.domain.OrderStatus
 import com.nearai.admin.feature.orders.domain.OrderSummary
 import com.nearai.admin.feature.orders.domain.PaginatedOrders
 import com.nearai.admin.feature.orders.domain.StatusHistoryEntry
+import java.math.BigDecimal
 
 /**
  * Deterministic test data factory for UI tests.
@@ -34,16 +35,22 @@ object TestDataFactory {
         completedOrders = 1180,
         cancelledOrders = 15,
         rejectedOrders = 10,
-        totalRevenue = 6071.25,
+        totalRevenue = parseDecimalAmount("6071.25"),
         revenueCurrency = "USD",
         revenueByCurrency = listOf(
-            RevenueByCurrency("USD", 4820.50),
-            RevenueByCurrency("EUR", 1250.75)
+            RevenueByCurrency("USD", parseDecimalAmount("4820.50")),
+            RevenueByCurrency("EUR", parseDecimalAmount("1250.75"))
         ),
         recentOrders = listOf(
-            RecentOrder("ord-001", "Alice Martin", "2026-11-01", "completed", 120.00, "USD"),
-            RecentOrder("ord-002", "Bob Smith", "2026-11-02", "pending", 85.50, "USD"),
-            RecentOrder("ord-003", "Carol White", "2026-11-03", "completed", 210.00, "EUR")
+            RecentOrder(
+                "ord-001", "Alice Martin", "2026-11-01", "completed", parseDecimalAmount("120.00"), "USD"
+            ),
+            RecentOrder(
+                "ord-002", "Bob Smith", "2026-11-02", "pending", parseDecimalAmount("85.50"), "USD"
+            ),
+            RecentOrder(
+                "ord-003", "Carol White", "2026-11-03", "completed", parseDecimalAmount("210.00"), "EUR"
+            )
         ),
         recentRegistrations = listOf(
             RecentRegistration("usr-001", "alice@example.com", "customer", "2026-11-01"),
@@ -67,7 +74,7 @@ object TestDataFactory {
                 id = "ord-001",
                 status = OrderStatus.COMPLETED,
                 fulfillmentStatus = FulfillmentStatus.DELIVERED,
-                totalAmount = 120.00,
+                totalAmount = parseDecimalAmount("120.00"),
                 currency = "USD",
                 recipientName = "Alice Martin",
                 city = "New York"
@@ -76,7 +83,7 @@ object TestDataFactory {
                 id = "ord-002",
                 status = OrderStatus.PENDING,
                 fulfillmentStatus = FulfillmentStatus.AWAITING_CONFIRMATION,
-                totalAmount = 85.50,
+                totalAmount = parseDecimalAmount("85.50"),
                 currency = "USD",
                 recipientName = "Bob Smith",
                 city = "London"
@@ -85,7 +92,7 @@ object TestDataFactory {
                 id = "ord-003",
                 status = OrderStatus.PENDING,
                 fulfillmentStatus = FulfillmentStatus.OUT_FOR_DELIVERY,
-                totalAmount = 210.00,
+                totalAmount = parseDecimalAmount("210.00"),
                 currency = "EUR",
                 recipientName = "Carol White",
                 city = "Paris"
@@ -109,7 +116,7 @@ object TestDataFactory {
         id: String,
         status: OrderStatus,
         fulfillmentStatus: FulfillmentStatus,
-        totalAmount: Double,
+        totalAmount: BigDecimal,
         currency: String,
         recipientName: String?,
         city: String?
@@ -120,12 +127,18 @@ object TestDataFactory {
         fulfillmentStatus = fulfillmentStatus,
         totalAmount = totalAmount,
         subtotalAmount = totalAmount,
-        deliveryFeeAmount = 0.0,
-        discountAmount = 0.0,
+        deliveryFeeAmount = BigDecimal.ZERO,
+        discountAmount = BigDecimal.ZERO,
         currency = currency,
         items = listOf(
-            OrderItem("var-001", "Wireless Mouse", "WM-001", 2, 25.0, "USD", 50.0),
-            OrderItem("var-002", "USB-C Cable", "UC-002", 1, 15.0, "USD", 15.0)
+            OrderItem(
+                "var-001", "Wireless Mouse", "WM-001", 2,
+                parseDecimalAmount("25.00"), "USD", parseDecimalAmount("50.00")
+            ),
+            OrderItem(
+                "var-002", "USB-C Cable", "UC-002", 1,
+                parseDecimalAmount("15.00"), "USD", parseDecimalAmount("15.00")
+            )
         ),
         deliveryRecipientName = recipientName,
         deliveryPhone = "+1-555-0100",
@@ -147,13 +160,19 @@ object TestDataFactory {
         status = OrderStatus.PENDING,
         fulfillmentStatus = FulfillmentStatus.OUT_FOR_DELIVERY,
         items = listOf(
-            OrderItem("var-010", "Mechanical Keyboard", "MK-010", 1, 150.0, "EUR", 150.0),
-            OrderItem("var-011", "Keyboard Wrist Rest", "KW-011", 1, 60.0, "EUR", 60.0)
+            OrderItem(
+                "var-010", "Mechanical Keyboard", "MK-010", 1,
+                parseDecimalAmount("150.00"), "EUR", parseDecimalAmount("150.00")
+            ),
+            OrderItem(
+                "var-011", "Keyboard Wrist Rest", "KW-011", 1,
+                parseDecimalAmount("60.00"), "EUR", parseDecimalAmount("60.00")
+            )
         ),
-        subtotalAmount = 210.00,
-        deliveryFeeAmount = 0.0,
-        discountAmount = 0.0,
-        totalAmount = 210.00,
+        subtotalAmount = parseDecimalAmount("210.00"),
+        deliveryFeeAmount = BigDecimal.ZERO,
+        discountAmount = BigDecimal.ZERO,
+        totalAmount = parseDecimalAmount("210.00"),
         currency = "EUR",
         deliveryRecipientName = "Carol White",
         deliveryPhone = "+33-555-0200",
@@ -171,13 +190,19 @@ object TestDataFactory {
         status = OrderStatus.COMPLETED,
         fulfillmentStatus = FulfillmentStatus.DELIVERED,
         items = listOf(
-            OrderItem("var-001", "Wireless Mouse", "WM-001", 2, 25.0, "USD", 50.0),
-            OrderItem("var-002", "USB-C Cable", "UC-002", 1, 15.0, "USD", 15.0)
+            OrderItem(
+                "var-001", "Wireless Mouse", "WM-001", 2,
+                parseDecimalAmount("25.00"), "USD", parseDecimalAmount("50.00")
+            ),
+            OrderItem(
+                "var-002", "USB-C Cable", "UC-002", 1,
+                parseDecimalAmount("15.00"), "USD", parseDecimalAmount("15.00")
+            )
         ),
-        subtotalAmount = 120.00,
-        deliveryFeeAmount = 0.0,
-        discountAmount = 0.0,
-        totalAmount = 120.00,
+        subtotalAmount = parseDecimalAmount("120.00"),
+        deliveryFeeAmount = BigDecimal.ZERO,
+        discountAmount = BigDecimal.ZERO,
+        totalAmount = parseDecimalAmount("120.00"),
         currency = "USD",
         deliveryRecipientName = "Alice Martin",
         deliveryPhone = "+1-555-0100",
@@ -196,3 +221,5 @@ object TestDataFactory {
         StatusHistoryEntry("processing", "out_for_delivery", "fulfillment", "driver", null, "2026-11-04T08:00:00Z")
     )
 }
+
+private fun parseDecimalAmount(value: String): BigDecimal = BigDecimal(value)
